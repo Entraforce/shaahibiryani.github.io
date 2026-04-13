@@ -1082,276 +1082,577 @@ p.s-intro {
 <!-- TOAST -->
 <div class="cart-toast" id="cartToast"></div>
 
+
 <script>
-// ════════════════════════════════════════
-// GLOBAL FUNCTIONS
-// ════════════════════════════════════════
+/* =========================================================
+   SHAAHI BIRYANI — ALL JS
+   Global functions first (reachable from inline onclick),
+   then DOM-ready block.
+   ONE script tag. No raw JS anywhere else.
+   ========================================================= */
+
+// ── CART DATA ──
 var cart = [];
 
-function getPrice(s){ if(!s)return 0; var m=String(s).match(/[\d.]+/); return m?parseFloat(m[0]):0; }
+// ── HELPERS ──
+function _price(s){
+  if(!s) return 0;
+  var m = String(s).match(/[\d.]+/);
+  return m ? parseFloat(m[0]) : 0;
+}
 
+// ── ITEM MODAL ──
 function openItemModal(el){
-  if(!el)return;
-  var name=(el.dataset.name||'Menu Item').trim();
-  var price=(el.dataset.price||'').trim();
-  var desc=(el.dataset.desc||'').trim();
-  var cat=(el.dataset.cat||'').trim();
-  var n=document.getElementById('modalName'),p=document.getElementById('modalPrice'),
-      d=document.getElementById('modalDesc'),c=document.getElementById('modalCat'),
-      q=document.getElementById('qtyVal'),a=document.getElementById('allergyInput');
-  if(!n)return;
-  n.textContent=name; p.textContent=price||'See menu';
-  d.textContent=desc||'Freshly prepared to order.';
-  c.textContent=cat; q.textContent='1';
-  if(a)a.value='';
-  var ov=document.getElementById('itemModalOverlay');
-  if(!ov)return;
-  ov.dataset.name=name; ov.dataset.price=price;
-  ov.classList.add('open'); document.body.style.overflow='hidden';
+  if(!el) return;
+  var d = el.dataset;
+  var name  = (d.name  || 'Menu Item').trim();
+  var price = (d.price || '').trim();
+  var desc  = (d.desc  || 'Freshly prepared to order.').trim();
+  var cat   = (d.cat   || '').trim();
+  var e = function(id){ return document.getElementById(id); };
+  if(!e('modalName')) return;
+  e('modalName').textContent  = name;
+  e('modalPrice').textContent = price || 'See menu';
+  e('modalDesc').textContent  = desc;
+  e('modalCat').textContent   = cat;
+  e('qtyVal').textContent     = '1';
+  if(e('allergyInput')) e('allergyInput').value = '';
+  var ov = e('itemModalOverlay');
+  if(!ov) return;
+  ov.dataset.name  = name;
+  ov.dataset.price = price;
+  ov.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 function closeModal(){
-  var ov=document.getElementById('itemModalOverlay');
-  if(ov)ov.classList.remove('open');
-  document.body.style.overflow='';
+  var ov = document.getElementById('itemModalOverlay');
+  if(ov) ov.classList.remove('open');
+  document.body.style.overflow = '';
 }
-function addToCart(name,price,qty,allergy){
-  qty=qty||1; allergy=allergy||'';
-  var ex=cart.find(function(i){return i.name===name&&i.allergy===allergy;});
-  if(ex){ex.qty+=qty;}else{cart.push({name:name,price:price,qty:qty,allergy:allergy});}
-  renderCart(); showToast('✦ '+name+' added');
+
+// ── CART ──
+function addToCart(name, price, qty, allergy){
+  qty = qty||1; allergy = allergy||'';
+  var ex = cart.find(function(i){ return i.name===name && i.allergy===allergy; });
+  if(ex){ ex.qty += qty; }
+  else { cart.push({name:name,price:price,qty:qty,allergy:allergy}); }
+  renderCart();
+  showToast('✦ ' + name + ' added');
 }
-function removeFromCart(idx){cart.splice(idx,1);renderCart();}
-function changeQty(idx,delta){
-  if(cart[idx]){cart[idx].qty+=delta;if(cart[idx].qty<=0)removeFromCart(idx);else renderCart();}
+function removeFromCart(i){ cart.splice(i,1); renderCart(); }
+function changeQty(i, d){
+  if(cart[i]){
+    cart[i].qty += d;
+    if(cart[i].qty <= 0) removeFromCart(i); else renderCart();
+  }
 }
 function renderCart(){
-  var ie=document.getElementById('cartItems'),te=document.getElementById('cartTotal'),ce=document.getElementById('cartCount');
-  if(!ie)return;
-  var tq=cart.reduce(function(s,i){return s+i.qty;},0);
-  if(ce)ce.textContent=tq;
-  if(cart.length===0){ie.innerHTML='<div class="cart-empty">Your order is empty.<br>Add something delicious!</div>';if(te)te.textContent='$0.00';return;}
-  var total=0;
-  ie.innerHTML=cart.map(function(item,idx){
-    var p=getPrice(item.price);total+=p*item.qty;
-    return '<div class="cart-item"><div class="cart-item-info"><div class="cart-item-name">'+item.name+'</div>'
-      +(item.allergy?'<div class="cart-item-allergy">&#9888; '+item.allergy+'</div>':'')
-      +'<div class="cart-item-price">'+(item.price||'Price at counter')+'</div>'
-      +'<div class="cart-item-qty"><button onclick="changeQty('+idx+',-1)">&#8722;</button><span>'+item.qty+'</span><button onclick="changeQty('+idx+',1)">+</button></div>'
-      +'</div><button class="cart-item-del" onclick="removeFromCart('+idx+')">&#215;</button></div>';
+  var ie = document.getElementById('cartItems');
+  var te = document.getElementById('cartTotal');
+  var ce = document.getElementById('cartCount');
+  if(!ie) return;
+  var tq = cart.reduce(function(s,i){ return s+i.qty; }, 0);
+  if(ce) ce.textContent = tq;
+  if(!cart.length){
+    ie.innerHTML = '<div class="cart-empty">Your order is empty.<br>Add something delicious!</div>';
+    if(te) te.textContent = '$0.00';
+    return;
+  }
+  var tot = 0;
+  ie.innerHTML = cart.map(function(item, idx){
+    var p = _price(item.price); tot += p * item.qty;
+    return '<div class="cart-item">'
+      + '<div class="cart-item-info">'
+      + '<div class="cart-item-name">' + item.name + '</div>'
+      + (item.allergy ? '<div class="cart-item-allergy">⚠ '+item.allergy+'</div>' : '')
+      + '<div class="cart-item-price">' + (item.price||'Price at counter') + '</div>'
+      + '<div class="cart-item-qty">'
+      + '<button onclick="changeQty('+idx+',-1)">−</button>'
+      + '<span>' + item.qty + '</span>'
+      + '<button onclick="changeQty('+idx+',1)">+</button>'
+      + '</div></div>'
+      + '<button class="cart-item-del" onclick="removeFromCart('+idx+')">×</button>'
+      + '</div>';
   }).join('');
-  if(te)te.textContent=total>0?'$'+total.toFixed(2):'TBD';
+  if(te) te.textContent = tot > 0 ? '$'+tot.toFixed(2) : 'TBD';
 }
-function showToast(msg){var t=document.getElementById('cartToast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
-function showPage(id){var o=document.getElementById('page-'+id);if(!o)return;o.style.display='block';document.body.style.overflow='hidden';window.scrollTo(0,0);}
-function closePage(){document.querySelectorAll('.page-overlay').forEach(function(el){el.style.display='none';});document.body.style.overflow='';}
+function showToast(msg){
+  var t = document.getElementById('cartToast');
+  if(!t) return;
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+
+// ── PAGE OVERLAYS ──
+function showPage(id){
+  var o = document.getElementById('page-'+id);
+  if(o){ o.style.display='block'; document.body.style.overflow='hidden'; window.scrollTo(0,0); }
+}
+function closePage(){
+  document.querySelectorAll('.page-overlay').forEach(function(el){ el.style.display='none'; });
+  document.body.style.overflow = '';
+}
 
 // ── CHATBOT ──
-var chatOpen=false;
-window.toggleChat=function(){
-  chatOpen=!chatOpen;
-  var w=document.getElementById('chat-window');
-  if(w)w.classList.toggle('open',chatOpen);
-  if(chatOpen){var msgs=document.getElementById('chatMessages');if(msgs&&msgs.children.length===0)initChat();}
+var _chatOpen = false;
+
+window.toggleChat = function(){
+  _chatOpen = !_chatOpen;
+  var w = document.getElementById('chat-window');
+  if(w) w.classList.toggle('open', _chatOpen);
+  if(_chatOpen){
+    var msgs = document.getElementById('chatMessages');
+    if(msgs && msgs.children.length === 0) _chatInit();
+  }
 };
-window.sendUserMessage=function(){
-  var input=document.getElementById('chatInput');if(!input)return;
-  var text=input.value.trim();if(!text)return;
-  input.value='';setQuickReplies([]);addChatMsg(text,'user',false);
-  var t=text.toLowerCase();
-  if(t.match(/biryani|rice|dum/))handleQR({label:'Biryani',action:'biryani'});
-  else if(t.match(/kabab|grill|tikka|sheek|platter/))handleQR({label:'Grill',action:'grill'});
-  else if(t.match(/butter|chicken|curry/))handleQR({label:'Chicken',action:'chicken'});
-  else if(t.match(/cater|event|wedding|party/))handleQR({label:'Catering',action:'catering'});
-  else if(t.match(/location|address|where|hour/))handleQR({label:'Location',action:'location'});
-  else if(t.match(/whatsapp|contact/))handleQR({label:'WhatsApp',action:'whatsapp'});
-  else if(t.match(/partner|nadeem|osman|ibrahim/))handleQR({label:'Partners',action:'partners'});
-  else botReply("I can help with our menu, catering, or connect you with our team! 😊",[
-    {label:'🍛 Menu',action:'menu'},{label:'🎉 Catering',action:'catering'},
-    {label:'📍 Location',action:'location'},{label:'💬 WhatsApp',action:'whatsapp'}
+
+window.sendUserMessage = function(){
+  var inp = document.getElementById('chatInput');
+  if(!inp) return;
+  var txt = inp.value.trim();
+  if(!txt) return;
+  inp.value = '';
+  _chatSetQR([]);
+  _chatAddMsg(txt, 'user', false);
+  var t = txt.toLowerCase();
+  if(t.match(/biryani|rice|dum/))           _chatDo({label:'Biryani',     action:'biryani'});
+  else if(t.match(/kabab|grill|tikka|sheek/))_chatDo({label:'Grill',       action:'grill'});
+  else if(t.match(/butter|chicken|curry/))   _chatDo({label:'Chicken',     action:'chicken'});
+  else if(t.match(/cater|event|wedding/))    _chatDo({label:'Catering',    action:'catering'});
+  else if(t.match(/location|address|where/)) _chatDo({label:'Location',    action:'location'});
+  else if(t.match(/whatsapp|contact/))       _chatDo({label:'WhatsApp',    action:'whatsapp'});
+  else if(t.match(/partner|nadeem|osman|ibrahim/)) _chatDo({label:'Partners', action:'partners'});
+  else _chatBotReply("I can help with our menu, catering, or connect you to our team! 😊", [
+    {label:'🍛 Menu',     action:'menu'},
+    {label:'🎉 Catering', action:'catering'},
+    {label:'📍 Location', action:'location'},
+    {label:'💬 WhatsApp', action:'whatsapp'}
   ]);
 };
-function getChatTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-function addChatMsg(text,type,isHTML){
-  var msgs=document.getElementById('chatMessages');if(!msgs)return;
-  var div=document.createElement('div');div.className='msg '+type;
-  var av=type==='bot'?'<div class="msg-avatar">SB</div>':'<div class="msg-avatar" style="background:linear-gradient(135deg,#3a3a3a,#1a1a1a);color:#c9a84c;">You</div>';
-  var content=isHTML?text:text.replace(/\n/g,'<br>');
-  div.innerHTML=av+'<div><div class="msg-bubble">'+content+'</div><div class="msg-time">'+getChatTime()+'</div></div>';
-  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+
+function _chatTime(){ return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+function _chatAddMsg(text, type, isHTML){
+  var msgs = document.getElementById('chatMessages');
+  if(!msgs) return;
+  var div = document.createElement('div');
+  div.className = 'msg ' + type;
+  var av = type==='bot'
+    ? '<div class="msg-avatar">SB</div>'
+    : '<div class="msg-avatar" style="background:linear-gradient(135deg,#333,#111);color:#c9a84c;">You</div>';
+  var content = isHTML ? text : text.replace(/
+/g,'<br>');
+  div.innerHTML = av + '<div><div class="msg-bubble">' + content + '</div>'
+    + '<div class="msg-time">' + _chatTime() + '</div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
 }
-function showTyping(){var msgs=document.getElementById('chatMessages');if(!msgs)return;var d=document.createElement('div');d.className='msg bot';d.id='typing-ind';d.innerHTML='<div class="msg-avatar">SB</div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
-function removeTyping(){var t=document.getElementById('typing-ind');if(t)t.remove();}
-function setQuickReplies(replies){var qr=document.getElementById('quickReplies');if(!qr)return;qr.innerHTML='';replies.forEach(function(r){var b=document.createElement('button');b.className='qr-btn';b.textContent=r.label;b.onclick=function(){handleQR(r);};qr.appendChild(b);});}
-function botReply(text,qrs,delay,isHTML){delay=delay||900;showTyping();setTimeout(function(){removeTyping();addChatMsg(text,'bot',isHTML||false);if(qrs)setQuickReplies(qrs);},delay);}
-function partnerCardsHTML(){
-  var p=[{n:'Nadeem',w:'https://wa.me/message/REPLACE_NADEEM'},{n:'Osman',w:'https://wa.me/message/REPLACE_OSMAN'},{n:'Ibrahim',w:'https://wa.me/message/REPLACE_IBRAHIM'}];
-  var h='<div class="partner-cards">';
-  p.forEach(function(x){h+='<a class="partner-card" href="'+x.w+'" target="_blank" rel="noopener"><div class="partner-avatar">'+x.n[0]+'</div><div class="partner-info"><div class="partner-name">'+x.n+'</div><div class="partner-role">Catering Partner</div></div><div class="partner-wa">📱</div></a>';});
-  return h+'</div>';
+
+function _chatShowTyping(){
+  var msgs = document.getElementById('chatMessages');
+  if(!msgs) return;
+  var d = document.createElement('div');
+  d.className = 'msg bot'; d.id = 'chat-typing';
+  d.innerHTML = '<div class="msg-avatar">SB</div><div class="msg-bubble">'
+    + '<div class="typing-indicator">'
+    + '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>'
+    + '</div></div>';
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
 }
-function handleQR(r){
-  setQuickReplies([]);addChatMsg(r.label,'user',false);
-  var back=[{label:'⬅ Back',action:'back'}];
-  if(r.action==='menu')botReply('What are you in the mood for? 🍽️',[{label:'🥩 Biryani',action:'biryani'},{label:'🔥 Grill & Kababs',action:'grill'},{label:'🍗 Chicken Curries',action:'chicken'},{label:'⬅ Back',action:'back'}]);
-  else if(r.action==='biryani')botReply('Our biryanis — fresh daily in traditional dum style:\n\n• <strong>Goat Dum Biryani</strong> — from $20\n• <strong>Chicken Dum Biryani</strong> — $14\n• <strong>Family Pack (Goat)</strong> — $46\n• <strong>Jumbo Pack (Goat)</strong> — $75',[{label:'🛒 Order',action:'order'},{label:'⬅ Back',action:'menu'}],1100,true);
-  else if(r.action==='grill')botReply('From the tandoor:\n\n• <strong>Golden Shaahi Platter</strong> — $150\n• <strong>Mixed Grill Platter</strong> — $60\n• <strong>Beef Sheek Kabab</strong> — $18\n• <strong>Bihari Kabab</strong> — $22',[{label:'🛒 Order',action:'order'},{label:'⬅ Back',action:'menu'}],1100,true);
-  else if(r.action==='chicken')botReply('Our most loved:\n\n• <strong>Butter Chicken</strong> — $18\n• <strong>Chicken Tikka Masala</strong> — $18\n• <strong>Karahi Chicken</strong> — $16',[{label:'🛒 Order',action:'order'},{label:'⬅ Back',action:'menu'}],1100,true);
-  else if(r.action==='catering')botReply('We cater <strong>100 to 5,000 guests</strong> 🎉\n\nWeddings, Eid, corporate dinners and more.\n\nConnect with a catering partner on WhatsApp?',[{label:'👥 Connect with Partner',action:'partners'},{label:'📞 Call Us',action:'call'}],1000,true);
-  else if(r.action==='partners'){showTyping();setTimeout(function(){removeTyping();addChatMsg('Choose a partner to connect with:','bot',false);addChatMsg(partnerCardsHTML(),'bot',true);setQuickReplies(back);},900);}
-  else if(r.action==='location')botReply('📍 <strong>3421 E Renner Rd, Suite 110\nPlano, TX 75074</strong>\n\n🕐 Mon–Thu & Sun: 11am–10pm\nFri–Sat: 11am–11pm\n📞 (469) 960-3300',[{label:'🗺 Directions',action:'directions'},{label:'💬 WhatsApp',action:'whatsapp'},{label:'⬅ Back',action:'back'}],1000,true);
-  else if(r.action==='directions'){window.open('https://maps.google.com/?q=3421+E+Renner+Rd+Suite+110+Plano+TX+75074','_blank');botReply('Opening Google Maps! 🗺️',back);}
-  else if(r.action==='whatsapp'){window.open('https://wa.me/14699603300?text=Hi+Shaahi+Biryani%2C+I+have+an+enquiry!','_blank');botReply('Connecting you to WhatsApp! 📱',back);}
-  else if(r.action==='call'){window.open('tel:4699603300');botReply('Calling (469) 960-3300 📞',back);}
-  else if(r.action==='order'){window.open('tel:4699603300');botReply('Call us at <strong>(469) 960-3300</strong> to place your order! 📞',back,900,true);}
-  else botReply('What can I help you with? 😊',[{label:'🍛 Menu',action:'menu'},{label:'🎉 Catering',action:'catering'},{label:'📍 Location',action:'location'},{label:'💬 WhatsApp',action:'whatsapp'}]);
+function _chatRemoveTyping(){ var t=document.getElementById('chat-typing'); if(t) t.remove(); }
+
+function _chatSetQR(list){
+  var qr = document.getElementById('quickReplies');
+  if(!qr) return;
+  qr.innerHTML = '';
+  list.forEach(function(r){
+    var b = document.createElement('button');
+    b.className = 'qr-btn'; b.textContent = r.label;
+    b.onclick = function(){ _chatDo(r); };
+    qr.appendChild(b);
+  });
 }
-function initChat(){
+
+function _chatBotReply(text, qrs, delay, isHTML){
+  delay = delay||900;
+  _chatShowTyping();
   setTimeout(function(){
-    addChatMsg('Assalamu Alaikum! 👋\nWelcome to <strong>Shaahi Biryani</strong> — The Pride of Biryani & Kababs.\n\nHow can I help you today?','bot',true);
-    setTimeout(function(){setQuickReplies([{label:'🍛 View Menu',action:'menu'},{label:'🎉 Catering',action:'catering'},{label:'📍 Location & Hours',action:'location'},{label:'💬 WhatsApp Us',action:'whatsapp'}]);},500);
-  },600);
+    _chatRemoveTyping();
+    _chatAddMsg(text, 'bot', isHTML||false);
+    if(qrs) _chatSetQR(qrs);
+  }, delay);
 }
 
-// ════════════════════════════════════════
-// DOM READY
-// ════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',function(){
+function _chatPartners(){
+  return '<div class="partner-cards">'
+    + [{n:'Nadeem',w:'REPLACE_NADEEM'},{n:'Osman',w:'REPLACE_OSMAN'},{n:'Ibrahim',w:'REPLACE_IBRAHIM'}]
+    .map(function(p){
+      return '<a class="partner-card" href="https://wa.me/message/'+p.w+'" target="_blank" rel="noopener">'
+        + '<div class="partner-avatar">'+p.n[0]+'</div>'
+        + '<div class="partner-info"><div class="partner-name">'+p.n+'</div>'
+        + '<div class="partner-role">Catering Partner</div></div>'
+        + '<div class="partner-wa">📱</div></a>';
+    }).join('') + '</div>';
+}
 
-  // Chat logo + enter key
-  var chatLogo=document.getElementById('chatLogoImg'),navLogo=document.querySelector('.nav-logo img');
-  if(chatLogo&&navLogo)chatLogo.src=navLogo.src;
-  var ci=document.getElementById('chatInput');
-  if(ci)ci.addEventListener('keydown',function(e){if(e.key==='Enter')sendUserMessage();});
+function _chatDo(r){
+  _chatSetQR([]);
+  _chatAddMsg(r.label, 'user', false);
+  var back = [{label:'⬅ Back', action:'back'}];
+  switch(r.action){
+    case 'menu':
+      _chatBotReply('What are you in the mood for? 🍽️', [
+        {label:'🥩 Biryani',       action:'biryani'},
+        {label:'🔥 Grill & Kababs',action:'grill'},
+        {label:'🍗 Chicken',        action:'chicken'},
+        {label:'⬅ Back',            action:'back'}
+      ]); break;
+    case 'biryani':
+      _chatBotReply('Prepared fresh daily in traditional dum style:
 
-  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeModal();closePage();}});
+• <strong>Goat Dum Biryani</strong> — from $20
+• <strong>Chicken Dum Biryani</strong> — $14
+• <strong>Family Pack (Goat)</strong> — $46
+• <strong>Jumbo Pack (Goat)</strong> — $75',
+        [{label:'🛒 Order',action:'order'},{label:'⬅ Menu',action:'menu'}],1100,true); break;
+    case 'grill':
+      _chatBotReply('From the tandoor:
 
-  // ── SLIDESHOW ──
+• <strong>Golden Shaahi Platter</strong> — $150
+• <strong>Mixed Grill Platter</strong> — $60
+• <strong>Beef Sheek Kabab</strong> — $18
+• <strong>Bihari Kabab</strong> — $22',
+        [{label:'🛒 Order',action:'order'},{label:'⬅ Menu',action:'menu'}],1100,true); break;
+    case 'chicken':
+      _chatBotReply('Our most loved:
+
+• <strong>Butter Chicken</strong> — $18
+• <strong>Chicken Tikka Masala</strong> — $18
+• <strong>Karahi Chicken</strong> — $16',
+        [{label:'🛒 Order',action:'order'},{label:'⬅ Menu',action:'menu'}],1100,true); break;
+    case 'catering':
+      _chatBotReply('We cater <strong>100 to 5,000 guests</strong> 🎉
+
+Weddings, Eid gatherings, corporate dinners and more.',
+        [{label:'👥 Connect with Partner',action:'partners'},{label:'📞 Call Us',action:'call'}],1000,true); break;
+    case 'partners':
+      _chatShowTyping();
+      setTimeout(function(){
+        _chatRemoveTyping();
+        _chatAddMsg('Choose a partner to connect with on WhatsApp:', 'bot', false);
+        _chatAddMsg(_chatPartners(), 'bot', true);
+        _chatSetQR(back);
+      }, 900); break;
+    case 'location':
+      _chatBotReply('📍 <strong>3421 E Renner Rd, Suite 110
+Plano, TX 75074</strong>
+
+🕐 Mon–Thu & Sun: 11am–10pm
+Fri–Sat: 11am–11pm
+📞 (469) 960-3300',
+        [{label:'🗺 Directions',action:'directions'},{label:'💬 WhatsApp',action:'whatsapp'},back[0]],1000,true); break;
+    case 'directions':
+      window.open('https://maps.google.com/?q=3421+E+Renner+Rd+Suite+110+Plano+TX','_blank');
+      _chatBotReply('Opening Google Maps! 🗺️', back); break;
+    case 'whatsapp':
+      window.open('https://wa.me/14699603300?text=Hi+Shaahi+Biryani!','_blank');
+      _chatBotReply('Connecting you to WhatsApp! 📱', back); break;
+    case 'call':
+      window.open('tel:4699603300');
+      _chatBotReply('Calling (469) 960-3300 📞', back); break;
+    case 'order':
+      window.open('tel:4699603300');
+      _chatBotReply('Call us at <strong>(469) 960-3300</strong> to place your order! 📞', back, 900, true); break;
+    default:
+      _chatBotReply('How can I help? 😊', [
+        {label:'🍛 Menu',action:'menu'},{label:'🎉 Catering',action:'catering'},
+        {label:'📍 Location',action:'location'},{label:'💬 WhatsApp',action:'whatsapp'}
+      ]);
+  }
+}
+
+function _chatInit(){
+  setTimeout(function(){
+    _chatAddMsg('Assalamu Alaikum! 👋
+Welcome to <strong>Shaahi Biryani</strong> — The Pride of Biryani & Kababs.
+
+How can I help you today?', 'bot', true);
+    setTimeout(function(){
+      _chatSetQR([
+        {label:'🍛 View Menu',       action:'menu'},
+        {label:'🎉 Catering Enquiry',action:'catering'},
+        {label:'📍 Location & Hours',action:'location'},
+        {label:'💬 WhatsApp Us',     action:'whatsapp'}
+      ]);
+    }, 500);
+  }, 600);
+}
+
+/* =========================================================
+   DOM READY — only runs after all HTML is parsed
+   ========================================================= */
+document.addEventListener('DOMContentLoaded', function(){
+
+  // Set chatbot logo
+  var chatLogo = document.getElementById('chatLogoImg');
+  var navLogo  = document.querySelector('.nav-logo img');
+  if(chatLogo && navLogo) chatLogo.src = navLogo.src;
+
+  // Chat input enter key
+  var ci = document.getElementById('chatInput');
+  if(ci) ci.addEventListener('keydown', function(e){ if(e.key==='Enter') sendUserMessage(); });
+
+  // Escape closes modals
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ closeModal(); closePage(); }
+  });
+
+  // ── HERO SLIDESHOW ──
   (function(){
-    var slides=document.querySelectorAll('.slide'),dotsW=document.getElementById('hdots'),numEl=document.getElementById('hnum'),prog=document.getElementById('hprog');
-    if(!slides.length||!dotsW)return;
-    var cur=0,tot=slides.length,timer;
-    slides.forEach(function(_,i){var d=document.createElement('div');d.className='hdot'+(i===0?' active':'');d.onclick=function(){goSlide(i);};dotsW.appendChild(d);});
-    function goSlide(n){slides[cur].classList.remove('active');dotsW.children[cur].classList.remove('active');cur=n;slides[cur].classList.add('active');dotsW.children[cur].classList.add('active');if(numEl)numEl.textContent=String(cur+1).padStart(2,'0');if(prog){prog.style.animation='none';prog.offsetHeight;prog.style.animation='hprog 7s linear infinite';}clearInterval(timer);timer=setInterval(function(){goSlide((cur+1)%tot);},7000);}
-    timer=setInterval(function(){goSlide((cur+1)%tot);},7000);
+    var slides = document.querySelectorAll('.slide');
+    var dotsW  = document.getElementById('hdots');
+    if(!slides.length || !dotsW) return;
+    var cur = 0, tot = slides.length, timer;
+    slides.forEach(function(_, i){
+      var d = document.createElement('div');
+      d.className = 'hdot' + (i===0?' active':'');
+      d.onclick = function(){ go(i); };
+      dotsW.appendChild(d);
+    });
+    function go(n){
+      slides[cur].classList.remove('active');
+      dotsW.children[cur].classList.remove('active');
+      cur = n;
+      slides[cur].classList.add('active');
+      dotsW.children[cur].classList.add('active');
+      var ne = document.getElementById('hnum');
+      if(ne) ne.textContent = String(cur+1).padStart(2,'0');
+      var pr = document.getElementById('hprog');
+      if(pr){ pr.style.animation='none'; pr.offsetHeight; pr.style.animation='hprog 7s linear infinite'; }
+      clearInterval(timer);
+      timer = setInterval(function(){ go((cur+1)%tot); }, 7000);
+    }
+    timer = setInterval(function(){ go((cur+1)%tot); }, 7000);
   })();
 
-  // ── NAV ──
-  var navEl=document.getElementById('nav');
-  if(navEl)window.addEventListener('scroll',function(){navEl.classList.toggle('scrolled',window.scrollY>60);});
-  setTimeout(function(){document.querySelectorAll('.nav-logo img').forEach(function(el){el.classList.add('shown');});},5800);
+  // ── NAV SCROLL ──
+  var navEl = document.getElementById('nav');
+  if(navEl) window.addEventListener('scroll', function(){
+    navEl.classList.toggle('scrolled', window.scrollY > 60);
+  });
+  setTimeout(function(){
+    document.querySelectorAll('.nav-logo img').forEach(function(el){ el.classList.add('shown'); });
+  }, 5800);
 
   // ── MENU TABS ──
-  document.querySelectorAll('.mtab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.mtab').forEach(function(x){x.classList.remove('active');});document.querySelectorAll('.mpane').forEach(function(x){x.classList.remove('active');});t.classList.add('active');var p=document.getElementById('p-'+t.dataset.t);if(p)p.classList.add('active');});});
+  document.querySelectorAll('.mtab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.mtab').forEach(function(t){ t.classList.remove('active'); });
+      document.querySelectorAll('.mpane').forEach(function(p){ p.classList.remove('active'); });
+      tab.classList.add('active');
+      var pane = document.getElementById('p-' + tab.dataset.t);
+      if(pane) pane.classList.add('active');
+    });
+  });
 
   // ── SCROLL REVEAL ──
-  var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target);}});},{threshold:0.08});
-  document.querySelectorAll('.rv').forEach(function(el){obs.observe(el);});
+  var revObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('vis'); revObs.unobserve(e.target); }
+    });
+  }, {threshold: 0.08});
+  document.querySelectorAll('.rv').forEach(function(el){ revObs.observe(el); });
 
   // ── BESTSELLER SLIDER ──
   (function(){
-    var track=document.getElementById('bslTrack'),dotsEl=document.getElementById('bslDots'),
-        prevBtn=document.getElementById('bslPrev'),nextBtn=document.getElementById('bslNext');
-    if(!track)return;
-    var orig=Array.from(track.querySelectorAll('.bsl-card'));
-    var total=orig.length,clones=3,cur=clones,moving=false,autoT=null;
-    // Clone for infinite loop
-    for(var i=total-clones;i<total;i++){var cl=orig[i].cloneNode(true);track.insertBefore(cl,track.firstChild);}
-    for(var i=0;i<clones;i++){var cl=orig[i].cloneNode(true);track.appendChild(cl);}
-    var all=Array.from(track.querySelectorAll('.bsl-card'));
-    function getW(){
-      var c=all[0];if(!c)return 340;
-      var w=c.offsetWidth;return(w>10?w:340)+24;
+    var track  = document.getElementById('bslTrack');
+    var dotsEl = document.getElementById('bslDots');
+    var prevB  = document.getElementById('bslPrev');
+    var nextB  = document.getElementById('bslNext');
+    if(!track) return;
+
+    // Clone cards for infinite loop
+    var origCards = Array.from(track.querySelectorAll('.bsl-card'));
+    var total = origCards.length;
+    var C = 3; // clones each side
+    for(var i = total-C; i < total; i++){
+      track.insertBefore(origCards[i].cloneNode(true), track.firstChild);
     }
-    function place(n,animate){
-      track.style.transition=animate?'transform .55s cubic-bezier(.22,1,.36,1)':'none';
-      track.style.transform='translateX(-'+(n*getW())+'px)';
-      if(!animate)void track.offsetWidth;
+    for(var i = 0; i < C; i++){
+      track.appendChild(origCards[i].cloneNode(true));
     }
-    function jump(n){cur=n;place(n,false);}
-    function go(n){if(moving)return;moving=true;cur=n;place(n,true);updDots();}
-    function updDots(){
-      var ri=((cur-clones)%total+total)%total;
-      dotsEl.querySelectorAll('.bsl-dot').forEach(function(d,i){d.classList.toggle('active',i===ri);});
+    var all = Array.from(track.querySelectorAll('.bsl-card'));
+
+    var cur = C;        // start at first real card
+    var busy = false;
+    var autoT = null;
+
+    function cardW(){
+      var c = all[0];
+      if(!c) return 340;
+      var w = c.offsetWidth;
+      return (w > 20 ? w : 340) + 24;
     }
-    track.addEventListener('transitionend',function(){
-      moving=false;
-      var l=all.length;
-      if(cur>=l-clones)jump(clones+(cur-(l-clones)));
-      else if(cur<clones)jump(l-clones*2+cur);
-      updDots();
+    function moveTo(n, animate){
+      track.style.transition = animate ? 'transform .55s cubic-bezier(.22,1,.36,1)' : 'none';
+      track.style.transform  = 'translateX(-' + (n * cardW()) + 'px)';
+      if(!animate) void track.offsetWidth; // flush
+    }
+    function snapIfNeeded(){
+      var l = all.length;
+      if(cur >= l - C){ cur = C + (cur - (l-C)); moveTo(cur, false); }
+      else if(cur < C){ cur = l - C*2 + cur;     moveTo(cur, false); }
+    }
+    function updateDots(){
+      var real = ((cur - C) % total + total) % total;
+      dotsEl.querySelectorAll('.bsl-dot').forEach(function(d,i){
+        d.classList.toggle('active', i === real);
+      });
+    }
+    function go(n){
+      if(busy) return;
+      busy = true; cur = n;
+      moveTo(cur, true);
+      updateDots();
+    }
+    track.addEventListener('transitionend', function(){
+      busy = false; snapIfNeeded(); updateDots();
     });
-    function next(){go(cur+1);}function prev(){go(cur-1);}
-    function startAuto(){stopAuto();autoT=setInterval(next,3000);}
-    function stopAuto(){clearInterval(autoT);autoT=null;}
-    if(prevBtn)prevBtn.onclick=function(){stopAuto();prev();startAuto();};
-    if(nextBtn)nextBtn.onclick=function(){stopAuto();next();startAuto();};
-    track.addEventListener('mouseenter',stopAuto);
-    track.addEventListener('mouseleave',startAuto);
-    var tx=0;
-    track.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;stopAuto();},{passive:true});
-    track.addEventListener('touchend',function(e){var d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>40){d>0?next():prev();}startAuto();});
+
+    function next(){ go(cur+1); }
+    function prev(){ go(cur-1); }
+    function startAuto(){ stopAuto(); autoT = setInterval(next, 3000); }
+    function stopAuto(){  clearInterval(autoT); autoT = null; }
+
+    if(prevB) prevB.onclick = function(){ stopAuto(); prev(); startAuto(); };
+    if(nextB) nextB.onclick = function(){ stopAuto(); next(); startAuto(); };
+    track.addEventListener('mouseenter', stopAuto);
+    track.addEventListener('mouseleave', startAuto);
+
+    // Touch swipe
+    var tx = 0;
+    track.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; stopAuto(); }, {passive:true});
+    track.addEventListener('touchend',   function(e){
+      var dx = tx - e.changedTouches[0].clientX;
+      if(Math.abs(dx) > 40){ dx > 0 ? next() : prev(); }
+      startAuto();
+    });
+
+    // Build dots
     function buildDots(){
-      dotsEl.innerHTML='';
-      for(var i=0;i<total;i++){(function(idx){
-        var d=document.createElement('button');
-        d.className='bsl-dot'+(idx===0?' active':'');
-        d.onclick=function(){stopAuto();go(idx+clones);startAuto();};
-        dotsEl.appendChild(d);
-      })(i);}
+      dotsEl.innerHTML = '';
+      for(var i = 0; i < total; i++){
+        (function(idx){
+          var d = document.createElement('button');
+          d.className = 'bsl-dot' + (idx===0?' active':'');
+          d.onclick = function(){ stopAuto(); go(idx+C); startAuto(); };
+          dotsEl.appendChild(d);
+        })(i);
+      }
     }
-    // Init after layout
-    setTimeout(function(){place(cur,false);buildDots();updDots();startAuto();},150);
-    window.addEventListener('resize',function(){jump(cur);});
-  })();
+
+    // Init — wait 200ms for layout to settle
+    setTimeout(function(){
+      moveTo(cur, false);
+      buildDots();
+      updateDots();
+      startAuto();
+    }, 200);
+
+    window.addEventListener('resize', function(){
+      moveTo(cur, false); buildDots(); updateDots();
+    });
   })();
 
   // ── MODAL BINDINGS ──
-  var mc=document.getElementById('itemModalClose'),mo=document.getElementById('itemModalOverlay'),qd=document.getElementById('qtyDec'),qi=document.getElementById('qtyInc'),ma=document.getElementById('modalAddBtn'),ct=document.getElementById('cartToggle'),cc=document.getElementById('cartClose');
-  if(mc)mc.onclick=closeModal;
-  if(mo)mo.addEventListener('click',function(e){if(e.target===this)closeModal();});
-  if(qd)qd.onclick=function(){var v=document.getElementById('qtyVal');if(parseInt(v.textContent)>1)v.textContent=parseInt(v.textContent)-1;};
-  if(qi)qi.onclick=function(){var v=document.getElementById('qtyVal');v.textContent=parseInt(v.textContent)+1;};
-  if(ma)ma.onclick=function(){var ov=document.getElementById('itemModalOverlay'),qty=parseInt(document.getElementById('qtyVal').textContent),ae=document.getElementById('allergyInput'),al=ae?ae.value.trim():'';addToCart(ov.dataset.name,ov.dataset.price,qty,al);closeModal();document.getElementById('cartDrawer').classList.add('open');};
-  if(ct)ct.onclick=function(){document.getElementById('cartDrawer').classList.toggle('open');};
-  if(cc)cc.onclick=function(){document.getElementById('cartDrawer').classList.remove('open');};
-  document.addEventListener('click',function(e){var dr=document.getElementById('cartDrawer'),tg=document.getElementById('cartToggle');if(dr&&dr.classList.contains('open')&&!dr.contains(e.target)&&tg&&!tg.contains(e.target))dr.classList.remove('open');});
+  var g = function(id){ return document.getElementById(id); };
+  var mc = g('itemModalClose'), mo = g('itemModalOverlay'),
+      qd = g('qtyDec'), qi = g('qtyInc'), ma = g('modalAddBtn'),
+      ct = g('cartToggle'), cc = g('cartClose');
+
+  if(mc) mc.onclick = closeModal;
+  if(mo) mo.addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+  if(qd) qd.onclick = function(){
+    var v = g('qtyVal');
+    if(parseInt(v.textContent) > 1) v.textContent = parseInt(v.textContent) - 1;
+  };
+  if(qi) qi.onclick = function(){
+    var v = g('qtyVal');
+    v.textContent = parseInt(v.textContent) + 1;
+  };
+  if(ma) ma.onclick = function(){
+    var ov  = g('itemModalOverlay');
+    var qty = parseInt(g('qtyVal').textContent);
+    var ae  = g('allergyInput');
+    var al  = ae ? ae.value.trim() : '';
+    addToCart(ov.dataset.name, ov.dataset.price, qty, al);
+    closeModal();
+    var drawer = g('cartDrawer');
+    if(drawer) drawer.classList.add('open');
+  };
+  if(ct) ct.onclick = function(){ var dr=g('cartDrawer'); if(dr) dr.classList.toggle('open'); };
+  if(cc) cc.onclick = function(){ var dr=g('cartDrawer'); if(dr) dr.classList.remove('open'); };
+  document.addEventListener('click', function(e){
+    var dr = g('cartDrawer'), tg = g('cartToggle');
+    if(dr && dr.classList.contains('open') && !dr.contains(e.target) && tg && !tg.contains(e.target))
+      dr.classList.remove('open');
+  });
   renderCart();
 
   // ── BOOK FLIP ──
   (function(){
-    var pages=document.querySelectorAll('.book-page'),dots=document.querySelectorAll('.book-dot'),pb=document.getElementById('bookPrev'),nb=document.getElementById('bookNext');
-    if(!pages.length)return;
-    var state=0,max=2,af=null;
+    var pages  = document.querySelectorAll('.book-page');
+    var dots   = document.querySelectorAll('.book-dot');
+    var pb     = document.getElementById('bookPrev');
+    var nb     = document.getElementById('bookNext');
+    if(!pages.length) return;
+
+    var state = 0, MAX = 2, af = null;
+
     function goState(n){
-      state=Math.max(0,Math.min(n,max));
-      pages[0].classList.toggle('flipped',state>=1);
-      if(pages[1])pages[1].style.zIndex=state>=1?'2':'0';
-      dots.forEach(function(d,i){d.classList.toggle('active',i===state);});
-      if(pb)pb.disabled=(state===0);
-      if(nb)nb.disabled=(state===max);
-    });
-      if(pb){pb.disabled=(state===0);}
-      if(nb){nb.disabled=(state===max);}
+      state = Math.max(0, Math.min(n, MAX));
+      // Page 1 flips at state 1+
+      pages[0].classList.toggle('flipped', state >= 1);
+      // Page 2 rises to z:2 at state 1 so its front shows behind flipped page1
+      if(pages[1]) pages[1].style.zIndex = state >= 1 ? '2' : '0';
+      // Update dots
+      dots.forEach(function(d, i){ d.classList.toggle('active', i === state); });
+      if(pb) pb.disabled = (state === 0);
+      if(nb) nb.disabled = (state === MAX);
     }
-    function next(){goState(state<max?state+1:0);}
-    function prev(){if(state>0)goState(state-1);}
-    if(pb)pb.onclick=function(){stopAF();prev();startAF();};
-    if(nb)nb.onclick=function(){stopAF();next();startAF();};
-    dots.forEach(function(d,i){d.onclick=function(){stopAF();goState(i);startAF();};});
-    var book=document.getElementById('book');
-    if(book)book.onclick=function(e){if(e.target.tagName==='BUTTON')return;stopAF();next();startAF();};
-    function startAF(){clearInterval(af);af=setInterval(function(){var a=document.getElementById('about');if(!a)return;var r=a.getBoundingClientRect();if(r.top<window.innerHeight*0.9&&r.bottom>0)next();},5000);}
-    function stopAF(){clearInterval(af);}
-    if(pages[1])pages[1].style.zIndex='0';
+
+    function next(){ goState(state < MAX ? state+1 : 0); }
+    function prev(){ if(state > 0) goState(state - 1); }
+
+    if(pb) pb.onclick = function(){ stopAF(); prev(); startAF(); };
+    if(nb) nb.onclick = function(){ stopAF(); next(); startAF(); };
+    dots.forEach(function(d, i){ d.onclick = function(){ stopAF(); goState(i); startAF(); }; });
+
+    var book = document.getElementById('book');
+    if(book) book.onclick = function(e){
+      if(e.target.tagName === 'BUTTON') return;
+      stopAF(); next(); startAF();
+    };
+
+    function startAF(){
+      clearInterval(af);
+      af = setInterval(function(){
+        var sec = document.getElementById('about');
+        if(!sec) return;
+        var r = sec.getBoundingClientRect();
+        if(r.top < window.innerHeight * 0.9 && r.bottom > 0) next();
+      }, 5000);
+    }
+    function stopAF(){ clearInterval(af); }
+
+    if(pages[1]) pages[1].style.zIndex = '0';
     goState(0);
     startAF();
   })();
 
-  // Nav logo shown after hero
-  setTimeout(function(){document.querySelectorAll('.nav-logo img').forEach(function(el){el.classList.add('shown');});},5800);
-
 }); // end DOMContentLoaded
 </script>
+
 
 <!-- AI CHATBOT -->
 <div id="chat-bubble" onclick="toggleChat()">
@@ -1385,5 +1686,6 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="chat-send-btn" onclick="sendUserMessage()">➤</button>
   </div>
 </div>
+
 </body>
 </html>
