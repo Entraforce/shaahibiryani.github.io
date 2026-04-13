@@ -1240,8 +1240,7 @@ function _chatAddMsg(text, type, isHTML){
   var av = type==='bot'
     ? '<div class="msg-avatar">SB</div>'
     : '<div class="msg-avatar" style="background:linear-gradient(135deg,#333,#111);color:#c9a84c;">You</div>';
-  var content = isHTML ? text : text.replace(/
-/g,'<br>');
+  var content = isHTML ? text : (text + '').split('\n').join('<br>');
   div.innerHTML = av + '<div><div class="msg-bubble">' + content + '</div>'
     + '<div class="msg-time">' + _chatTime() + '</div></div>';
   msgs.appendChild(div);
@@ -1308,32 +1307,16 @@ function _chatDo(r){
         {label:'⬅ Back',            action:'back'}
       ]); break;
     case 'biryani':
-      _chatBotReply('Prepared fresh daily in traditional dum style:
-
-• <strong>Goat Dum Biryani</strong> — from $20
-• <strong>Chicken Dum Biryani</strong> — $14
-• <strong>Family Pack (Goat)</strong> — $46
-• <strong>Jumbo Pack (Goat)</strong> — $75',
+      _chatBotReply('Prepared fresh daily in traditional dum style:\n\n• <strong>Goat Dum Biryani</strong> — from $20\n• <strong>Chicken Dum Biryani</strong> — $14\n• <strong>Family Pack (Goat)</strong> — $46\n• <strong>Jumbo Pack (Goat)</strong> — $75',
         [{label:'🛒 Order',action:'order'},{label:'⬅ Menu',action:'menu'}],1100,true); break;
     case 'grill':
-      _chatBotReply('From the tandoor:
-
-• <strong>Golden Shaahi Platter</strong> — $150
-• <strong>Mixed Grill Platter</strong> — $60
-• <strong>Beef Sheek Kabab</strong> — $18
-• <strong>Bihari Kabab</strong> — $22',
+      _chatBotReply('From the tandoor:\n\n• <strong>Golden Shaahi Platter</strong> — $150\n• <strong>Mixed Grill Platter</strong> — $60\n• <strong>Beef Sheek Kabab</strong> — $18\n• <strong>Bihari Kabab</strong> — $22',
         [{label:'🛒 Order',action:'order'},{label:'⬅ Menu',action:'menu'}],1100,true); break;
     case 'chicken':
-      _chatBotReply('Our most loved:
-
-• <strong>Butter Chicken</strong> — $18
-• <strong>Chicken Tikka Masala</strong> — $18
-• <strong>Karahi Chicken</strong> — $16',
+      _chatBotReply('Our most loved:\n\n• <strong>Butter Chicken</strong> — $18\n• <strong>Chicken Tikka Masala</strong> — $18\n• <strong>Karahi Chicken</strong> — $16',
         [{label:'🛒 Order',action:'order'},{label:'⬅ Menu',action:'menu'}],1100,true); break;
     case 'catering':
-      _chatBotReply('We cater <strong>100 to 5,000 guests</strong> 🎉
-
-Weddings, Eid gatherings, corporate dinners and more.',
+      _chatBotReply('We cater <strong>100 to 5,000 guests</strong> 🎉\n\nWeddings, Eid gatherings, corporate dinners and more.',
         [{label:'👥 Connect with Partner',action:'partners'},{label:'📞 Call Us',action:'call'}],1000,true); break;
     case 'partners':
       _chatShowTyping();
@@ -1344,12 +1327,7 @@ Weddings, Eid gatherings, corporate dinners and more.',
         _chatSetQR(back);
       }, 900); break;
     case 'location':
-      _chatBotReply('📍 <strong>3421 E Renner Rd, Suite 110
-Plano, TX 75074</strong>
-
-🕐 Mon–Thu & Sun: 11am–10pm
-Fri–Sat: 11am–11pm
-📞 (469) 960-3300',
+      _chatBotReply('📍 <strong>3421 E Renner Rd, Suite 110\nPlano, TX 75074</strong>\n\n🕐 Mon–Thu & Sun: 11am–10pm\nFri–Sat: 11am–11pm\n📞 (469) 960-3300',
         [{label:'🗺 Directions',action:'directions'},{label:'💬 WhatsApp',action:'whatsapp'},back[0]],1000,true); break;
     case 'directions':
       window.open('https://maps.google.com/?q=3421+E+Renner+Rd+Suite+110+Plano+TX','_blank');
@@ -1373,10 +1351,7 @@ Fri–Sat: 11am–11pm
 
 function _chatInit(){
   setTimeout(function(){
-    _chatAddMsg('Assalamu Alaikum! 👋
-Welcome to <strong>Shaahi Biryani</strong> — The Pride of Biryani & Kababs.
-
-How can I help you today?', 'bot', true);
+    _chatAddMsg('Assalamu Alaikum! 👋\nWelcome to <strong>Shaahi Biryani</strong> — The Pride of Biryani & Kababs.\n\nHow can I help you today?', 'bot', true);
     setTimeout(function(){
       _chatSetQR([
         {label:'🍛 View Menu',       action:'menu'},
