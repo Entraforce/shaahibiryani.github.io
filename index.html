@@ -1281,8 +1281,8 @@ p.s-intro {
       <span>Subtotal</span>
       <strong id="cartTotal">$0.00</strong>
     </div>
-    <button class="cart-checkout" onclick="alert('Thank you! Please call (469) 960-3300 to confirm your order.')">Proceed to Checkout &#8594;</button>
-    <p class="cart-note">Or call us: (469) 960-3300</p>
+    <button class="cart-checkout" onclick="window.open('https://shaahi-biryani-plano.cloveronline.com/','_blank')">Proceed to Checkout &#8594;</button>
+    <p class="cart-note">Or <a href="tel:4699603300" style="color:inherit;">(469) 960-3300</a></p>
   </div>
 </div>
 
@@ -1724,7 +1724,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <!-- CLOVER ORDER DRAWER -->
 <style>
 #sb-order-fab{
-  position:fixed;bottom:28px;right:28px;z-index:9000;
+  position:fixed;bottom:28px;left:28px;z-index:9000;
   display:flex;align-items:center;gap:10px;
   background:linear-gradient(135deg,var(--gold-p),var(--gold));
   color:var(--black);border:none;border-radius:50px;
