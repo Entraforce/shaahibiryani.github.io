@@ -697,6 +697,7 @@ p.s-intro {
 
       <!-- CLICK PROMPT -->
       <div class="bo-prompt" id="boPrompt">Click the cover to open</div>
+    <button class="bo-skip-btn" onclick="boEnter()" title="Skip intro">Skip intro ›</button>
 
     </div><!-- /bo-book-wrap -->
   </div><!-- /bo-scene -->
@@ -900,9 +901,17 @@ p.s-intro {
   box-shadow:-2px 4px 16px rgba(0,0,0,.5);
 }
 
+.bo-skip-btn{
+  position:absolute;bottom:20px;right:24px;
+  background:transparent;border:none;
+  font-family:"Cinzel",serif;font-size:8px;letter-spacing:.25em;
+  text-transform:uppercase;color:rgba(201,168,76,.25);
+  cursor:pointer;transition:color .3s;padding:4px 0;
+}
+.bo-skip-btn:hover{color:rgba(201,168,76,.7);}
+
 /* ── MAIN SITE INITIAL STATE ── */
 #mainSite{transform:translateY(40px);opacity:0;transition:none;}
-body{overflow:hidden;}
 </style>
 </head>
 
@@ -1552,6 +1561,8 @@ function _ci(){
 
 // DOM READY
 document.addEventListener('DOMContentLoaded',function(){
+  // Lock scroll while book overlay is showing
+  document.body.style.overflow = 'hidden';
 
   // Chat logo
   var cl=document.getElementById('chatLogoImg'),nl=document.querySelector('.nav-logo img');
@@ -1730,19 +1741,21 @@ function boOpen(){
 
 function boEnter(){
   var overlay = document.getElementById('bookOverlay');
-  // Glide: fade overlay out while page content glides up
-  overlay.classList.add('bo-hidden');
-  // Reveal main site with upward slide
+  var main    = document.getElementById('mainSite');
+  // Fade overlay
+  overlay.style.transition = 'opacity .7s ease';
+  overlay.style.opacity    = '0';
+  overlay.style.pointerEvents = 'none';
+  // Glide main site in
   document.body.style.overflow = '';
-  var main = document.getElementById('mainSite');
   if(main){
-    main.style.transition = 'transform .9s cubic-bezier(.22,1,.36,1), opacity .7s ease';
-    main.style.transform = 'translateY(0)';
-    main.style.opacity = '1';
+    main.style.transition = 'transform .9s cubic-bezier(.22,1,.36,1), opacity .8s ease';
+    main.style.transform  = 'translateY(0)';
+    main.style.opacity    = '1';
   }
   setTimeout(function(){
     overlay.style.display = 'none';
-  }, 1000);
+  }, 800);
 }
 
 }); // end DOMContentLoaded
