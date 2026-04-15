@@ -796,7 +796,7 @@ p.s-intro {
 </div></div>
 <div class="sb-pgr"><div class="sb-pgri">
 <div class="sb-pr-lbl">Our Bestsellers</div>
-<div class="sb-pr-ttl">Today's Menu</div>
+<div class="sb-pr-ttl">Chef's Special</div>
 <div class="sb-pr-rule"><span>&#10022;</span></div>
 <div class="sb-pr-list">
 <div class="sb-pr-item"><span class="sb-pr-name">Goat Dum Biryani</span><span class="sb-pr-price">From $20</span></div>
@@ -1481,7 +1481,7 @@ function _cd(action){
     window.open('https://maps.google.com/?q=3421+E+Renner+Rd+Plano+TX','_blank');
     _br('Opening Google Maps!',back);
   } else if(action==='whatsapp'){
-    window.open('https://wa.me/14699603300','_blank');
+    window.open('https://chat.whatsapp.com/Di7kavLUzKXIAm3pGF2EKJ?mode=gi_t','_blank');
     _br('Opening WhatsApp!',back);
   } else if(action==='call'){
     window.open('tel:4699603300');
@@ -1719,6 +1719,199 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
+
+
+<!-- CLOVER ORDER DRAWER -->
+<style>
+#sb-order-fab{
+  position:fixed;bottom:28px;right:28px;z-index:9000;
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,var(--gold-p),var(--gold));
+  color:var(--black);border:none;border-radius:50px;
+  padding:14px 22px 14px 18px;cursor:pointer;
+  font-family:"Cinzel",serif;font-size:.62rem;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;
+  box-shadow:0 4px 24px rgba(201,168,76,.5);
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  transition:transform .18s ease,box-shadow .18s ease;
+  animation:sb-bounce 2.5s ease-in-out 2s 3;
+}
+#sb-order-fab:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(201,168,76,.65);}
+#sb-order-fab:active{transform:scale(0.97);}
+#sb-order-fab .fab-icon{font-size:16px;line-height:1;}
+@keyframes sb-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+#sb-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(8,2,10,.72);z-index:9001;
+  opacity:0;transition:opacity .25s ease;
+}
+#sb-overlay.open{display:block;}
+#sb-overlay.visible{opacity:1;}
+
+#sb-drawer{
+  position:fixed;top:0;right:0;bottom:0;
+  width:min(500px,100vw);
+  background:var(--near-black);
+  border-left:1px solid rgba(201,168,76,.2);
+  z-index:9002;
+  transform:translateX(100%);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+#sb-drawer.open{transform:translateX(0);}
+
+#sb-drawer-header{
+  background:var(--maroon-d);
+  padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(201,168,76,.25);
+  flex-shrink:0;
+}
+#sb-drawer-header .brand{
+  font-family:"Cinzel",serif;font-size:1rem;
+  color:var(--gold);letter-spacing:.12em;
+}
+#sb-drawer-header .subtitle{
+  font-family:"Cormorant Garamond",serif;font-size:.75rem;
+  color:var(--text-muted);margin-top:2px;letter-spacing:.08em;font-style:italic;
+}
+#sb-close-btn{
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
+  color:var(--text-muted);width:34px;height:34px;border-radius:50%;
+  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+#sb-close-btn:hover{background:rgba(201,168,76,.2);color:var(--gold);}
+
+#sb-iframe-wrap{flex:1;position:relative;overflow:hidden;}
+#sb-iframe-wrap iframe{width:100%;height:100%;border:none;display:block;}
+
+#sb-loader{
+  position:absolute;inset:0;background:var(--near-black);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;pointer-events:none;transition:opacity .3s;
+}
+#sb-loader .sb-spinner{
+  width:34px;height:34px;
+  border:2px solid rgba(201,168,76,.15);
+  border-top-color:var(--gold);
+  border-radius:50%;
+  animation:sb-spin .75s linear infinite;
+}
+#sb-loader p{
+  font-family:"Cinzel",serif;font-size:.55rem;
+  letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase;
+}
+@keyframes sb-spin{to{transform:rotate(360deg)}}
+
+#sb-fallback{
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;padding:48px 28px;text-align:center;gap:18px;
+}
+#sb-fallback .fb-emoji{font-size:48px;}
+#sb-fallback p{
+  font-family:"Cormorant Garamond",serif;font-size:1.1rem;
+  color:var(--text-muted);line-height:1.7;
+}
+#sb-fallback a{
+  font-family:"Cinzel",serif;font-size:.6rem;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--black);
+  background:linear-gradient(135deg,var(--gold-p),var(--gold));
+  padding:13px 30px;text-decoration:none;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  transition:box-shadow .2s;
+}
+#sb-fallback a:hover{box-shadow:0 4px 20px rgba(201,168,76,.5);}
+</style>
+
+<button id="sb-order-fab" onclick="sbOpen()">
+  <span class="fab-icon">🍛</span>
+  Order Online
+</button>
+
+<div id="sb-overlay" onclick="sbClose()"></div>
+
+<div id="sb-drawer">
+  <div id="sb-drawer-header">
+    <div>
+      <div class="brand">Shaahi Biryani</div>
+      <div class="subtitle">Online Ordering · Plano, TX</div>
+    </div>
+    <button id="sb-close-btn" onclick="sbClose()">✕</button>
+  </div>
+  <div id="sb-iframe-wrap">
+    <div id="sb-loader">
+      <div class="sb-spinner"></div>
+      <p>Loading Menu…</p>
+    </div>
+    <iframe
+      id="sb-iframe"
+      src="about:blank"
+      title="Shaahi Biryani Online Ordering"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+      onload="sbIframeLoaded()"
+      onerror="sbIframeFailed()"
+    ></iframe>
+    <div id="sb-fallback">
+      <div class="fb-emoji">🍛</div>
+      <p>Tap below to open our full menu and place your order directly through Clover.</p>
+      <a href="https://shaahi-biryani-plano.cloveronline.com/" target="_blank" rel="noopener noreferrer">Open Full Menu →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var CLOVER = 'https://shaahi-biryani-plano.cloveronline.com/';
+  var loaded = false;
+
+  window.sbOpen = function(){
+    var ov = document.getElementById('sb-overlay');
+    var dr = document.getElementById('sb-drawer');
+    var ifr = document.getElementById('sb-iframe');
+    ov.classList.add('open');
+    requestAnimationFrame(function(){ ov.classList.add('visible'); dr.classList.add('open'); });
+    document.body.style.overflow = 'hidden';
+    if(!loaded){ ifr.src = CLOVER; loaded = true; }
+  };
+
+  window.sbClose = function(){
+    var ov = document.getElementById('sb-overlay');
+    var dr = document.getElementById('sb-drawer');
+    ov.classList.remove('visible');
+    dr.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(function(){ ov.classList.remove('open'); }, 300);
+  };
+
+  window.sbIframeLoaded = function(){
+    var loader = document.getElementById('sb-loader');
+    var ifr = document.getElementById('sb-iframe');
+    var fb = document.getElementById('sb-fallback');
+    try {
+      var doc = ifr.contentDocument || ifr.contentWindow.document;
+      if(!doc || doc.body.innerHTML.trim() === '') throw new Error('blocked');
+      loader.style.opacity = '0';
+      setTimeout(function(){ loader.style.display = 'none'; }, 300);
+    } catch(e) {
+      loader.style.display = 'none';
+      ifr.style.display = 'none';
+      fb.style.display = 'flex';
+    }
+  };
+
+  window.sbIframeFailed = function(){
+    document.getElementById('sb-loader').style.display = 'none';
+    document.getElementById('sb-iframe').style.display = 'none';
+    document.getElementById('sb-fallback').style.display = 'flex';
+  };
+
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') sbClose(); });
+})();
+</script>
+<!-- END CLOVER ORDER DRAWER -->
 
 </body>
 </html>
