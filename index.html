@@ -59,9 +59,8 @@
     "longitude": -96.6845
   },
   "openingHoursSpecification": [
-    {"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday"],"opens":"11:00","closes":"22:00"},
-    {"@type":"OpeningHoursSpecification","dayOfWeek":["Friday","Saturday"],"opens":"11:00","closes":"23:00"},
-    {"@type":"OpeningHoursSpecification","dayOfWeek":"Sunday","opens":"11:00","closes":"22:00"}
+    {"@type":"OpeningHoursSpecification","dayOfWeek":["Sunday","Tuesday","Wednesday","Thursday"],"opens":"11:30","closes":"22:00"},
+    {"@type":"OpeningHoursSpecification","dayOfWeek":["Friday","Saturday"],"opens":"11:30","closes":"23:00"}
   ],
   "hasMenu": "https://shaahibiryanidfw.com/#menu",
   "sameAs": [
@@ -139,6 +138,39 @@
           "offers": {"@type":"Offer","price":"150","priceCurrency":"USD"}
         }
       ]
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Are all your dishes halal?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes — 100% Zabihah Halal, Hafsah Certified."}
+    },
+    {
+      "@type": "Question",
+      "name": "Do you offer catering?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes — we cater events from 50 guests up to 3,000 guests. Call (469) 960-3300 to plan your event."}
+    },
+    {
+      "@type": "Question",
+      "name": "Can I book the private event hall?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes — our private hall accommodates up to 132 guests. Visit the Book a Hall page at https://shaahibiryanidfw.com/hall.html or call (469) 960-3300."}
+    },
+    {
+      "@type": "Question",
+      "name": "What are your hours?",
+      "acceptedAnswer": {"@type":"Answer","text":"Sunday and Tuesday through Thursday: 11:30am–10:00pm. Friday and Saturday: 11:30am–11:00pm. Closed Mondays."}
+    },
+    {
+      "@type": "Question",
+      "name": "Do you take reservations?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes — call (469) 960-3300 to reserve a table."}
     }
   ]
 }
@@ -1343,6 +1375,34 @@ p.s-intro {
   </div>
 </section>
 
+<!-- FAQ -->
+<section id="faq" style="padding:84px 24px;background:linear-gradient(180deg,var(--near-black),var(--black));">
+  <div class="s-label rv">Good to Know</div>
+  <h2 class="s-title rv">Frequently Asked Questions</h2>
+  <div style="max-width:900px;margin:42px auto 0;display:grid;gap:20px;">
+    <div class="rv" style="background:rgba(201,168,76,.04);border-left:2px solid var(--gold);padding:22px 28px;">
+      <h3 style="font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-l);margin:0 0 12px 0;">Are all your dishes halal?</h3>
+      <p style="color:var(--text-warm);font-size:1.1rem;line-height:1.8;margin:0;">Yes — 100% Zabihah Halal, Hafsah Certified.</p>
+    </div>
+    <div class="rv" style="background:rgba(201,168,76,.04);border-left:2px solid var(--gold);padding:22px 28px;">
+      <h3 style="font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-l);margin:0 0 12px 0;">Do you offer catering?</h3>
+      <p style="color:var(--text-warm);font-size:1.1rem;line-height:1.8;margin:0;">Yes — we cater events from 50 guests up to 3,000 guests. Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a> to plan your event.</p>
+    </div>
+    <div class="rv" style="background:rgba(201,168,76,.04);border-left:2px solid var(--gold);padding:22px 28px;">
+      <h3 style="font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-l);margin:0 0 12px 0;">Can I book the private event hall?</h3>
+      <p style="color:var(--text-warm);font-size:1.1rem;line-height:1.8;margin:0;">Yes — our private hall accommodates up to 132 guests. Visit our <a href="hall.html" style="color:var(--gold-l);">Book a Hall</a> page or call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.</p>
+    </div>
+    <div class="rv" style="background:rgba(201,168,76,.04);border-left:2px solid var(--gold);padding:22px 28px;">
+      <h3 style="font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-l);margin:0 0 12px 0;">What are your hours?</h3>
+      <p style="color:var(--text-warm);font-size:1.1rem;line-height:1.8;margin:0;">Sunday &amp; Tuesday–Thursday: 11:30am–10:00pm · Friday &amp; Saturday: 11:30am–11:00pm · Closed Mondays.</p>
+    </div>
+    <div class="rv" style="background:rgba(201,168,76,.04);border-left:2px solid var(--gold);padding:22px 28px;">
+      <h3 style="font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-l);margin:0 0 12px 0;">Do you take reservations?</h3>
+      <p style="color:var(--text-warm);font-size:1.1rem;line-height:1.8;margin:0;">Yes — call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a> to reserve a table.</p>
+    </div>
+  </div>
+</section>
+
 <!-- CONTACT -->
 <section id="contact">
   <div class="s-label rv">Find Us</div>
@@ -1352,7 +1412,7 @@ p.s-intro {
       <h3>Get in Touch</h3>
       <div class="ciitem"><div class="ciico">📍</div><div><span class="cilbl">Address</span><div class="cival">3421 E Renner Rd, Suite 110<br>Plano, TX 75074</div></div></div>
       <div class="ciitem"><div class="ciico">📞</div><div><span class="cilbl">Phone</span><div class="cival"><a href="tel:4699603300">(469) 960-3300</a></div></div></div>
-      <div class="ciitem"><div class="ciico">🕐</div><div><span class="cilbl">Hours</span><div class="cival">Mon – Thu: 11am – 10pm<br>Fri – Sat: 11am – 11pm<br>Sunday: 11am – 10pm</div></div></div>
+      <div class="ciitem"><div class="ciico">🕐</div><div><span class="cilbl">Hours</span><div class="cival">Sun, Tue – Thu: 11:30am – 10pm<br>Fri – Sat: 11:30am – 11pm<br>Monday: Closed</div></div></div>
       <div class="ciitem"><div class="ciico">🗺</div><div><span class="cilbl">Directions</span><div class="cival"><a href="https://maps.google.com/?q=3421+E+Renner+Rd+Suite+110+Plano+TX+75074" target="_blank">Open in Google Maps →</a></div></div></div>
     </div>
     <div class="cform rv d2">
@@ -1873,7 +1933,7 @@ function _cd(action){
       _sq(back);
     },900);
   } else if(action==='location'){
-    _br('3421 E Renner Rd Suite 110 Plano TX 75074\nHours: Mon-Thu & Sun 11am-10pm, Fri-Sat 11am-11pm\nPhone: (469) 960-3300',
+    _br('3421 E Renner Rd Suite 110 Plano TX 75074\nHours: Sun & Tue-Thu 11:30am-10pm, Fri-Sat 11:30am-11pm (Closed Mondays)\nPhone: (469) 960-3300',
       [{l:'Directions',a:'directions'},{l:'WhatsApp',a:'whatsapp'},{l:'Back',a:'back'}],1000,true);
   } else if(action==='directions'){
     window.open('https://maps.google.com/?q=3421+E+Renner+Rd+Plano+TX','_blank');
