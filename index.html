@@ -42,9 +42,20 @@
   "url": "https://shaahibiryanidfw.com/",
   "telephone": "+1-469-960-3300",
   "priceRange": "$$",
-  "servesCuisine": ["Hyderabadi", "Indian", "South Asian", "Halal"],
+  "servesCuisine": ["Hyderabadi", "Indian", "South Asian", "Pakistani", "Halal"],
   "foundingDate": "2017",
+  "acceptsReservations": true,
+  "paymentAccepted": "Cash, Credit Card, Debit Card",
+  "currenciesAccepted": "USD",
   "image": "https://shaahibiryanidfw.com/assets/og-image.jpg",
+  "areaServed": [
+    {"@type":"City","name":"Plano"},
+    {"@type":"City","name":"Frisco"},
+    {"@type":"City","name":"Richardson"},
+    {"@type":"City","name":"Allen"},
+    {"@type":"City","name":"McKinney"},
+    {"@type":"City","name":"Dallas"}
+  ],
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "3421 E Renner Rd, Suite 110",
@@ -71,6 +82,23 @@
   ]
 }
 </script>
+<!--
+  ─── TODO (owner): enable Google star-ratings in search results ───
+  In your Google Business Profile, copy your current overall rating and
+  total review count, then INSERT the snippet below into the Restaurant
+  schema above. Place it as a new key right after the "sameAs" array
+  (add a comma after the closing ] of "sameAs"):
+
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.6",
+        "reviewCount": "350"
+      }
+
+  Replace 4.6 and 350 with your REAL numbers. Google penalizes fake or
+  placeholder ratings, so do not publish this until the numbers are real.
+-->
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -171,8 +199,45 @@
       "@type": "Question",
       "name": "Do you take reservations?",
       "acceptedAnswer": {"@type":"Answer","text":"Yes — call (469) 960-3300 to reserve a table."}
+    },
+    {
+      "@type": "Question",
+      "name": "Do you serve Pakistani and Indian food too?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes — our menu features Hyderabadi, Indian and Pakistani halal favorites including biryani, kababs, haleem, tandoori grills, butter chicken and tikka masala."}
+    },
+    {
+      "@type": "Question",
+      "name": "Do you deliver in the DFW area?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes — delivery is available through our partners, and we cater across Plano, Frisco, Richardson, Allen, McKinney and the wider DFW metroplex. Call (469) 960-3300 to arrange catering."}
     }
   ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "@id": "https://shaahibiryanidfw.com/#catering",
+  "serviceType": "Hyderabadi Halal Catering",
+  "name": "Shaahi Biryani Catering — Plano & DFW",
+  "description": "Full-service Hyderabadi, Indian and Pakistani halal catering for weddings, walimas, corporate events, birthdays and celebrations across Plano, Frisco, Richardson, Allen, McKinney and the wider DFW metroplex. Capacity 50 to 3,000+ guests.",
+  "provider": {"@id": "https://shaahibiryanidfw.com/#restaurant"},
+  "areaServed": [
+    {"@type":"City","name":"Plano"},
+    {"@type":"City","name":"Frisco"},
+    {"@type":"City","name":"Richardson"},
+    {"@type":"City","name":"Allen"},
+    {"@type":"City","name":"McKinney"},
+    {"@type":"City","name":"Dallas"},
+    {"@type":"AdministrativeArea","name":"Dallas–Fort Worth metroplex"}
+  ],
+  "audience": {"@type":"Audience","audienceType":"Weddings, walimas, corporate events, birthdays, celebrations"},
+  "offers": {
+    "@type":"Offer",
+    "url":"https://shaahibiryanidfw.com/hall.html",
+    "availability":"https://schema.org/InStock",
+    "priceCurrency":"USD"
+  }
 }
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
@@ -1365,7 +1430,7 @@ p.s-intro {
 <section id="catering">
   <div class="s-label rv">Events &amp; Occasions</div>
   <h2 class="s-title rv">Royal Catering Services</h2>
-  <p class="s-intro rv">From 100 to 3,000+ guests — we bring the royal feast to your event.</p>
+  <p class="s-intro rv">From 50 to 3,000+ guests — we bring the royal feast to your event.</p>
   <div class="cater-grid rv">
     <div class="ccard"><div class="cico">💍</div><div class="ctitle">Weddings &amp; Receptions</div><p class="cdesc">Large-tray service, custom menu planning, and on-time delivery for your most important day.</p></div>
     <div class="ccard"><div class="cico">🎊</div><div class="ctitle">Festive Gatherings</div><p class="cdesc">Birthdays, anniversaries, engagements and festive occasions — full tray service with traditional sides.</p></div>
@@ -1373,6 +1438,16 @@ p.s-intro {
   </div>
   <div style="text-align:center;margin-top:48px;" class="rv d2">
     <a href="tel:4699603300" class="btn-gold" style="font-size:.75rem;padding:17px 52px;">☎ (469) 960-3300 — Enquire Now</a>
+  </div>
+  <div style="text-align:center;margin-top:36px;padding-top:28px;border-top:1px solid rgba(201,168,76,.12);max-width:880px;margin-left:auto;margin-right:auto;" class="rv d3">
+    <p style="font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;">We Cater Across DFW</p>
+    <p style="color:var(--text-warm);font-size:1rem;line-height:1.9;">
+      Halal Hyderabadi catering for weddings, walimas and corporate events in
+      <a href="catering-frisco.html" style="color:var(--gold-l);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(201,168,76,.4);">Frisco</a>,
+      <a href="catering-richardson.html" style="color:var(--gold-l);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(201,168,76,.4);">Richardson</a>,
+      <a href="catering-allen.html" style="color:var(--gold-l);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(201,168,76,.4);">Allen</a>,
+      McKinney, Dallas and the wider DFW metroplex — delivered fresh from our Plano kitchen.
+    </p>
   </div>
 </section>
 
@@ -1951,7 +2026,7 @@ function _cd(action){
     _br('Popular chicken dishes:\n- Butter Chicken $18\n- Tikka Masala $18\n- Karahi $16',
       [{l:'Order',a:'order'},{l:'Back',a:'menu'}],1100,true);
   } else if(action==='catering'){
-    _br('We cater 100 to 3,000+ guests. Weddings, Eid, corporate events.',
+    _br('We cater 50 to 3,000+ guests. Weddings, Eid, corporate events.',
       [{l:'Connect with Partner',a:'partners'},{l:'Call Us',a:'call'}],1000,true);
   } else if(action==='partners'){
     _st();
