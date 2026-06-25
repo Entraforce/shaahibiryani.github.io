@@ -261,12 +261,12 @@ nav.scrolled{background:rgba(8,2,10,.96);border-bottom:1px solid rgba(201,168,76
 .nav-logo img{height:72px;width:auto;object-fit:contain;opacity:0;transition:opacity .6s ease;visibility:hidden;}
 .nav-logo img.shown{opacity:1;visibility:visible;}
 .nav-links{display:flex;gap:32px;list-style:none;}
-.nav-links a{font-family:"Cinzel",serif;font-size:.62rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--text-warm);text-decoration:none;position:relative;transition:color .3s;}
-.nav-links a::after{content:"";position:absolute;bottom:-3px;left:0;right:0;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:right;transition:transform .4s;}
+.nav-links a{font-family:"Cinzel",serif;font-size:.62rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--text-warm);text-decoration:none;position:relative;transition:color .5s cubic-bezier(.16,1,.3,1);}
+.nav-links a::after{content:"";position:absolute;bottom:-3px;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold));transform:scaleX(0);transform-origin:center;transition:transform .55s cubic-bezier(.16,1,.3,1);}
 .nav-links a:hover{color:var(--gold-l);}
-.nav-links a:hover::after{transform:scaleX(1);transform-origin:left;}
-.nav-cta{font-family:"Cinzel",serif;font-size:.62rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold));padding:10px 24px;text-decoration:none;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:all .3s;}
-.nav-cta:hover{box-shadow:0 4px 22px rgba(201,168,76,.45);transform:translateY(-1px);}
+.nav-links a:hover::after{transform:scaleX(1);}
+.nav-cta{font-family:"Cinzel",serif;font-size:.62rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold));padding:10px 24px;text-decoration:none;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:box-shadow .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1),filter .5s ease;}
+.nav-cta:hover{box-shadow:0 6px 26px rgba(201,168,76,.5);transform:translateY(-2px);filter:brightness(1.05);}
 .nav-burger{display:none;background:none;border:0;cursor:pointer;padding:6px;width:40px;height:40px;flex-direction:column;justify-content:center;align-items:center;gap:5px;}
 .nav-burger span{display:block;width:24px;height:2px;background:var(--gold);transition:transform .3s,opacity .3s;}
 .nav-burger.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}
@@ -301,16 +301,25 @@ nav.scrolled{background:rgba(8,2,10,.96);border-bottom:1px solid rgba(201,168,76
 .hero-eyebrow i{width:36px;height:1px;background:var(--gold);display:block;font-style:normal;}
 .h-tagline{font-family:"Cormorant Garamond",serif;font-size:clamp(1.5rem,3.4vw,2.1rem);font-style:italic;font-weight:300;color:rgba(240,228,200,.88);line-height:1.9;max-width:600px;margin-bottom:46px;opacity:0;animation:fadeUp 0.8s 1.7s forwards;}
 .hbtns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp 0.8s 2.0s forwards;}
-.btn-gold{font-family:"Cinzel",serif;font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold),var(--gold-d));border:none;padding:17px 44px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);transition:all .4s;}
-.btn-gold:hover{transform:translateY(-3px);box-shadow:0 10px 36px rgba(201,168,76,.5);}
-.btn-ghost{font-family:"Cinzel",serif;font-size:.78rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-l);background:rgba(8,2,10,.3);border:1px solid rgba(201,168,76,.42);padding:17px 44px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);transition:all .4s;backdrop-filter:blur(6px);}
-.btn-ghost:hover{border-color:var(--gold);background:rgba(201,168,76,.1);transform:translateY(-3px);}
+.btn-gold{font-family:"Cinzel",serif;font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold),var(--gold-d));border:none;padding:17px 44px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);transition:transform .5s cubic-bezier(.16,1,.3,1),box-shadow .5s cubic-bezier(.16,1,.3,1),filter .5s ease;}
+.btn-gold:hover{transform:translateY(-3px);box-shadow:0 12px 42px rgba(201,168,76,.55);filter:brightness(1.06);}
+.btn-ghost{font-family:"Cinzel",serif;font-size:.78rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-l);background:rgba(8,2,10,.3);border:1px solid rgba(201,168,76,.42);padding:17px 44px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);transition:border-color .5s cubic-bezier(.16,1,.3,1),background .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1);backdrop-filter:blur(6px);}
+.btn-ghost:hover{border-color:var(--gold);background:rgba(201,168,76,.12);transform:translateY(-3px);}
 .hstats{position:absolute;bottom:0;left:0;right:0;z-index:15;display:flex;justify-content:center;opacity:0;animation:fadeUp 0.8s 2.3s forwards;}
 .hstat{padding:16px 36px;text-align:center;border-right:1px solid rgba(201,168,76,.12);background:rgba(8,2,10,.65);backdrop-filter:blur(12px);flex:1;max-width:175px;}
 .hstat:last-child{border-right:none;}
 .hstat-n{font-family:"Cinzel",serif;font-size:1.9rem;font-weight:700;color:var(--gold-l);display:block;line-height:1;}
 .hstat-l{font-family:"Cinzel",serif;font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(201,168,76,.4);display:block;margin-top:4px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+/* SCROLL REVEAL — sections fade + slide up as they enter view (JS adds .vis) */
+.rv{opacity:0;transform:translateY(30px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1);will-change:opacity,transform;}
+.rv.vis{opacity:1;transform:translateY(0);}
+.rv.d1{transition-delay:.12s;}
+.rv.d2{transition-delay:.24s;}
+.rv.d3{transition-delay:.36s;}
+.rv.d4{transition-delay:.48s;}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none;}}
 
 /* LOGO ANIMATION — position:fixed so it can move anywhere precisely */
 .footer-logo img{height:76px;width:auto;}
@@ -1645,7 +1654,7 @@ p.s-intro {
     </div>
 
     <!-- Customer Info -->
-    <div style="margin-bottom:18px;">
+    <div style="margin-bottom:18px;" id="custDetailsBlock">
       <div style="font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Your Details</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div>
@@ -1668,7 +1677,7 @@ p.s-intro {
       <p id="custError" style="display:none;font-size:.72rem;color:#f87171;font-style:italic;margin-top:8px;">Please fill in all required fields.</p>
     </div>
 
-    <div style="display:flex;gap:10px;">
+    <div style="display:flex;gap:10px;" id="waActionBtns">
       <button onclick="closeWaModal()" style="
         flex:1;font-family:'Cinzel',serif;font-size:.6rem;font-weight:600;
         letter-spacing:.14em;text-transform:uppercase;
@@ -1677,21 +1686,45 @@ p.s-intro {
       " onmouseover="this.style.borderColor='rgba(201,168,76,.5)'" onmouseout="this.style.borderColor='rgba(201,168,76,.2)'">
         Edit Order
       </button>
-      <button onclick="sendToWhatsApp()" style="
+      <button id="toPayBtn" onclick="startWebPayment()" style="
         flex:2;font-family:'Cinzel',serif;font-size:.62rem;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
-        color:var(--black);background:linear-gradient(135deg,#25d366,#128c50);
+        color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold),var(--gold-d));
         border:none;padding:13px;cursor:pointer;transition:all .35s;
         display:flex;align-items:center;justify-content:center;gap:10px;
         clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
-      " onmouseover="this.style.boxShadow='0 6px 24px rgba(37,211,102,.4)'" onmouseout="this.style.boxShadow='none'">
-        <span style="font-size:1.1rem;">💬</span> Send on WhatsApp
+      " onmouseover="this.style.boxShadow='0 6px 24px rgba(201,168,76,.4)'" onmouseout="this.style.boxShadow='none'">
+        Pay Securely &#8594;
       </button>
     </div>
 
-    <p style="font-size:.7rem;font-style:italic;color:rgba(201,168,76,.25);text-align:center;margin-top:14px;">
-      Opens WhatsApp with your full order pre-written · We respond within minutes
+    <p id="waFallbackNote" style="font-size:.72rem;font-style:italic;color:rgba(201,168,76,.4);text-align:center;margin-top:14px;">
+      Prefer to order over chat? <a onclick="sendToWhatsApp()" style="color:var(--gold-l);cursor:pointer;text-decoration:underline;">Send via WhatsApp instead</a>
     </p>
+
+    <!-- CARD PAYMENT (revealed after details are confirmed) -->
+    <div id="webPayArea" style="display:none;margin-top:8px;">
+      <div style="font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;">Card Payment</div>
+      <div id="payment-element"></div>
+      <button id="webPayBtn" onclick="payWeb()" style="
+        width:100%;margin-top:18px;font-family:'Cinzel',serif;font-size:.66rem;font-weight:700;
+        letter-spacing:.2em;text-transform:uppercase;color:var(--black);
+        background:linear-gradient(135deg,var(--gold-p),var(--gold),var(--gold-d));
+        border:none;padding:15px;cursor:pointer;transition:all .35s;
+        clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+      " onmouseover="this.style.boxShadow='0 6px 24px rgba(201,168,76,.45)'" onmouseout="this.style.boxShadow='none'">Pay</button>
+      <p id="webPayErr" style="color:#f87171;font-size:.78rem;font-style:italic;text-align:center;margin-top:10px;min-height:16px;"></p>
+      <p style="font-size:.68rem;font-style:italic;color:rgba(201,168,76,.3);text-align:center;margin-top:8px;">&#128274; Secure payment by Stripe · your card never touches our servers · pickup at our Plano kitchen</p>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="webPaySuccess" style="display:none;text-align:center;padding:14px 0;">
+      <div style="font-size:2.6rem;color:#4CAF50;line-height:1;margin-bottom:10px;">&#10003;</div>
+      <div style="font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold-p);margin-bottom:8px;">Order Received!</div>
+      <div id="webPayOrdNo" style="font-family:'Cinzel',serif;font-size:.8rem;letter-spacing:.1em;color:var(--gold-l);margin-bottom:12px;"></div>
+      <p style="font-size:.92rem;font-style:italic;color:var(--text-warm);line-height:1.7;">Paid &amp; sent to our kitchen. We'll have it freshly made and ready for pickup in about <strong style="color:var(--gold-l);">20–30 minutes</strong>.<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.</p>
+      <button onclick="closeWaModal()" style="margin-top:16px;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text-muted);background:transparent;border:1px solid rgba(201,168,76,.25);padding:11px 28px;cursor:pointer;">Done</button>
+    </div>
 
     <button onclick="closeWaModal()" style="
       position:absolute;top:14px;right:16px;background:none;border:none;
@@ -1704,6 +1737,94 @@ p.s-intro {
 <div class="cart-toast" id="cartToast"></div>
 
 
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+// ── Shaahi in-cart online payment (Stripe) — server-priced, added for online ordering ──
+// All amounts are computed server-side by the create-web-order function from an
+// authoritative price map; the page only sends item references (never a price).
+var SB_URL='https://wtdthjhqgsbnyjucdqxl.supabase.co';
+var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZHRoamhxZ3NibnlqdWNkcXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcxMzcsImV4cCI6MjA5MjQ0MzEzN30.1WYVcbrulkg0l7QB-scj4KcJCnMwFKSLHXucEdEZV3Q';
+var STRIPE_PK='pk_test_51Tcm6ZEay8r3S5MXuSiKAWpBD5AgxvWdm11jG3eKtXMu23MarwBfsjstgZXBlHBi9iBHGTXubQvgqZeCqEoWBIz8007iw5hVO6';
+var PID_MAP={"Hyderabadi Goat Dum Biryani":{"Single":"goat-dum-biryani|goat-dum-biryani-regular","Family":"goat-dum-biryani|goat-dum-biryani-family","Jumbo":"goat-dum-biryani|goat-dum-biryani-jumbo","Half Tray":"cat-goat-dum-biryani|half","Full Tray":"cat-goat-dum-biryani|full"},"Butter Chicken":{"":"butter-chicken|butter-chicken-standard"},"Chicken Dum Biryani":{"Single":"chicken-dum-biryani|chicken-dum-biryani-regular","Family":"chicken-dum-biryani|chicken-dum-biryani-family","Jumbo":"chicken-dum-biryani|chicken-dum-biryani-jumbo","Half Tray":"cat-chicken-dum-ki-biryani|half","Full Tray":"cat-chicken-dum-ki-biryani|full"},"Goat Haleem":{"":"goat-haleem|goat-haleem-standard"},"Golden Shaahi Platter":{"":"golden-shaahi-platter|golden-shaahi-platter-standard"},"Chicken Tikka Masala":{"":"chicken-tikka-masala|chicken-tikka-masala-standard"},"Vegetable Samosa 2pc":{"":"vegetable-samosa-2pc|vegetable-samosa-2pc-standard"},"Lukhmi 2pc Check Avail.":{"":"lukhmi-2pc|lukhmi-2pc-standard"},"Beef Samosa":{"":"beef-samosa|beef-samosa-standard"},"Chicken Samosa":{"":"chicken-samosa|chicken-samosa-standard"},"Chicken Spring Roll 5pc":{"":"chicken-spring-roll-5pc|chicken-spring-roll-5pc-standard"},"Vegetable Spring Roll 6pc":{"":"vegetable-spring-roll-6pc|vegetable-spring-roll-6pc-standard"},"Chicken Pakora":{"":"chicken-pakora|chicken-pakora-standard"},"Chicken 65":{"":"chicken-65|chicken-65-standard"},"Chili Chicken":{"":"chili-chicken|chili-chicken-standard"},"Chicken Manchurian":{"":"chicken-manchurian|chicken-manchurian-standard"},"Apollo Fish":{"":"apollo-fish|apollo-fish-standard"},"Butter Chicken Popular":{"":"butter-chicken|butter-chicken-standard"},"Frontier Chicken":{"":"frontier-chicken|frontier-chicken-standard"},"Achari Chicken":{"":"achari-chicken|achari-chicken-standard"},"Dum Ka Chicken":{"":"dum-ka-chicken|dum-ka-chicken-standard"},"Karahi Chicken":{"":"karahi-chicken|karahi-chicken-standard"},"Chicken Tikka Masala Popular":{"":"chicken-tikka-masala|chicken-tikka-masala-standard"},"Mutton Masala":{"":"mutton-masala|mutton-masala-standard"},"Goat Khorma":{"":"goat-khorma|goat-khorma-standard"},"Karahi Gosht":{"":"karahi-gosht|karahi-gosht-standard"},"Dum Ka Gosht":{"":"dum-ka-gosht|dum-ka-gosht-standard"},"Goat Marag Check Avail.":{"":"goat-marag|goat-marag-standard"},"Zafrani Mutton Signature":{"":"zafrani-mutton|zafrani-mutton-standard"},"Goat Haleem Signature":{"":"goat-haleem|goat-haleem-standard"},"Golden Shaahi Platter Signature":{"":"golden-shaahi-platter|golden-shaahi-platter-standard"},"Mixed Grill Platter":{"":"mixed-grill-platter|mixed-grill-platter-standard"},"Regular Platter (Chicken)":{"":"regular-platter-chicken|regular-platter-chicken-standard"},"Beef Chapli Kabab":{"":"beef-chapli-kabab|beef-chapli-kabab-standard"},"Beef Sheek Kabab":{"":"beef-sheek-kabab|beef-sheek-kabab-standard"},"Bihari Kabab":{"":"bihari-kabab|bihari-kabab-standard"},"Patthar Ka Gosht":{"":"patthar-ka-gosht|patthar-ka-gosht-standard"},"Chicken Malai Boti":{"":"chicken-malai-boti|chicken-malai-boti-standard"},"Chicken Tandoori (Half)":{"":"chicken-tandoori-half|chicken-tandoori-half-standard"},"Chicken Tandoori (Full)":{"":"chicken-tandoori-full|chicken-tandoori-full-standard"},"Chicken Tikka":{"":"chicken-tikka|chicken-tikka-standard"},"Chicken Sheek Kabab":{"":"chicken-sheek-kabab|chicken-sheek-kabab-standard"},"Chicken Chapli Kabab":{"":"chicken-chapli-kabab|chicken-chapli-kabab-standard"},"Chicken Boti":{"":"chicken-boti|chicken-boti-standard"},"Regular Chicken Biryani":{"":"chicken-dum-biryani|chicken-dum-biryani-regular"},"Family Pack Chicken Biryani":{"":"chicken-dum-biryani|chicken-dum-biryani-family"},"Jumbo Pack Chicken Biryani":{"":"chicken-dum-biryani|chicken-dum-biryani-jumbo"},"Regular Goat Biryani":{"":"goat-dum-biryani|goat-dum-biryani-regular"},"Family Pack Goat Biryani":{"":"goat-dum-biryani|goat-dum-biryani-family"},"Jumbo Pack Goat Biryani":{"":"goat-dum-biryani|goat-dum-biryani-jumbo"},"Chicken Sheekh Kabab Roll":{"":"chicken-sheekh-kabab-roll|chicken-sheekh-kabab-roll-standard"},"Beef Sheekh Kabab Roll":{"":"beef-sheekh-kabab-roll|beef-sheekh-kabab-roll-standard"},"Chicken 65 Roll":{"":"chicken-65-roll|chicken-65-roll-standard"},"Chicken Boti Roll":{"":"chicken-boti-roll|chicken-boti-roll-standard"},"Beef Boti Roll":{"":"beef-boti-roll|beef-boti-roll-standard"},"Chicken Malai Boti Roll":{"":"chicken-malai-boti-roll|chicken-malai-boti-roll-standard"},"Beef Bihari Roll":{"":"beef-bihari-roll|beef-bihari-roll-standard"},"Plain Rice":{"":"plain-rice|plain-rice-standard"},"Frontier Chicken Rice":{"":"frontier-chicken-rice|frontier-chicken-rice-standard"},"Frontier Beef Rice":{"":"frontier-beef-rice|frontier-beef-rice-standard"},"Chicken 65 Rice":{"":"chicken-65-rice|chicken-65-rice-standard"},"Chili Chicken Rice":{"":"chili-chicken-rice|chili-chicken-rice-standard"},"Mixed Vegetables":{"":"mixed-vegetables|mixed-vegetables-standard"},"Palak Paneer":{"":"palak-paneer|palak-paneer-standard"},"Dal Tadka":{"":"dal-tadka|dal-tadka-standard"},"Navratan Korma":{"":"navratan-korma|navratan-korma-standard"},"Vegetarian Khorma":{"":"vegetarian-khorma|vegetarian-khorma-standard"},"Chana Masala":{"":"chana-masala|chana-masala-standard"},"Bhendi Masala":{"":"bhendi-masala|bhendi-masala-standard"},"Butter Paneer":{"":"butter-paneer|butter-paneer-standard"},"Mirchi Ka Salan Signature":{"":"mirchi-ka-salan|mirchi-ka-salan-standard"},"Tilapia Fish (Fry or Grill)":{"":"tilapia-fish-fry-or-grill|tilapia-fish-fry-or-grill-standard"},"Fried Fish":{"":"fried-fish|fried-fish-standard"},"Fish Pakora":{"":"fish-pakora|fish-pakora-standard"},"Regular Naan":{"":"regular-naan|regular-naan-standard"},"Butter Naan":{"":"butter-naan|butter-naan-standard"},"Garlic Naan":{"":"garlic-naan|garlic-naan-standard"},"Chapati":{"":"chapati|chapati-standard"},"Paratha":{"":"paratha|paratha-standard"},"Latcha Paratha":{"":"latcha-paratha|latcha-paratha-standard"},"Badam Ki Kheer":{"":"badam-ki-kheer|badam-ki-kheer-standard"},"Gulab Jamun":{"":"gulab-jamun|gulab-jamun-standard"},"Gajar Halwa":{"":"gajar-halwa|gajar-halwa-standard"},"Rasmalai":{"":"rasmalai|rasmalai-standard"},"Kubani Ka Meeta":{"":"kubani-ka-meeta|kubani-ka-meeta-standard"},"Double Ka Meeta Signature":{"":"double-ka-meeta|double-ka-meeta-standard"},"Sitaphal Rabdi":{"":"sitaphal-rabdi|sitaphal-rabdi-standard"},"Kaddu Ki Kheer":{"":"kaddu-ki-kheer|kaddu-ki-kheer-standard"},"Indian Tea":{"":"indian-tea|indian-tea-large"},"Mango Lassi (Single)":{"":"mango-lassi-single|mango-lassi-single-standard"},"Mango Lassi (Jug)":{"":"mango-lassi-jug|mango-lassi-jug-standard"},"Salaam Drink":{"":"salaam-drink|salaam-drink-standard"},"Thumbs Up":{"":"thumbs-up|thumbs-up-standard"},"Jeera Drink":{"":"jeera-drink|jeera-drink-standard"},"Water Bottle":{"":"water-bottle|water-bottle-standard"}};
+var _stripe=(typeof Stripe!=='undefined')?Stripe(STRIPE_PK):null;
+var _wpElements=null,_wpSecret=null,_wpOrder=null;
+
+function _wpResetModal(){
+  ['custDetailsBlock','waOrderSummary','waActionBtns','waFallbackNote'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='';});
+  var pa=document.getElementById('webPayArea'); if(pa)pa.style.display='none';
+  var ps=document.getElementById('webPaySuccess'); if(ps)ps.style.display='none';
+  var pe=document.getElementById('payment-element'); if(pe)pe.innerHTML='';
+  var er=document.getElementById('webPayErr'); if(er)er.textContent='';
+}
+
+function _wpResolveItems(){
+  var items=[],bad=[];
+  cart.forEach(function(it){
+    var m=PID_MAP[it.name]; var keyv=m?(m[it.size||'']||m['']||null):null;
+    if(!keyv){ bad.push(it.name); return; }
+    var p=keyv.split('|');
+    items.push({menuItemId:p[0],variantId:p[1],quantity:it.qty,itemName:it.name+(it.size?' ('+it.size+')':''),variantName:it.size||'Standard'});
+  });
+  return {items:items,bad:bad};
+}
+
+async function startWebPayment(){
+  var gi=function(id){return document.getElementById(id);};
+  var first=((gi('custFirst')||{}).value||'').trim(), last=((gi('custLast')||{}).value||'').trim(),
+      email=((gi('custEmail')||{}).value||'').trim(), phone=((gi('custPhone')||{}).value||'').trim();
+  var err=gi('custError');
+  if(!first||!last||!email||!phone){
+    if(err){err.style.display='block';err.textContent='Please fill in all required fields.';}
+    ['custFirst','custLast','custEmail','custPhone'].forEach(function(id){var el=gi(id);if(el&&!el.value.trim())el.style.borderColor='rgba(248,113,113,.6)';});
+    return;
+  }
+  if(phone.replace(/\D/g,'').length<10){ if(err){err.style.display='block';err.textContent='Please enter a valid phone number.';} return; }
+  if(err) err.style.display='none';
+  if(!cart.length) return;
+  var r=_wpResolveItems();
+  if(r.bad.length){ if(err){err.style.display='block';err.textContent="Sorry, these aren't available for online payment yet: "+r.bad.join(', ')+". Please call (469) 960-3300.";} return; }
+  if(!_stripe){ if(err){err.style.display='block';err.textContent='Payment is temporarily unavailable. Please try again shortly.';} return; }
+
+  var btn=gi('toPayBtn'); btn.disabled=true; var bl=btn.innerHTML; btn.textContent='Setting up payment…';
+  var subtotal=cart.reduce(function(s,i){return s+_p(i.price)*i.qty;},0);
+  var tipCents=Math.round(subtotal*((selectedTip||0)/100)*100);
+  try{
+    var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,tipCents:tipCents})
+    });
+    var data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Could not start the order.');
+    _wpSecret=data.paymentIntent; _wpOrder=data;
+    gi('custDetailsBlock').style.display='none';
+    if(gi('waOrderSummary')) gi('waOrderSummary').style.display='none';
+    gi('waActionBtns').style.display='none';
+    if(gi('waFallbackNote')) gi('waFallbackNote').style.display='none';
+    gi('webPayArea').style.display='block';
+    var b=data.breakdown;
+    gi('webPayBtn').textContent='Pay $'+(b.totalCents/100).toFixed(2);
+    _wpElements=_stripe.elements({clientSecret:_wpSecret,appearance:{theme:'night',variables:{colorPrimary:'#C9A84C',colorBackground:'#15090c',colorText:'#F5EDD8',fontFamily:'Georgia, serif',borderRadius:'4px'}}});
+    _wpElements.create('payment',{layout:'tabs'}).mount('#payment-element');
+  }catch(e){
+    if(err){err.style.display='block';err.textContent=e.message;}
+  }finally{ btn.disabled=false; btn.innerHTML=bl; }
+}
+
+async function payWeb(){
+  var gi=function(id){return document.getElementById(id);};
+  var btn=gi('webPayBtn'); var bl=btn.textContent; btn.disabled=true; btn.textContent='Processing…';
+  gi('webPayErr').textContent='';
+  var rp=await _stripe.confirmPayment({elements:_wpElements,confirmParams:{return_url:location.origin+'/?paid=1'},redirect:'if_required'});
+  if(rp.error){ gi('webPayErr').textContent=rp.error.message||'Payment could not be completed.'; btn.disabled=false; btn.textContent=bl; return; }
+  if(rp.paymentIntent&&(rp.paymentIntent.status==='succeeded'||rp.paymentIntent.status==='processing')){
+    gi('webPayArea').style.display='none';
+    var s=gi('webPaySuccess'); if(s)s.style.display='block';
+    if(gi('webPayOrdNo')) gi('webPayOrdNo').textContent=_wpOrder?('Order #'+_wpOrder.orderNumber):'';
+    cart.length=0; if(typeof renderCart==='function') renderCart();
+  } else { gi('webPayErr').textContent='Payment status: '+(rp.paymentIntent?rp.paymentIntent.status:'unknown'); btn.disabled=false; btn.textContent=bl; }
+}
+</script>
 <script>
 // SHAAHI BIRYANI — COMPLETE JS
 // All global functions before DOMContentLoaded
@@ -1829,6 +1950,7 @@ function setTip(pct){
 
 function initiateWhatsAppCheckout(){
   if(!cart.length){ showToast('Your cart is empty!'); return; }
+  if(typeof _wpResetModal==='function') _wpResetModal();
 
   var subtotal = cart.reduce(function(s,i){ return s + _p(i.price)*i.qty; }, 0);
   var tax      = subtotal * TAX_RATE;
