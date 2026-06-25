@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Order Hyderabadi halal biryani, kababs and more online for pickup from Shaahi Biryani in Plano, TX. Hand-cut zabiha halal Indian & Pakistani food. Order online and pick up at 3421 E Renner Rd.">
+<!-- TEST MODE: noindex while Stripe is in test mode + page is unlinked. Flip to "index,follow,max-image-preview:large,max-snippet:-1" at go-live. -->
+<meta name="robots" content="noindex,nofollow">
+<meta name="author" content="Shaahi Biryani">
+<meta name="theme-color" content="#5C0A14">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+<link rel="canonical" href="https://shaahibiryanidfw.com/order">
+<meta property="og:url" content="https://shaahibiryanidfw.com/order">
+<meta property="og:site_name" content="Shaahi Biryani">
+<meta property="og:title" content="Order Online for Pickup – Shaahi Biryani, Plano TX">
+<meta property="og:description" content="Order hand-cut zabiha halal Hyderabadi biryani, kababs and more online for pickup from Shaahi Biryani in Plano.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://shaahibiryanidfw.com/assets/og-image.jpg">
+<title>Order Online for Pickup – Shaahi Biryani, Plano TX</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+:root{--gold:#C9A84C;--gold-l:#E8C97A;--gold-p:#F5E4B0;--gold-d:#8B6914;--maroon:#5C0A14;--maroon-d:#3A0509;--black:#08020A;--near-black:#100308;--cream:#F5EDD8;--text-warm:#E0C9A0;--text-muted:#907050;--green:#2E7D32;--green-l:#4CAF50;}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--near-black);color:var(--cream);font-family:"Cormorant Garamond",Georgia,serif;min-height:100vh;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--maroon-d);}::-webkit-scrollbar-thumb{background:var(--gold-d);}
+a{color:var(--gold-l);text-decoration:none;}
+nav{position:sticky;top:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;background:rgba(8,2,10,.96);border-bottom:1px solid rgba(201,168,76,.18);backdrop-filter:blur(14px);}
+.nav-logo{font-family:"Cinzel",serif;color:var(--gold-l);font-size:.86rem;letter-spacing:.22em;font-weight:700;text-transform:uppercase;}
+.nav-links{display:flex;gap:28px;list-style:none;}
+.nav-links a{font-family:"Cinzel",serif;font-size:.6rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--text-warm);transition:color .3s;}
+.nav-links a:hover,.nav-links a.active{color:var(--gold-l);}
+@media(max-width:900px){nav{padding:12px 18px;}.nav-links{display:none;}}
+.page-hero{padding:60px 24px 30px;text-align:center;background:linear-gradient(180deg,var(--maroon-d),var(--near-black));}
+.s-label{display:flex;align-items:center;justify-content:center;gap:12px;font-family:"Cinzel",serif;font-size:.56rem;font-weight:600;letter-spacing:.45em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
+.s-label::before,.s-label::after{content:"";display:block;width:26px;height:1px;background:var(--gold);}
+h1.page-title{font-family:"Cinzel",serif;font-size:clamp(1.8rem,5vw,3rem);font-weight:700;color:var(--gold-p);margin-bottom:12px;}
+p.page-sub{font-size:clamp(.92rem,1.5vw,1.1rem);font-style:italic;color:var(--text-warm);max-width:620px;margin:0 auto;line-height:1.8;}
+.pickup-note{font-family:"Cinzel",serif;font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-l);margin-top:16px;}
+.wrap{max-width:860px;margin:0 auto;padding:0 18px;}
+.view{display:none;}.view.active{display:block;}
+
+/* category chips */
+.cat-bar{position:sticky;top:53px;z-index:400;display:flex;gap:8px;overflow-x:auto;padding:14px 18px;background:rgba(8,2,10,.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(201,168,76,.12);}
+.cat-bar::-webkit-scrollbar{display:none;}
+.cat-chip{flex:0 0 auto;font-family:"Cinzel",serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-warm);border:1px solid rgba(201,168,76,.25);padding:8px 14px;border-radius:999px;white-space:nowrap;cursor:pointer;}
+.cat-chip:hover{color:var(--gold-l);border-color:var(--gold);}
+
+section.menu{padding:30px 0 140px;}
+.cat-h{font-family:"Cinzel",serif;color:var(--gold-l);font-size:1.15rem;letter-spacing:.1em;text-transform:uppercase;margin:34px 0 6px;padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,.18);scroll-margin-top:120px;}
+.item{display:flex;justify-content:space-between;gap:16px;padding:18px 0;border-bottom:1px solid rgba(201,168,76,.07);}
+.item-info{flex:1;}
+.item-name{font-size:1.18rem;color:var(--cream);font-weight:600;display:flex;align-items:center;gap:8px;}
+.veg{width:13px;height:13px;border:1.5px solid var(--green-l);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.veg::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--green-l);}
+.spice{font-size:.7rem;letter-spacing:.04em;color:#ff8a5c;text-transform:uppercase;font-family:"Cinzel",serif;}
+.item-desc{font-size:.98rem;color:var(--text-muted);font-style:italic;margin-top:4px;line-height:1.5;max-width:90%;}
+.variants{margin-top:12px;display:flex;flex-direction:column;gap:9px;}
+.vrow{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.vname{font-size:1rem;color:var(--text-warm);}
+.vname .price{color:var(--gold-l);font-weight:600;margin-left:8px;}
+.add-btn{font-family:"Cinzel",serif;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold));border:none;padding:9px 18px;border-radius:999px;cursor:pointer;transition:box-shadow .2s;}
+.add-btn:hover{box-shadow:0 3px 14px rgba(201,168,76,.4);}
+.stepper{display:flex;align-items:center;gap:14px;}
+.stepper button{width:30px;height:30px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold-l);font-size:1.1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.stepper button:hover{background:rgba(201,168,76,.12);}
+.stepper .qn{font-family:"Cinzel",serif;color:var(--gold-p);font-size:1rem;min-width:18px;text-align:center;}
+
+/* bottom bar */
+.bottombar{position:fixed;bottom:0;left:0;right:0;z-index:450;background:linear-gradient(180deg,var(--maroon),var(--maroon-d));border-top:1px solid var(--gold);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 -6px 24px rgba(0,0,0,.5);transform:translateY(120%);transition:transform .3s;}
+.bottombar.show{transform:translateY(0);}
+.bb-info{font-family:"Cinzel",serif;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-p);}
+.bb-info b{font-size:1rem;display:block;margin-top:3px;color:var(--cream);font-family:"Cormorant Garamond",serif;letter-spacing:0;}
+.bb-btn{font-family:"Cinzel",serif;font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold),var(--gold-d));border:none;padding:14px 26px;border-radius:999px;cursor:pointer;}
+
+/* checkout / pay shared */
+.panel{max-width:620px;margin:0 auto;}
+.back-link{font-family:"Cinzel",serif;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-warm);cursor:pointer;display:inline-block;margin-bottom:18px;}
+.cart-line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(201,168,76,.1);}
+.cl-name{color:var(--cream);font-size:1.05rem;}
+.cl-name small{display:block;color:var(--text-muted);font-size:.85rem;}
+.cl-right{display:flex;align-items:center;gap:18px;}
+.cl-price{color:var(--gold-l);font-weight:600;min-width:62px;text-align:right;}
+.totrow{display:flex;justify-content:space-between;padding:7px 0;font-size:1.02rem;color:var(--text-warm);}
+.totrow.grand{border-top:1px solid rgba(201,168,76,.25);margin-top:8px;padding-top:14px;font-size:1.25rem;color:var(--gold-p);font-family:"Cinzel",serif;letter-spacing:.04em;}
+.totrow.grand .amt{font-weight:700;}
+.sec-h{font-family:"Cinzel",serif;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:30px 0 14px;}
+.tip-row{display:flex;gap:10px;flex-wrap:wrap;}
+.tip-btn{flex:1;min-width:64px;font-family:"Cinzel",serif;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-warm);background:transparent;border:1px solid rgba(201,168,76,.3);padding:12px;border-radius:4px;cursor:pointer;transition:all .2s;}
+.tip-btn.sel{color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold));border-color:var(--gold);font-weight:700;}
+label{font-family:"Cinzel",serif;font-size:.58rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-l);margin-bottom:9px;display:block;}
+.req{color:var(--gold);}
+input{background:rgba(8,2,10,.6);border:1px solid rgba(201,168,76,.25);color:var(--cream);font-family:"Cormorant Garamond",Georgia,serif;font-size:1.02rem;padding:12px 14px;border-radius:2px;width:100%;transition:border-color .3s;}
+input:focus{outline:none;border-color:var(--gold);}
+.fgroup{margin-bottom:18px;}
+.btn-gold{font-family:"Cinzel",serif;font-size:.66rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold),var(--gold-d));border:none;padding:16px 46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);transition:all .3s;cursor:pointer;margin-top:24px;}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(201,168,76,.45);}
+.btn-gold:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none;}
+#payment-element{margin-top:8px;}
+.err{color:#ff8a7a;font-size:1rem;min-height:20px;text-align:center;margin-top:14px;}
+.muted{color:var(--text-muted);font-style:italic;font-size:.92rem;line-height:1.7;}
+.done{max-width:600px;margin:0 auto;text-align:center;border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.06);padding:50px 30px;}
+.done .check{font-size:3rem;color:var(--green-l);margin-bottom:14px;}
+.done h2{font-family:"Cinzel",serif;font-size:1.5rem;color:var(--gold-p);margin-bottom:16px;}
+.done p{font-size:1.05rem;color:var(--text-warm);line-height:1.9;}
+.done .ord{font-family:"Cinzel",serif;color:var(--gold-l);letter-spacing:.1em;margin:10px 0;}
+footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding:30px 24px;text-align:center;}
+.footer-copy{font-size:.72rem;font-style:italic;color:rgba(224,201,160,.5);line-height:1.8;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="nav-logo">Shaahi Biryani</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="order" class="active">Order Online</a></li>
+    <li><a href="reserve">Reserve a Table</a></li>
+    <li><a href="index.html#catering">Catering</a></li>
+    <li><a href="hall.html">Book a Hall</a></li>
+  </ul>
+  <a href="tel:4699603300" class="nav-cta" style="font-family:'Cinzel',serif;font-size:.6rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--black);background:linear-gradient(135deg,var(--gold-p),var(--gold));padding:10px 22px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">☎ Call</a>
+</nav>
+
+<div class="page-hero">
+  <div class="s-label">Order Online</div>
+  <h1 class="page-title">Order for Pickup</h1>
+  <p class="page-sub">Hand-cut zabiha halal Hyderabadi biryani, kababs and more — ordered online, freshly made, ready for pickup at our Plano kitchen.</p>
+  <div class="pickup-note">✦ Pickup only · 3421 E Renner Rd, Plano · Ready in ~20–30 min</div>
+</div>
+
+<!-- ============ MENU VIEW ============ -->
+<div id="view-menu" class="view active">
+  <div class="cat-bar" id="cat-bar"></div>
+  <section class="menu"><div class="wrap" id="menu-list"></div></section>
+  <div class="bottombar" id="bottombar">
+    <div class="bb-info">Your Order<b id="bb-summary">0 items · $0.00</b></div>
+    <button class="bb-btn" onclick="go('checkout')">Review Order →</button>
+  </div>
+</div>
+
+<!-- ============ CHECKOUT VIEW ============ -->
+<div id="view-checkout" class="view">
+  <section style="padding:30px 0 80px;"><div class="wrap"><div class="panel">
+    <span class="back-link" onclick="go('menu')">← Back to menu</span>
+    <div class="sec-h">Your Order</div>
+    <div id="checkout-cart"></div>
+    <div style="margin-top:18px;">
+      <div class="totrow"><span>Subtotal</span><span id="co-subtotal">$0.00</span></div>
+      <div class="totrow"><span>Tax (8.25%)</span><span id="co-tax">$0.00</span></div>
+      <div class="totrow"><span>Tip</span><span id="co-tip">$0.00</span></div>
+      <div class="totrow grand"><span>Total</span><span class="amt" id="co-total">$0.00</span></div>
+    </div>
+
+    <div class="sec-h">Add a Tip <span style="color:var(--text-muted);text-transform:none;letter-spacing:0;font-family:'Cormorant Garamond';">(optional)</span></div>
+    <div class="tip-row" id="tip-row">
+      <button class="tip-btn sel" data-tip="0" onclick="setTip(0,this)">No tip</button>
+      <button class="tip-btn" data-tip="0.10" onclick="setTip(0.10,this)">10%</button>
+      <button class="tip-btn" data-tip="0.15" onclick="setTip(0.15,this)">15%</button>
+      <button class="tip-btn" data-tip="0.20" onclick="setTip(0.20,this)">20%</button>
+    </div>
+
+    <div class="sec-h">Your Details</div>
+    <div class="fgroup">
+      <label for="g-name">Full Name <span class="req">*</span></label>
+      <input type="text" id="g-name" autocomplete="name" placeholder="Name for the order">
+    </div>
+    <div class="fgroup">
+      <label for="g-phone">Mobile Number <span class="req">*</span></label>
+      <input type="tel" id="g-phone" autocomplete="tel" placeholder="(469) 000-0000">
+    </div>
+    <p class="muted">We'll text/call this number when your order is ready for pickup.</p>
+    <button class="btn-gold" id="to-pay-btn" onclick="startPayment()">Continue to Payment →</button>
+    <div class="err" id="checkout-err"></div>
+  </div></div></section>
+</div>
+
+<!-- ============ PAYMENT VIEW ============ -->
+<div id="view-pay" class="view">
+  <section style="padding:30px 0 80px;"><div class="wrap"><div class="panel">
+    <span class="back-link" onclick="go('checkout')">← Back</span>
+    <div class="sec-h">Payment</div>
+    <div id="pay-summary" style="margin-bottom:22px;"></div>
+    <div id="payment-element"></div>
+    <button class="btn-gold" id="pay-btn" onclick="pay()">Pay Now</button>
+    <div class="err" id="pay-err"></div>
+    <p class="muted" style="text-align:center;margin-top:16px;">🔒 Secure payment by Stripe. Your card details never touch our servers.</p>
+  </div></div></section>
+</div>
+
+<!-- ============ DONE VIEW ============ -->
+<div id="view-done" class="view">
+  <section style="padding:50px 0 90px;"><div class="wrap">
+    <div class="done">
+      <div class="check">✓</div>
+      <h2>Order Received!</h2>
+      <div class="ord" id="done-ord"></div>
+      <p>Thank you — your payment went through and your order is now with our Plano kitchen.<br>We'll have it freshly made and ready for pickup in about <b>20–30 minutes</b>.<br><br>Pickup: <a href="https://maps.google.com/?q=3421+E+Renner+Rd+Plano+TX+75074">3421 E Renner Rd, Suite 110, Plano TX</a><br>Questions? Call <a href="tel:4699603300">(469) 960-3300</a>.</p>
+    </div>
+  </div></section>
+</div>
+
+<footer>
+  <p class="footer-copy">© 2025 Shaahi Biryani · Hand-cut Zabiha Halal · <a href="https://maps.google.com/?q=3421+E+Renner+Rd+Plano+TX+75074">3421 E Renner Rd, Suite 110, Plano TX 75074</a> · <a href="tel:4699603300">(469) 960-3300</a></p>
+</footer>
+
+<script>
+// ── Config (all public values; safe to embed) ──
+const SUPABASE_URL='https://wtdthjhqgsbnyjucdqxl.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZHRoamhxZ3NibnlqdWNkcXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcxMzcsImV4cCI6MjA5MjQ0MzEzN30.1WYVcbrulkg0l7QB-scj4KcJCnMwFKSLHXucEdEZV3Q';
+const STRIPE_PK='pk_test_51Tcm6ZEay8r3S5MXuSiKAWpBD5AgxvWdm11jG3eKtXMu23MarwBfsjstgZXBlHBi9iBHGTXubQvgqZeCqEoWBIz8007iw5hVO6';
+const MENU={"categories":[{"id":"app","name":"Appetizers","order":1},{"id":"chk","name":"Chicken","order":2},{"id":"lmb","name":"Goat","order":3},{"id":"grl","name":"Grill","order":4},{"id":"bry","name":"Biryani","order":5},{"id":"rol","name":"Rolls","order":6},{"id":"ric","name":"Rice","order":7},{"id":"veg","name":"Vegetable","order":8},{"id":"sea","name":"Seafood","order":9},{"id":"brd","name":"Bread","order":10},{"id":"des","name":"Desserts","order":11},{"id":"bev","name":"Beverages","order":12}],"items":[{"id":"vegetable-samosa-2pc","categoryId":"app","name":"Vegetable Samosa 2pc","description":"Crispy pastry stuffed with spiced seasonal vegetables.","isVegetarian":true,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"vegetable-samosa-2pc-standard","name":"Standard","price":4,"isDefault":true}]},{"id":"lukhmi-2pc","categoryId":"app","name":"Lukhmi 2pc","description":"Hyderabadi crisp pastry filled with savory minced meat.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"lukhmi-2pc-standard","name":"Standard","price":5,"isDefault":true}]},{"id":"beef-samosa","categoryId":"app","name":"Beef Samosa","description":"Crispy pastry filled with spiced minced beef, onions and herbs.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"beef-samosa-standard","name":"Standard","price":5,"isDefault":true}]},{"id":"chicken-samosa","categoryId":"app","name":"Chicken Samosa","description":"Crispy pastry filled with spiced minced chicken, onions and herbs.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-samosa-standard","name":"Standard","price":5,"isDefault":true}]},{"id":"chicken-spring-roll-5pc","categoryId":"app","name":"Chicken Spring Roll 5pc","description":"Crisp rolls stuffed with spiced shredded chicken and vegetables.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-spring-roll-5pc-standard","name":"Standard","price":5,"isDefault":true}]},{"id":"vegetable-spring-roll-6pc","categoryId":"app","name":"Vegetable Spring Roll 6pc","description":"Crisp golden rolls packed with seasoned cabbage, carrots and herbs.","isVegetarian":true,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"vegetable-spring-roll-6pc-standard","name":"Standard","price":5,"isDefault":true}]},{"id":"chicken-pakora","categoryId":"app","name":"Chicken Pakora","description":"Battered chicken bites fried crisp with chickpea flour and Indian spices.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"chicken-pakora-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"chicken-65","categoryId":"app","name":"Chicken 65","description":"Deep fried chicken pieces mixed with spices cooked on low heat.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"chicken-65-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"chili-chicken","categoryId":"app","name":"Chili Chicken","description":"Indo-Chinese fried chicken tossed in a tangy chili-soy glaze with peppers and onions.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"chili-chicken-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"chicken-manchurian","categoryId":"app","name":"Chicken Manchurian","description":"Crispy chicken in a savory Indo-Chinese brown sauce with ginger and garlic.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"chicken-manchurian-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"apollo-fish","categoryId":"app","name":"Apollo Fish","description":"Hyderabadi fried fish tossed with curry leaves, chilies and tangy spices.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"apollo-fish-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"butter-chicken","categoryId":"chk","name":"Butter Chicken","description":"Tandoori chicken simmered in a rich tomato-butter cream sauce.","isVegetarian":false,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"butter-chicken-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"frontier-chicken","categoryId":"chk","name":"Frontier Chicken","description":"Roasted chicken in a bold charred masala with tomato, onion and warm spices.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"frontier-chicken-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"achari-chicken","categoryId":"chk","name":"Achari Chicken","description":"Tangy chicken cooked with South Asian pickling spices—mustard, fenugreek and nigella seed.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"achari-chicken-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"dum-ka-chicken","categoryId":"chk","name":"Dum Ka Chicken","description":"Slow-cooked Hyderabadi chicken sealed with yogurt, nuts and warm spices.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"dum-ka-chicken-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"karahi-chicken","categoryId":"chk","name":"Karahi Chicken","description":"Chicken sizzled wok-style with tomato, ginger, green chili and fresh cilantro.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"karahi-chicken-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"chicken-tikka-masala","categoryId":"chk","name":"Chicken Tikka Masala","description":"Charred tikka pieces in a creamy tomato masala.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-tikka-masala-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"mutton-masala","categoryId":"lmb","name":"Mutton Masala","description":"Tender goat simmered in a bold onion-tomato masala with whole spices.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"mutton-masala-standard","name":"Standard","price":22,"isDefault":true}]},{"id":"goat-khorma","categoryId":"lmb","name":"Goat Khorma","description":"Goat in a rich yogurt-and-cashew gravy, gently spiced with cardamom and clove.","isVegetarian":false,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"goat-khorma-standard","name":"Standard","price":22,"isDefault":true}]},{"id":"karahi-gosht","categoryId":"lmb","name":"Karahi Gosht","description":"Goat cooked wok-style with tomato, green chili, ginger and fresh cilantro.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"karahi-gosht-standard","name":"Standard","price":22,"isDefault":true}]},{"id":"dum-ka-gosht","categoryId":"lmb","name":"Dum Ka Gosht","description":"Slow-cooked Hyderabadi goat sealed with yogurt, fried onions and warm spices.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"dum-ka-gosht-standard","name":"Standard","price":22,"isDefault":true}]},{"id":"goat-marag","categoryId":"lmb","name":"Goat Marag","description":"Hyderabadi goat broth simmered with whole spices, mint and ginger.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"goat-marag-standard","name":"Standard","price":24,"isDefault":true}]},{"id":"zafrani-mutton","categoryId":"lmb","name":"Zafrani Mutton","description":"Marinated meat with Kashmiri zafran, almond, cashew, asli ghee and Indian spices.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"zafrani-mutton-standard","name":"Standard","price":24,"isDefault":true}]},{"id":"goat-haleem","categoryId":"lmb","name":"Goat Haleem","description":"Wheat, barley, minced meat and spices slow-cooked 3–4 hours.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"goat-haleem-standard","name":"Standard","price":20,"isDefault":true}]},{"id":"golden-shaahi-platter","categoryId":"grl","name":"Golden Shaahi Platter","description":"4pc Sheek Kabab, 4pc Chicken Boti, 2pc Tikka, 2pc Chapli Kabab, 2pc Bihari Kabab, 4pc Grilled & Fried Fish, Chicken Malai Boti. 3 Naan included.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"golden-shaahi-platter-standard","name":"Standard","price":150,"isDefault":true}]},{"id":"mixed-grill-platter","categoryId":"grl","name":"Mixed Grill Platter","description":"2pc each: Sheek Kabab, Chicken Boti, Tikka, Chapli Kabab, Bihari Kabab, Grill Fish & Malai Boti. 2 Naan.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"mixed-grill-platter-standard","name":"Standard","price":60,"isDefault":true}]},{"id":"regular-platter-chicken","categoryId":"grl","name":"Regular Platter (Chicken)","description":"2pc Chicken Sheekh Kabab, 2pc Chicken Chapli, 2pc Chicken Boti, 2pc Chicken Tikka. Naan included.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"regular-platter-chicken-standard","name":"Standard","price":40,"isDefault":true}]},{"id":"beef-chapli-kabab","categoryId":"grl","name":"Beef Chapli Kabab","description":"Flat spiced beef patty with coriander, chili and pomegranate seed.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"beef-chapli-kabab-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"beef-sheek-kabab","categoryId":"grl","name":"Beef Sheek Kabab","description":"Skewered minced beef grilled with onion, green chili and warm spices.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"beef-sheek-kabab-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"bihari-kabab","categoryId":"grl","name":"Bihari Kabab","description":"Marinated beef strips grilled with papaya, mustard oil and Bihari spices.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"bihari-kabab-standard","name":"Standard","price":22,"isDefault":true}]},{"id":"patthar-ka-gosht","categoryId":"grl","name":"Patthar Ka Gosht","description":"Hyderabadi meat grilled on a hot stone slab with aromatic marinade.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"patthar-ka-gosht-standard","name":"Standard","price":24,"isDefault":true}]},{"id":"chicken-malai-boti","categoryId":"grl","name":"Chicken Malai Boti","description":"Boneless chicken marinated in cream, yogurt and cardamom, grilled smoky-tender.","isVegetarian":false,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-malai-boti-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"chicken-tandoori-half","categoryId":"grl","name":"Chicken Tandoori (Half)","description":"Yogurt-marinated chicken roasted in the tandoor with classic tandoori spices.","isVegetarian":false,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-tandoori-half-standard","name":"Standard","price":20,"isDefault":true}]},{"id":"chicken-tandoori-full","categoryId":"grl","name":"Chicken Tandoori (Full)","description":"Yogurt-marinated chicken roasted in the tandoor with classic tandoori spices.","isVegetarian":false,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-tandoori-full-standard","name":"Standard","price":38,"isDefault":true}]},{"id":"chicken-tikka","categoryId":"grl","name":"Chicken Tikka","description":"2 pcs of boneless chicken marinated in yogurt and spices, grilled tandoori-style.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-tikka-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"chicken-sheek-kabab","categoryId":"grl","name":"Chicken Sheek Kabab","description":"Skewered minced chicken grilled with onion, herbs and warm spices.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"chicken-sheek-kabab-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"chicken-chapli-kabab","categoryId":"grl","name":"Chicken Chapli Kabab","description":"Flat spiced chicken patty with coriander, chili and pomegranate seed.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-chapli-kabab-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"chicken-boti","categoryId":"grl","name":"Chicken Boti","description":"Boneless chicken cubes marinated in spiced yogurt and grilled on skewers.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"chicken-boti-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"chicken-dum-biryani","categoryId":"bry","name":"Chicken Dum Biryani","description":"Hyderabadi chicken dum biryani — saffron basmati layered with marinated chicken, slow-cooked on dum.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"chicken-dum-biryani-regular","name":"Regular (serves 1)","price":14,"isDefault":true},{"id":"chicken-dum-biryani-family","name":"Family Pack (serves 3–4)","price":36,"isDefault":false},{"id":"chicken-dum-biryani-jumbo","name":"Jumbo Pack (serves 5–6)","price":52,"isDefault":false}]},{"id":"goat-dum-biryani","categoryId":"bry","name":"Hyderabadi Goat Dum Biryani","description":"The house signature — saffron basmati layered with tender goat, slow-cooked on dum the royal Hyderabadi way.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"goat-dum-biryani-regular","name":"Regular (serves 1)","price":20,"isDefault":true},{"id":"goat-dum-biryani-family","name":"Family Pack (serves 3–4)","price":46,"isDefault":false},{"id":"goat-dum-biryani-jumbo","name":"Jumbo Pack (serves 5–6)","price":75,"isDefault":false}]},{"id":"chicken-sheekh-kabab-roll","categoryId":"rol","name":"Chicken Sheekh Kabab Roll","description":"Grilled chicken sheekh wrapped with salad and chutney.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-sheekh-kabab-roll-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"beef-sheekh-kabab-roll","categoryId":"rol","name":"Beef Sheekh Kabab Roll","description":"Grilled beef sheekh wrapped with salad and chutney.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"beef-sheekh-kabab-roll-standard","name":"Standard","price":14,"isDefault":true}]},{"id":"chicken-65-roll","categoryId":"rol","name":"Chicken 65 Roll","description":"Spicy fried Chicken 65 wrapped with salad and mint sauce.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-65-roll-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"chicken-boti-roll","categoryId":"rol","name":"Chicken Boti Roll","description":"Grilled chicken boti wrapped with salad and chutney.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-boti-roll-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"beef-boti-roll","categoryId":"rol","name":"Beef Boti Roll","description":"Grilled beef boti wrapped with salad and chutney.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"beef-boti-roll-standard","name":"Standard","price":14,"isDefault":true}]},{"id":"chicken-malai-boti-roll","categoryId":"rol","name":"Chicken Malai Boti Roll","description":"Creamy grilled malai boti wrapped with salad and chutney.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-malai-boti-roll-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"beef-bihari-roll","categoryId":"rol","name":"Beef Bihari Roll","description":"Bihari-spiced beef grilled and wrapped with salad and chutney.","isVegetarian":false,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"beef-bihari-roll-standard","name":"Standard","price":14,"isDefault":true}]},{"id":"plain-rice","categoryId":"ric","name":"Plain Rice","description":"Steamed long-grain basmati.","isVegetarian":true,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"plain-rice-standard","name":"Standard","price":6,"isDefault":true}]},{"id":"frontier-chicken-rice","categoryId":"ric","name":"Frontier Chicken Rice","description":"Frontier-style roasted chicken layered with seasoned basmati.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"frontier-chicken-rice-standard","name":"Standard","price":34,"isDefault":true}]},{"id":"frontier-beef-rice","categoryId":"ric","name":"Frontier Beef Rice","description":"Frontier-style roasted beef layered with seasoned basmati.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"frontier-beef-rice-standard","name":"Standard","price":36,"isDefault":true}]},{"id":"chicken-65-rice","categoryId":"ric","name":"Chicken 65 Rice","description":"Spicy fried Chicken 65 served over seasoned basmati.","isVegetarian":false,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"chicken-65-rice-standard","name":"Standard","price":34,"isDefault":true}]},{"id":"chili-chicken-rice","categoryId":"ric","name":"Chili Chicken Rice","description":"Indo-Chinese chili chicken served over seasoned basmati.","isVegetarian":false,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"chili-chicken-rice-standard","name":"Standard","price":34,"isDefault":true}]},{"id":"mixed-vegetables","categoryId":"veg","name":"Mixed Vegetables","description":"Seasonal vegetables cooked in a mildly spiced masala.","isVegetarian":true,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"mixed-vegetables-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"palak-paneer","categoryId":"veg","name":"Palak Paneer","description":"Soft paneer cubes simmered in spiced creamed spinach.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"palak-paneer-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"dal-tadka","categoryId":"veg","name":"Dal Tadka","description":"Yellow lentils tempered with cumin, garlic and ghee.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"dal-tadka-standard","name":"Standard","price":10,"isDefault":true}]},{"id":"navratan-korma","categoryId":"veg","name":"Navratan Korma","description":"Nine vegetables in a creamy cashew-coconut korma.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"navratan-korma-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"vegetarian-khorma","categoryId":"veg","name":"Vegetarian Khorma","description":"Mixed vegetables in a rich yogurt-and-cashew korma.","isVegetarian":true,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"vegetarian-khorma-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"chana-masala","categoryId":"veg","name":"Chana Masala","description":"Chickpeas stewed in a tangy onion-tomato masala.","isVegetarian":true,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"chana-masala-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"bhendi-masala","categoryId":"veg","name":"Bhendi Masala","description":"Okra sautéed with onion, tomato and Indian spices.","isVegetarian":true,"spiceLevel":"medium","spiceLevelNeedsReview":true,"variants":[{"id":"bhendi-masala-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"butter-paneer","categoryId":"veg","name":"Butter Paneer","description":"Paneer cubes in a rich tomato-butter cream sauce.","isVegetarian":true,"spiceLevel":"mild","spiceLevelNeedsReview":true,"variants":[{"id":"butter-paneer-standard","name":"Standard","price":12,"isDefault":true}]},{"id":"mirchi-ka-salan","categoryId":"veg","name":"Mirchi Ka Salan","description":"Green chilies in masala paste of coconut, peanuts and spices.","isVegetarian":true,"spiceLevel":"hot","spiceLevelNeedsReview":true,"variants":[{"id":"mirchi-ka-salan-standard","name":"Standard","price":14,"isDefault":true}]},{"id":"tilapia-fish-fry-or-grill","categoryId":"sea","name":"Tilapia Fish (Fry or Grill)","description":"Whole tilapia marinated in tangy spices, fried or grilled to order.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"tilapia-fish-fry-or-grill-standard","name":"Standard","price":15,"isDefault":true}]},{"id":"fried-fish","categoryId":"sea","name":"Fried Fish","description":"Golden fried fish in a crisp spiced batter.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"fried-fish-standard","name":"Standard","price":16,"isDefault":true}]},{"id":"fish-pakora","categoryId":"sea","name":"Fish Pakora","description":"Fish fritters battered in spiced chickpea flour and fried crisp.","isVegetarian":false,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"fish-pakora-standard","name":"Standard","price":18,"isDefault":true}]},{"id":"regular-naan","categoryId":"brd","name":"Regular Naan","description":"Leavened flatbread fresh from the tandoor.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"regular-naan-standard","name":"Standard","price":3,"isDefault":true}]},{"id":"butter-naan","categoryId":"brd","name":"Butter Naan","description":"Tandoor-baked naan brushed with butter.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"butter-naan-standard","name":"Standard","price":4,"isDefault":true}]},{"id":"garlic-naan","categoryId":"brd","name":"Garlic Naan","description":"Tandoor-baked naan topped with roasted garlic and herbs.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"garlic-naan-standard","name":"Standard","price":5,"isDefault":true}]},{"id":"chapati","categoryId":"brd","name":"Chapati","description":"Whole-wheat flatbread cooked on the griddle.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"chapati-standard","name":"Standard","price":2.5,"isDefault":true}]},{"id":"paratha","categoryId":"brd","name":"Paratha","description":"Flaky pan-fried whole-wheat flatbread.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"paratha-standard","name":"Standard","price":3.5,"isDefault":true}]},{"id":"latcha-paratha","categoryId":"brd","name":"Latcha Paratha","description":"Layered paratha with crisp buttery folds.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"latcha-paratha-standard","name":"Standard","price":3.5,"isDefault":true}]},{"id":"badam-ki-kheer","categoryId":"des","name":"Badam Ki Kheer","description":"Rich almond-milk pudding scented with cardamom.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"badam-ki-kheer-standard","name":"Standard","price":10,"isDefault":true}]},{"id":"gulab-jamun","categoryId":"des","name":"Gulab Jamun","description":"Warm milk-dough dumplings soaked in cardamom-rose syrup.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"gulab-jamun-standard","name":"Standard","price":8,"isDefault":true}]},{"id":"gajar-halwa","categoryId":"des","name":"Gajar Halwa","description":"Grated carrots slow-cooked in milk, ghee and cardamom.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"gajar-halwa-standard","name":"Standard","price":15,"isDefault":true}]},{"id":"rasmalai","categoryId":"des","name":"Rasmalai","description":"Soft cheese dumplings soaked in saffron-cardamom milk.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"rasmalai-standard","name":"Standard","price":10,"isDefault":true}]},{"id":"kubani-ka-meeta","categoryId":"des","name":"Kubani Ka Meeta","description":"Hyderabadi stewed apricots served with cream.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"kubani-ka-meeta-standard","name":"Standard","price":10,"isDefault":true}]},{"id":"double-ka-meeta","categoryId":"des","name":"Double Ka Meeta","description":"Hyderabadi bread pudding soaked in saffron-cardamom milk with nuts.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"double-ka-meeta-standard","name":"Standard","price":10,"isDefault":true}]},{"id":"sitaphal-rabdi","categoryId":"des","name":"Sitaphal Rabdi","description":"Custard apple folded into thickened sweetened milk.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"sitaphal-rabdi-standard","name":"Standard","price":20,"isDefault":true}]},{"id":"kaddu-ki-kheer","categoryId":"des","name":"Kaddu Ki Kheer","description":"Slow-cooked pumpkin pudding with milk and cardamom.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"kaddu-ki-kheer-standard","name":"Standard","price":10,"isDefault":true}]},{"id":"indian-tea","categoryId":"bev","name":"Indian Tea","description":"Masala chai brewed with milk, cardamom and warm spices.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"indian-tea-large","name":"Large","price":2.5,"isDefault":true},{"id":"indian-tea-small","name":"Small","price":1.5,"isDefault":false}]},{"id":"mango-lassi-single","categoryId":"bev","name":"Mango Lassi (Single)","description":"Creamy yogurt drink blended with sweet mango.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"mango-lassi-single-standard","name":"Standard","price":6.5,"isDefault":true}]},{"id":"mango-lassi-jug","categoryId":"bev","name":"Mango Lassi (Jug)","description":"Creamy yogurt drink blended with sweet mango.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":false,"variants":[{"id":"mango-lassi-jug-standard","name":"Standard","price":19.5,"isDefault":true}]},{"id":"salaam-drink","categoryId":"bev","name":"Salaam Drink","description":"Indian-style cola soft drink.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"salaam-drink-standard","name":"Standard","price":2.5,"isDefault":true}]},{"id":"thumbs-up","categoryId":"bev","name":"Thumbs Up","description":"","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"thumbs-up-standard","name":"Standard","price":3.5,"isDefault":true}]},{"id":"jeera-drink","categoryId":"bev","name":"Jeera Drink","description":"Cumin-spiced fizzy soft drink, tangy and refreshing.","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"jeera-drink-standard","name":"Standard","price":3.5,"isDefault":true}]},{"id":"water-bottle","categoryId":"bev","name":"Water Bottle","description":"","isVegetarian":true,"spiceLevel":null,"spiceLevelNeedsReview":true,"variants":[{"id":"water-bottle-standard","name":"Standard","price":1.5,"isDefault":true}]}]};
+const TAX_RATE=0.0825;
+
+const stripe=Stripe(STRIPE_PK);
+let elements=null, clientSecret=null, currentOrder=null, tipRate=0;
+const cart={}; // key "itemId|variantId" -> {menuItemId,variantId,itemName,variantName,unitPrice,qty}
+
+const $=(id)=>document.getElementById(id);
+const money=(n)=>'$'+(Math.round(n*100)/100).toFixed(2);
+const key=(i,v)=>i+'|'+v;
+
+// ── Menu render ──
+function renderMenu(){
+  const cats=[...MENU.categories].sort((a,b)=>a.order-b.order);
+  $('cat-bar').innerHTML=cats.map(c=>`<div class="cat-chip" onclick="document.getElementById('cat-${c.id}').scrollIntoView({behavior:'smooth'})">${esc(c.name)}</div>`).join('');
+  let html='';
+  for(const c of cats){
+    const items=MENU.items.filter(i=>i.categoryId===c.id);
+    if(!items.length) continue;
+    html+=`<h2 class="cat-h" id="cat-${c.id}">${esc(c.name)}</h2>`;
+    for(const it of items){
+      const singleStd=it.variants.length===1 && /standard/i.test(it.variants[0].id);
+      const spice=it.spiceLevel && !it.spiceLevelNeedsReview?`<span class="spice">${esc(it.spiceLevel)}</span>`:'';
+      html+=`<div class="item"><div class="item-info">
+        <div class="item-name">${it.isVegetarian?'<span class="veg"></span>':''}${esc(it.name)} ${spice}</div>
+        ${it.description?`<div class="item-desc">${esc(it.description)}</div>`:''}
+        <div class="variants">`;
+      for(const v of it.variants){
+        const k=key(it.id,v.id);
+        const label=singleStd?money(v.price):`${esc(v.name)} <span class="price">${money(v.price)}</span>`;
+        html+=`<div class="vrow"><span class="vname">${label}</span><span id="ctl-${cssid(k)}">${ctl(it,v)}</span></div>`;
+      }
+      html+=`</div></div></div>`;
+    }
+  }
+  $('menu-list').innerHTML=html;
+}
+function ctl(it,v){
+  const k=key(it.id,v.id); const c=cart[k];
+  if(!c) return `<button class="add-btn" onclick="addItem('${it.id}','${v.id}')">+ Add</button>`;
+  return `<span class="stepper"><button onclick="chg('${k}',-1)">–</button><span class="qn">${c.qty}</span><button onclick="chg('${k}',1)">+</button></span>`;
+}
+function refreshCtl(k){ const el=$('ctl-'+cssid(k)); if(el){ const [i,v]=k.split('|'); const it=MENU.items.find(x=>x.id===i); const vr=it.variants.find(x=>x.id===v); el.innerHTML=ctl(it,vr);} }
+
+function addItem(itemId,variantId){
+  const it=MENU.items.find(x=>x.id===itemId); const v=it.variants.find(x=>x.id===variantId);
+  const k=key(itemId,variantId);
+  cart[k]={menuItemId:itemId,variantId,itemName:it.name,variantName:v.name,unitPrice:v.price,qty:1};
+  refreshCtl(k); updateBar();
+}
+function chg(k,d){
+  if(!cart[k]) return;
+  cart[k].qty+=d;
+  if(cart[k].qty<=0) delete cart[k];
+  refreshCtl(k); updateBar();
+  if(document.getElementById('view-checkout').classList.contains('active')) renderCheckout();
+}
+function count(){return Object.values(cart).reduce((a,c)=>a+c.qty,0);}
+function subtotal(){return Object.values(cart).reduce((a,c)=>a+c.unitPrice*c.qty,0);}
+function updateBar(){
+  const n=count();
+  $('bb-summary').textContent=`${n} item${n===1?'':'s'} · ${money(subtotal())}`;
+  $('bottombar').classList.toggle('show', n>0);
+}
+
+// ── Checkout render ──
+function setTip(rate,btn){ tipRate=rate; document.querySelectorAll('.tip-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); renderTotals(); }
+function tipAmt(){return subtotal()*tipRate;}
+function renderCheckout(){
+  const lines=Object.entries(cart);
+  if(!lines.length){ go('menu'); return; }
+  $('checkout-cart').innerHTML=lines.map(([k,c])=>{
+    const showVar=c.variantName && !/standard/i.test(c.variantName);
+    return `<div class="cart-line">
+      <div class="cl-name">${esc(c.itemName)}${showVar?`<small>${esc(c.variantName)}</small>`:''}</div>
+      <div class="cl-right">
+        <span class="stepper"><button onclick="chg('${k}',-1)">–</button><span class="qn">${c.qty}</span><button onclick="chg('${k}',1)">+</button></span>
+        <span class="cl-price">${money(c.unitPrice*c.qty)}</span>
+      </div></div>`;
+  }).join('');
+  renderTotals();
+}
+function renderTotals(){
+  const sub=subtotal(), tax=sub*TAX_RATE, tip=tipAmt();
+  $('co-subtotal').textContent=money(sub);
+  $('co-tax').textContent=money(tax);
+  $('co-tip').textContent=money(tip);
+  $('co-total').textContent=money(sub+tax+tip);
+}
+
+// ── View switching ──
+function go(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  $('view-'+v).classList.add('active');
+  window.scrollTo({top:0,behavior:'instant'});
+  if(v==='checkout') renderCheckout();
+}
+
+// ── Payment ──
+async function startPayment(){
+  const name=$('g-name').value.trim(), phone=$('g-phone').value.trim();
+  $('checkout-err').textContent='';
+  if(!name){ $('checkout-err').textContent='Please enter a name for the order.'; return; }
+  if(phone.replace(/\D/g,'').length<10){ $('checkout-err').textContent='Please enter a valid mobile number.'; return; }
+  if(!count()){ go('menu'); return; }
+  const btn=$('to-pay-btn'); btn.disabled=true; btn.textContent='Setting up payment…';
+  try{
+    const items=Object.values(cart).map(c=>({menuItemId:c.menuItemId,variantId:c.variantId,quantity:c.qty,itemName:c.itemName,variantName:c.variantName}));
+    const res=await fetch(SUPABASE_URL+'/functions/v1/create-web-order',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON},
+      body:JSON.stringify({items,guestName:name,guestPhone:phone,tipCents:Math.round(tipAmt()*100)})
+    });
+    const data=await res.json();
+    if(!res.ok){ throw new Error(data.error||'Could not start the order.'); }
+    clientSecret=data.paymentIntent; currentOrder=data;
+    const b=data.breakdown;
+    $('pay-summary').innerHTML=`
+      <div class="totrow"><span>Subtotal</span><span>${money(b.subtotalCents/100)}</span></div>
+      <div class="totrow"><span>Tax</span><span>${money(b.taxCents/100)}</span></div>
+      ${b.tipCents?`<div class="totrow"><span>Tip</span><span>${money(b.tipCents/100)}</span></div>`:''}
+      <div class="totrow grand"><span>Total</span><span class="amt">${money(b.totalCents/100)}</span></div>`;
+    $('pay-btn').textContent='Pay '+money(b.totalCents/100);
+    elements=stripe.elements({clientSecret, appearance:{theme:'night', variables:{colorPrimary:'#C9A84C',colorBackground:'#15090c',colorText:'#F5EDD8',fontFamily:'Georgia, serif',borderRadius:'4px'}}});
+    elements.create('payment',{layout:'tabs'}).mount('#payment-element');
+    go('pay');
+  }catch(e){
+    $('checkout-err').textContent=e.message;
+  }finally{ btn.disabled=false; btn.textContent='Continue to Payment →'; }
+}
+
+async function pay(){
+  const btn=$('pay-btn'); btn.disabled=true; const orig=btn.textContent; btn.textContent='Processing…'; $('pay-err').textContent='';
+  const {error,paymentIntent}=await stripe.confirmPayment({
+    elements,
+    confirmParams:{ return_url: location.origin+'/order?status=done' },
+    redirect:'if_required'
+  });
+  if(error){ $('pay-err').textContent=error.message||'Payment could not be completed.'; btn.disabled=false; btn.textContent=orig; return; }
+  if(paymentIntent && (paymentIntent.status==='succeeded'||paymentIntent.status==='processing')){ showDone(); }
+  else{ $('pay-err').textContent='Payment status: '+(paymentIntent?paymentIntent.status:'unknown'); btn.disabled=false; btn.textContent=orig; }
+}
+
+function showDone(){
+  $('done-ord').textContent=currentOrder?('Order #'+currentOrder.orderNumber):'';
+  for(const k in cart) delete cart[k];
+  go('done');
+}
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function cssid(s){return s.replace(/[^a-zA-Z0-9_-]/g,'_');}
+
+// Handle redirect-based payment methods returning to the page
+if(location.search.indexOf('status=done')!==-1 && location.search.indexOf('redirect_status=succeeded')!==-1){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  $('view-done').classList.add('active');
+  $('done-ord').textContent='';
+}
+
+renderMenu(); updateBar();
+</script>
+</body>
+</html>
