@@ -1623,7 +1623,7 @@ p.s-intro {
   <div style="
     background:var(--near-black);border:1px solid rgba(201,168,76,.28);
     max-width:440px;width:100%;padding:clamp(22px,5vw,36px) clamp(16px,4.5vw,30px);position:relative;
-    max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
     animation:modalSlide .3s ease;
   ">
     <div style="font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Order Summary</div>
@@ -1750,6 +1750,18 @@ var PID_MAP={"Hyderabadi Goat Dum Biryani":{"Single":"goat-dum-biryani|goat-dum-
 var _stripe=(typeof Stripe!=='undefined')?Stripe(STRIPE_PK):null;
 var _wpElements=null,_wpSecret=null,_wpOrder=null;
 
+var _savedScrollY=0;
+function _lockScroll(){
+  _savedScrollY=window.scrollY||window.pageYOffset||0;
+  var b=document.body;
+  b.style.position='fixed'; b.style.top=(-_savedScrollY)+'px';
+  b.style.left='0'; b.style.right='0'; b.style.width='100%'; b.style.overflow='hidden';
+}
+function _unlockScroll(){
+  var b=document.body;
+  b.style.position=''; b.style.top=''; b.style.left=''; b.style.right=''; b.style.width=''; b.style.overflow='';
+  window.scrollTo(0,_savedScrollY);
+}
 function _wpResetModal(){
   ['custDetailsBlock','waOrderSummary','waActionBtns','waFallbackNote'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='';});
   var pa=document.getElementById('webPayArea'); if(pa)pa.style.display='none';
@@ -1793,7 +1805,7 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,tipCents:tipCents})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents})
     });
     var data=await res.json();
     if(!res.ok) throw new Error(data.error||'Could not start the order.');
@@ -1952,6 +1964,7 @@ function setTip(pct){
 function initiateWhatsAppCheckout(){
   if(!cart.length){ showToast('Your cart is empty!'); return; }
   if(typeof _wpResetModal==='function') _wpResetModal();
+  if(typeof _lockScroll==='function') _lockScroll();
 
   var subtotal = cart.reduce(function(s,i){ return s + _p(i.price)*i.qty; }, 0);
   var tax      = subtotal * TAX_RATE;
@@ -1987,7 +2000,7 @@ function initiateWhatsAppCheckout(){
 function closeWaModal(){
   var ov = document.getElementById('waModalOverlay');
   if(ov){ ov.style.opacity='0'; ov.style.pointerEvents='none'; }
-  document.body.style.overflow = '';
+  if(typeof _unlockScroll==='function') _unlockScroll(); else document.body.style.overflow='';
   // Reset validation state
   ['custFirst','custLast','custEmail','custPhone'].forEach(function(id){
     var el=document.getElementById(id);
