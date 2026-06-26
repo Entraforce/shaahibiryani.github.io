@@ -1585,9 +1585,22 @@ p.s-intro {
     <div class="cart-empty">Your order is empty.<br>Add something delicious!</div>
   </div>
   <div class="cart-footer">
+    <div style="margin-bottom:14px;">
+      <div style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;">Pickup or Delivery</div>
+      <div style="display:flex;gap:6px;">
+        <button class="ful-btn" data-ful="pickup" onclick="setFulfillment('pickup')" style="flex:1;font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:1px solid var(--gold);padding:9px 4px;cursor:pointer;transition:all .25s;">&#129377; Pickup</button>
+        <button class="ful-btn" data-ful="delivery" onclick="setFulfillment('delivery')" style="flex:1;font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(201,168,76,.4);background:transparent;border:1px dashed rgba(201,168,76,.25);padding:6px 4px;cursor:not-allowed;transition:all .25s;line-height:1.25;">&#128757; Delivery<br><span style="font-size:.44rem;letter-spacing:.16em;color:var(--gold);">Coming Soon</span></button>
+      </div>
+      <p style="font-size:.66rem;font-style:italic;color:rgba(201,168,76,.5);margin-top:7px;line-height:1.5;">🛵 <strong style="color:var(--gold-l);font-style:normal;">Delivery coming soon</strong> — order <strong style="color:var(--gold-l);font-style:normal;">Pickup</strong> now, $4.99 doorstep delivery launching shortly!</p>
+      <p id="delivNote" style="display:none;font-size:.66rem;font-style:italic;color:rgba(201,168,76,.45);margin-top:7px;line-height:1.5;">$4.99 delivery fee &middot; $20 minimum &middot; within ~8 miles of our Plano kitchen</p>
+    </div>
     <div class="cart-subtotal">
       <span>Subtotal</span>
       <strong id="cartTotal">$0.00</strong>
+    </div>
+    <div id="cartDelivRow" style="display:none;justify-content:space-between;align-items:center;margin-bottom:6px;margin-top:6px;">
+      <span style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Delivery</span>
+      <span id="cartDelivAmt" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);">$4.99</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <span style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Tax (8.25%)</span>
@@ -1628,7 +1641,7 @@ p.s-intro {
   ">
     <div style="font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Order Summary</div>
     <div style="font-family:'Cinzel',serif;font-size:1.15rem;font-weight:700;color:var(--gold-p);margin-bottom:6px;">Confirm Your Order</div>
-    <p style="font-size:.86rem;font-style:italic;color:var(--text-muted);line-height:1.65;margin-bottom:20px;">Review your order and details, then continue to secure card payment — your food will be freshly made and ready for pickup.</p>
+    <p id="waIntro" style="font-size:.86rem;font-style:italic;color:var(--text-muted);line-height:1.65;margin-bottom:20px;">Review your order and details, then continue to secure card payment — your food will be freshly made and ready for pickup.</p>
 
     <div id="waOrderSummary" style="
       background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.1);
@@ -1647,6 +1660,10 @@ p.s-intro {
       <div style="display:flex;justify-content:space-between;margin-bottom:10px;" id="waTipRow">
         <span style="font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Tip</span>
         <span id="waTip" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);"></span>
+      </div>
+      <div style="justify-content:space-between;margin-bottom:10px;display:none;" id="waDelivRow">
+        <span style="font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Delivery</span>
+        <span id="waDeliv" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);"></span>
       </div>
       <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(201,168,76,.15);">
         <span style="font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);">Total</span>
@@ -1676,6 +1693,34 @@ p.s-intro {
         <input id="custPhone" type="tel" placeholder="(469) 555-0100" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
       </div>
       <p id="custError" style="display:none;font-size:.72rem;color:#f87171;font-style:italic;margin-top:8px;">Please fill in all required fields.</p>
+    </div>
+
+    <!-- Delivery Address (shown only when Delivery is selected) -->
+    <div style="margin-bottom:18px;display:none;" id="delivAddrBlock">
+      <div style="font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Delivery Address</div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Cinzel',serif;font-size:.48rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.5);display:block;margin-bottom:4px;">Street Address *</label>
+        <input id="delivStreet" type="text" placeholder="1234 Main St" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div>
+          <label style="font-family:'Cinzel',serif;font-size:.48rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.5);display:block;margin-bottom:4px;">Apt / Suite</label>
+          <input id="delivApt" type="text" placeholder="Apt 200" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
+        </div>
+        <div>
+          <label style="font-family:'Cinzel',serif;font-size:.48rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.5);display:block;margin-bottom:4px;">ZIP *</label>
+          <input id="delivZip" type="text" inputmode="numeric" placeholder="75074" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Cinzel',serif;font-size:.48rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.5);display:block;margin-bottom:4px;">City *</label>
+        <input id="delivCity" type="text" placeholder="Plano" value="Plano" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
+      </div>
+      <div>
+        <label style="font-family:'Cinzel',serif;font-size:.48rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.5);display:block;margin-bottom:4px;">Delivery Instructions</label>
+        <input id="delivNotes" type="text" placeholder="Gate code, leave at door, etc." style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
+      </div>
+      <p id="delivAddrError" style="display:none;font-size:.72rem;color:#f87171;font-style:italic;margin-top:8px;">Please complete your delivery address (within ~8 miles of Plano).</p>
     </div>
 
     <div style="display:flex;gap:10px;" id="waActionBtns">
@@ -1715,7 +1760,7 @@ p.s-intro {
         clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
       " onmouseover="this.style.boxShadow='0 6px 24px rgba(201,168,76,.45)'" onmouseout="this.style.boxShadow='none'">Pay</button>
       <p id="webPayErr" style="color:#f87171;font-size:.78rem;font-style:italic;text-align:center;margin-top:10px;min-height:16px;"></p>
-      <p style="font-size:.68rem;font-style:italic;color:rgba(201,168,76,.3);text-align:center;margin-top:8px;">&#128274; Secure payment by Stripe · your card never touches our servers · pickup at our Plano kitchen</p>
+      <p id="webPayNote" style="font-size:.68rem;font-style:italic;color:rgba(201,168,76,.3);text-align:center;margin-top:8px;">&#128274; Secure payment by Stripe · your card never touches our servers · pickup at our Plano kitchen</p>
     </div>
 
     <!-- SUCCESS -->
@@ -1723,7 +1768,7 @@ p.s-intro {
       <div style="font-size:2.6rem;color:#4CAF50;line-height:1;margin-bottom:10px;">&#10003;</div>
       <div style="font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold-p);margin-bottom:8px;">Order Received!</div>
       <div id="webPayOrdNo" style="font-family:'Cinzel',serif;font-size:.8rem;letter-spacing:.1em;color:var(--gold-l);margin-bottom:12px;"></div>
-      <p style="font-size:.92rem;font-style:italic;color:var(--text-warm);line-height:1.7;">Paid &amp; sent to our kitchen. We'll have it freshly made and ready for pickup in about <strong style="color:var(--gold-l);">20–30 minutes</strong>.<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.</p>
+      <p id="webPaySuccessMsg" style="font-size:.92rem;font-style:italic;color:var(--text-warm);line-height:1.7;">Paid &amp; sent to our kitchen. We'll have it freshly made and ready for pickup in about <strong style="color:var(--gold-l);">20–30 minutes</strong>.<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.</p>
       <button onclick="closeWaModal()" style="margin-top:16px;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text-muted);background:transparent;border:1px solid rgba(201,168,76,.25);padding:11px 28px;cursor:pointer;">Done</button>
     </div>
 
@@ -1764,6 +1809,7 @@ function _unlockScroll(){
 }
 function _wpResetModal(){
   ['custDetailsBlock','waOrderSummary','waActionBtns','waFallbackNote'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='';});
+  var ae=document.getElementById('delivAddrError'); if(ae)ae.style.display='none';
   var pa=document.getElementById('webPayArea'); if(pa)pa.style.display='none';
   var ps=document.getElementById('webPaySuccess'); if(ps)ps.style.display='none';
   var pe=document.getElementById('payment-element'); if(pe)pe.innerHTML='';
@@ -1792,6 +1838,24 @@ async function startWebPayment(){
     return;
   }
   if(phone.replace(/\D/g,'').length<10){ if(err){err.style.display='block';err.textContent='Please enter a valid phone number.';} return; }
+  // Delivery: enforce minimum + require a complete address
+  var deliveryAddress=null;
+  if(fulfillment==='delivery'){
+    var subChk=cart.reduce(function(s,i){return s+_p(i.price)*i.qty;},0);
+    if(subChk<DELIVERY_MIN){ if(err){err.style.display='block';err.textContent='Delivery orders must be at least $'+DELIVERY_MIN.toFixed(2)+'. Please add a little more.';} return; }
+    var street=((gi('delivStreet')||{}).value||'').trim(), apt=((gi('delivApt')||{}).value||'').trim(),
+        city=((gi('delivCity')||{}).value||'').trim(), zip=((gi('delivZip')||{}).value||'').trim(),
+        dnotes=((gi('delivNotes')||{}).value||'').trim();
+    var ae=gi('delivAddrError');
+    if(!street||!city||!zip){
+      if(ae)ae.style.display='block';
+      ['delivStreet','delivCity','delivZip'].forEach(function(id){var el=gi(id);if(el&&!el.value.trim())el.style.borderColor='rgba(248,113,113,.6)';});
+      if(err){err.style.display='block';err.textContent='Please complete your delivery address.';}
+      return;
+    }
+    if(ae)ae.style.display='none';
+    deliveryAddress={street:street,apt:apt,city:city,zip:zip,notes:dnotes};
+  }
   if(err) err.style.display='none';
   if(!cart.length) return;
   var r=_wpResolveItems();
@@ -1805,10 +1869,12 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress})
     });
     var data=await res.json();
     if(!res.ok) throw new Error(data.error||'Could not start the order.');
+    var noteEl=gi('webPayNote');
+    if(noteEl) noteEl.innerHTML = '&#128274; Secure payment by Stripe · your card never touches our servers · '+(fulfillment==='delivery'?'delivered to your door':'pickup at our Plano kitchen');
     _wpSecret=data.paymentIntent; _wpOrder=data;
     gi('custDetailsBlock').style.display='none';
     if(gi('waOrderSummary')) gi('waOrderSummary').style.display='none';
@@ -1841,8 +1907,15 @@ async function payWeb(){
     }catch(e){/* payment already went through; order will reconcile */}
     gi('webPayArea').style.display='none';
     var s=gi('webPaySuccess'); if(s)s.style.display='block';
+    var sm=gi('webPaySuccessMsg');
+    if(sm){
+      sm.innerHTML = (fulfillment==='delivery')
+        ? 'Paid &amp; sent to our kitchen. We\'ll freshly prepare it and have it on the way to your door shortly &mdash; typically <strong style="color:var(--gold-l);">45&ndash;60 minutes</strong>.<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.'
+        : 'Paid &amp; sent to our kitchen. We\'ll have it freshly made and ready for pickup in about <strong style="color:var(--gold-l);">20&ndash;30 minutes</strong>.<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.';
+    }
     if(gi('webPayOrdNo')) gi('webPayOrdNo').textContent=_wpOrder?('Order #'+_wpOrder.orderNumber):'';
     cart.length=0; if(typeof renderCart==='function') renderCart();
+    fulfillment='pickup'; if(typeof setFulfillment==='function') setFulfillment('pickup');
   } else { gi('webPayErr').textContent='Payment status: '+(rp.paymentIntent?rp.paymentIntent.status:'unknown'); btn.disabled=false; btn.textContent=bl; }
 }
 </script>
@@ -1936,13 +2009,29 @@ function renderCart(){
   if(te) te.textContent = tot>0 ? '$'+tot.toFixed(2) : 'TBD';
   var tax = tot * TAX_RATE;
   var tip = tot * ((selectedTip||0) / 100);
-  var grand = tot + tax + tip;
+  var deliv = (fulfillment==='delivery' && tot>0) ? DELIVERY_FEE : 0;
+  var grand = tot + tax + tip + deliv;
   var taxEl = document.getElementById('cartTax');
   var tipEl = document.getElementById('cartTipAmt');
   var gtEl  = document.getElementById('cartGrandTotal');
+  var dRow  = document.getElementById('cartDelivRow');
+  var dAmt  = document.getElementById('cartDelivAmt');
   if(taxEl) taxEl.textContent = tot>0 ? '$'+tax.toFixed(2) : '$0.00';
   if(tipEl) tipEl.textContent = tot>0 && selectedTip>0 ? '$'+tip.toFixed(2) : '$0.00';
+  if(dRow)  dRow.style.display = deliv>0 ? 'flex' : 'none';
+  if(dAmt)  dAmt.textContent = '$'+DELIVERY_FEE.toFixed(2);
   if(gtEl)  gtEl.textContent  = tot>0 ? '$'+grand.toFixed(2) : '$0.00';
+  // Enforce delivery minimum on the checkout button
+  var coBtn = document.querySelector('.cart-checkout');
+  if(coBtn){
+    if(fulfillment==='delivery' && tot>0 && tot<DELIVERY_MIN){
+      coBtn.disabled=true; coBtn.style.opacity='.5'; coBtn.style.cursor='not-allowed';
+      coBtn.textContent='Add $'+(DELIVERY_MIN-tot).toFixed(2)+' more for delivery';
+    } else {
+      coBtn.disabled=false; coBtn.style.opacity=''; coBtn.style.cursor='pointer';
+      coBtn.innerHTML='Checkout &amp; Pay &#8594;';
+    }
+  }
 }
 
 function showToast(msg){
@@ -1956,6 +2045,36 @@ function showToast(msg){
 var WA_NUMBER = '19452083795';
 var TAX_RATE  = 0.0825;
 var selectedTip = 0; // percent
+
+// ── Fulfillment (pickup vs delivery) ──
+// DELIVERY_LIVE master switch: false = "Coming Soon" (delivery cannot be selected,
+// no delivery orders accepted). Flip to true ONLY after Uber Direct is approved AND
+// the create-web-order server function adds the $4.99 fee. Also remove the
+// "Coming Soon" badge on the Delivery button when going live.
+var DELIVERY_LIVE = false;
+var fulfillment = 'pickup';
+var DELIVERY_FEE = 4.99;   // flat fee charged to the customer
+var DELIVERY_MIN = 20;     // minimum subtotal for delivery
+var DELIVERY_RADIUS_MI = 8;
+
+function setFulfillment(mode){
+  // While delivery isn't live yet, keep everyone on pickup and let them know.
+  if(mode==='delivery' && !DELIVERY_LIVE){
+    showToast('🛵 Delivery is coming soon! Pickup is available now.');
+    return;
+  }
+  fulfillment = (mode==='delivery') ? 'delivery' : 'pickup';
+  document.querySelectorAll('.ful-btn').forEach(function(b){
+    if(b.dataset.ful==='delivery' && !DELIVERY_LIVE) return; // leave the "Coming Soon" button untouched
+    var active = b.dataset.ful === fulfillment;
+    b.style.background  = active ? 'var(--gold)'  : 'transparent';
+    b.style.color       = active ? 'var(--black)' : 'var(--text-muted)';
+    b.style.borderColor = active ? 'var(--gold)'  : 'rgba(201,168,76,.18)';
+  });
+  var note = document.getElementById('delivNote');
+  if(note) note.style.display = fulfillment==='delivery' ? 'block' : 'none';
+  renderCart();
+}
 
 function setTip(pct){
   selectedTip = pct;
@@ -1975,9 +2094,15 @@ function initiateWhatsAppCheckout(){
   if(typeof _lockScroll==='function') _lockScroll();
 
   var subtotal = cart.reduce(function(s,i){ return s + _p(i.price)*i.qty; }, 0);
+  if(fulfillment==='delivery' && subtotal < DELIVERY_MIN){
+    showToast('Delivery minimum is $'+DELIVERY_MIN.toFixed(2)+'. Please add a little more.');
+    if(typeof _unlockScroll==='function') _unlockScroll();
+    return;
+  }
   var tax      = subtotal * TAX_RATE;
   var tip      = subtotal * (selectedTip / 100);
-  var grand    = subtotal + tax + tip;
+  var deliv    = (fulfillment==='delivery') ? DELIVERY_FEE : 0;
+  var grand    = subtotal + tax + tip + deliv;
 
   var summaryHTML = cart.map(function(item){
     var p = _p(item.price);
@@ -1998,6 +2123,14 @@ function initiateWhatsAppCheckout(){
   if(gi('waSubtotal'))     gi('waSubtotal').textContent   = '$'+subtotal.toFixed(2);
   if(gi('waTax'))          gi('waTax').textContent        = '$'+tax.toFixed(2);
   if(gi('waTip'))          gi('waTip').textContent        = selectedTip > 0 ? selectedTip+'% — $'+tip.toFixed(2) : 'None';
+  var dRow = gi('waDelivRow');
+  if(dRow) dRow.style.display = fulfillment==='delivery' ? 'flex' : 'none';
+  if(gi('waDeliv'))        gi('waDeliv').textContent      = '$'+DELIVERY_FEE.toFixed(2);
+  var ab = gi('delivAddrBlock');
+  if(ab) ab.style.display = fulfillment==='delivery' ? 'block' : 'none';
+  if(gi('waIntro')) gi('waIntro').textContent = (fulfillment==='delivery')
+    ? 'Review your order and delivery address, then continue to secure card payment — your food will be freshly made and delivered to your door.'
+    : 'Review your order and details, then continue to secure card payment — your food will be freshly made and ready for pickup.';
   if(gi('waTotal'))        gi('waTotal').textContent      = '$'+grand.toFixed(2);
 
   var ov = document.getElementById('waModalOverlay');
@@ -2042,7 +2175,27 @@ function sendToWhatsApp(){
   var subtotal = cart.reduce(function(s,i){ return s + _p(i.price)*i.qty; }, 0);
   var tax      = subtotal * TAX_RATE;
   var tip      = subtotal * (selectedTip / 100);
-  var grand    = subtotal + tax + tip;
+  var deliv    = (fulfillment==='delivery') ? DELIVERY_FEE : 0;
+  var grand    = subtotal + tax + tip + deliv;
+
+  // Delivery: collect + require an address before sending
+  var addrLine = '';
+  if(fulfillment==='delivery'){
+    if(subtotal < DELIVERY_MIN){
+      if(err){ err.style.display='block'; err.textContent='Delivery orders must be at least $'+DELIVERY_MIN.toFixed(2)+'.'; }
+      return;
+    }
+    var dStreet=(gi('delivStreet')||{}).value||'', dApt=(gi('delivApt')||{}).value||'',
+        dCity=(gi('delivCity')||{}).value||'', dZip=(gi('delivZip')||{}).value||'',
+        dNotes=(gi('delivNotes')||{}).value||'';
+    if(!dStreet.trim()||!dCity.trim()||!dZip.trim()){
+      var ae=gi('delivAddrError'); if(ae) ae.style.display='block';
+      if(err){ err.style.display='block'; err.textContent='Please complete your delivery address.'; }
+      ['delivStreet','delivCity','delivZip'].forEach(function(id){var el=gi(id);if(el&&!el.value.trim())el.style.borderColor='rgba(248,113,113,.6)';});
+      return;
+    }
+    addrLine = '\n📍 *Deliver to*\n  '+dStreet.trim()+(dApt.trim()?', '+dApt.trim():'')+'\n  '+dCity.trim()+', TX '+dZip.trim()+(dNotes.trim()?'\n  Note: '+dNotes.trim():'')+'\n';
+  }
 
   var lines = cart.map(function(item){
     var p = _p(item.price);
@@ -2056,15 +2209,18 @@ function sendToWhatsApp(){
     + '\uD83D\uDC64 *Customer*\n'
     + '  Name: '+first.trim()+' '+last.trim()+'\n'
     + '  Email: '+email.trim()+'\n'
-    + '  Phone: '+phone.trim()+'\n\n'
+    + '  Phone: '+phone.trim()+'\n'
+    + '  Type: '+(fulfillment==='delivery'?'\uD83D\uDEF5 Delivery':'\uD83E\uDD61 Pickup')+'\n'
+    + addrLine + '\n'
     + '*Items:*\n'
     + lines + '\n\n'
     + '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n'
     + 'Subtotal: $'+subtotal.toFixed(2)+'\n'
     + 'Tax (8.25%): $'+tax.toFixed(2)+'\n'
     + (selectedTip > 0 ? 'Tip ('+selectedTip+'%): $'+tip.toFixed(2)+'\n' : '')
+    + (deliv > 0 ? 'Delivery: $'+deliv.toFixed(2)+'\n' : '')
     + '*Total: $'+grand.toFixed(2)+'*\n\n'
-    + 'Please confirm availability & let me know pickup/delivery options. Thank you!';
+    + 'Please confirm availability. Thank you!';
 
   var url = 'https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg);
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -2073,10 +2229,12 @@ function sendToWhatsApp(){
   setTip(0);
   cart = [];
   renderCart();
-  // Clear customer fields
-  ['custFirst','custLast','custEmail','custPhone'].forEach(function(id){
+  // Clear customer + delivery fields
+  ['custFirst','custLast','custEmail','custPhone','delivStreet','delivApt','delivZip','delivNotes'].forEach(function(id){
     var el=gi(id); if(el){ el.value=''; el.style.borderColor='rgba(201,168,76,.18)'; }
   });
+  if(gi('delivCity')) gi('delivCity').value='Plano';
+  fulfillment='pickup'; if(typeof setFulfillment==='function') setFulfillment('pickup');
   var cd = document.getElementById('cartDrawer');
   if(cd) cd.classList.remove('open');
   setTimeout(function(){ showToast('Order sent via WhatsApp! \uD83C\uDF89'); }, 400);
