@@ -1973,7 +1973,7 @@ function addToCart(name,price,qty,size){
   qty=qty||1; size=size||'';
   var ex=cart.find(function(i){return i.name===name&&i.size===size;});
   if(ex){ex.qty+=qty;}else{cart.push({name:name,price:price,qty:qty,size:size});}
-  renderCart(); showToast('Added: '+name+(size?' ('+size+')':''));
+  renderCart(); showToast('Added: '+name+(size?' ('+size+')':''), true);
 }
 
 function removeFromCart(i){cart.splice(i,1);renderCart();}
@@ -2034,11 +2034,29 @@ function renderCart(){
   }
 }
 
-function showToast(msg){
+function showToast(msg, clickable){
   var t=document.getElementById('cartToast');
   if(!t) return;
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2800);
+  if(clickable){
+    // Tappable toast → opens the cart, so adding an item flows straight to checkout
+    t.innerHTML = msg + ' <span style="color:var(--gold-l);border-bottom:1px solid rgba(201,168,76,.55);padding-bottom:1px;margin-left:8px;">View order &rarr;</span>';
+    t.style.cursor='pointer';
+    t.setAttribute('role','button');
+    t.onclick=function(e){
+      if(e) e.stopPropagation();   // don't let the "click-outside closes cart" handler swallow this
+      t.classList.remove('show');
+      var dr=document.getElementById('cartDrawer');
+      if(dr) dr.classList.add('open');
+    };
+  } else {
+    t.textContent=msg;
+    t.style.cursor='';
+    t.removeAttribute('role');
+    t.onclick=null;
+  }
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer=setTimeout(function(){t.classList.remove('show');},2800);
 }
 
 // ── WHATSAPP CHECKOUT ──
