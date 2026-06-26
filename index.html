@@ -629,14 +629,22 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
 
 /* Toast notification */
 .cart-toast{
-  position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);
-  background:var(--maroon-d);border:1px solid rgba(201,168,76,.3);
-  color:var(--gold-p);font-family:"Cinzel",serif;font-size:.62rem;
-  letter-spacing:.12em;padding:12px 28px;z-index:1000;
+  position:fixed;bottom:clamp(18px,5vw,28px);left:50%;transform:translateX(-50%) translateY(90px);
+  background:var(--maroon-d);border:1px solid rgba(201,168,76,.4);
+  color:var(--cream);font-family:"Cinzel",serif;
+  font-size:clamp(.66rem,2.8vw,.74rem);letter-spacing:.06em;line-height:1.3;
+  padding:clamp(11px,3vw,14px) clamp(16px,4.5vw,24px);z-index:1000;
   transition:transform .4s cubic-bezier(.22,1,.36,1),opacity .4s;
-  white-space:nowrap;opacity:0;
+  opacity:0;pointer-events:none;
+  display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:6px 12px;max-width:calc(100vw - 28px);text-align:center;
+  box-shadow:0 10px 32px rgba(0,0,0,.5);
 }
-.cart-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.cart-toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto;}
+.cart-toast .toast-cta{
+  display:inline-block;background:var(--gold);color:var(--near-black);
+  font-weight:700;letter-spacing:.1em;padding:5px 13px;border-radius:2px;white-space:nowrap;
+}
 
 /* Bestseller card add button */
 .bsl-card .bsl-btn{display:flex;align-items:center;gap:6px;}
@@ -1591,7 +1599,7 @@ p.s-intro {
         <button class="ful-btn" data-ful="pickup" onclick="setFulfillment('pickup')" style="flex:1;font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:1px solid var(--gold);padding:9px 4px;cursor:pointer;transition:all .25s;">&#129377; Pickup</button>
         <button class="ful-btn" data-ful="delivery" onclick="setFulfillment('delivery')" style="flex:1;font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(201,168,76,.4);background:transparent;border:1px dashed rgba(201,168,76,.25);padding:6px 4px;cursor:not-allowed;transition:all .25s;line-height:1.25;">&#128757; Delivery<br><span style="font-size:.44rem;letter-spacing:.16em;color:var(--gold);">Coming Soon</span></button>
       </div>
-      <p style="font-size:.66rem;font-style:italic;color:rgba(201,168,76,.5);margin-top:7px;line-height:1.5;">🛵 <strong style="color:var(--gold-l);font-style:normal;">Delivery coming soon</strong> — order <strong style="color:var(--gold-l);font-style:normal;">Pickup</strong> now, $4.99 doorstep delivery launching shortly!</p>
+      <p style="font-size:.72rem;color:rgba(245,237,216,.9);margin-top:8px;line-height:1.55;">🛵 <strong style="color:var(--gold-l);">Delivery coming soon</strong> — order <strong style="color:var(--gold-l);">Pickup</strong> now, $4.99 doorstep delivery launching shortly!</p>
       <p id="delivNote" style="display:none;font-size:.66rem;font-style:italic;color:rgba(201,168,76,.45);margin-top:7px;line-height:1.5;">$4.99 delivery fee &middot; $20 minimum &middot; within ~8 miles of our Plano kitchen</p>
     </div>
     <div class="cart-subtotal">
@@ -2039,7 +2047,7 @@ function showToast(msg, clickable){
   if(!t) return;
   if(clickable){
     // Tappable toast → opens the cart, so adding an item flows straight to checkout
-    t.innerHTML = msg + ' <span style="color:var(--gold-l);border-bottom:1px solid rgba(201,168,76,.55);padding-bottom:1px;margin-left:8px;">View order &rarr;</span>';
+    t.innerHTML = '<span>'+msg+'</span><span class="toast-cta">View order &rarr;</span>';
     t.style.cursor='pointer';
     t.setAttribute('role','button');
     t.onclick=function(e){
