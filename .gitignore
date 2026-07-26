@@ -3,3 +3,6 @@ private-data/
 
 # Local backups / scratch
 *.bak
+
+# Supabase CLI temp files
+supabase/.temp/
