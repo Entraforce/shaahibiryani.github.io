@@ -61,19 +61,22 @@ function b64decode(b64: string): string {
 }
 
 async function ghGetFile(path: string) {
-  const res = await fetch(
-    `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${GH_TOKEN}`,
-        Accept: "application/vnd.github+json",
-        "User-Agent": "shaahi-publish-menu",
-      },
-    },
-  );
-  if (!res.ok) throw new Error(`GitHub read ${path}: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  return { text: b64decode(data.content), sha: data.sha as string };
+  // Two requests: the JSON contents API inlines nothing above 1 MB (and
+  // index.html is ~1.5 MB), so grab metadata for the sha and raw for the text.
+  const url = `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`;
+  const headers = (accept: string) => ({
+    Authorization: `Bearer ${GH_TOKEN}`,
+    Accept: accept,
+    "User-Agent": "shaahi-publish-menu",
+  });
+  const [metaRes, rawRes] = await Promise.all([
+    fetch(url, { headers: headers("application/vnd.github+json") }),
+    fetch(url, { headers: headers("application/vnd.github.raw+json") }),
+  ]);
+  if (!metaRes.ok) throw new Error(`GitHub read ${path}: ${metaRes.status} ${await metaRes.text()}`);
+  if (!rawRes.ok) throw new Error(`GitHub raw read ${path}: ${rawRes.status} ${await rawRes.text()}`);
+  const meta = await metaRes.json();
+  return { text: await rawRes.text(), sha: meta.sha as string };
 }
 
 async function ghPutFile(path: string, content: string, sha: string, message: string) {

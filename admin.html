@@ -282,7 +282,7 @@ function openItem(id, addToCat) {
   }
   $("mCancel").onclick = () => show(false);
   if (r) $("mDel").onclick = async () => {
-    if (!confirm(`Delete "${r.display || r.name}" from the menu? This cannot be undone.`)) return;
+    if (!await ask(`Delete "${esc(r.display || r.name)}" from the menu? This cannot be undone.`, "Delete")) return;
     const { error } = await sb.from("web_menu_items").delete().eq("id", r.id);
     if (error) return toast("Delete failed: " + error.message);
     show(false); setDirty(true); await load();
@@ -340,9 +340,22 @@ function openCard(id) {
 function show(v) { $("modalBg").classList.toggle("show", v); }
 $("modalBg").onclick = (e) => { if (e.target === $("modalBg")) show(false); };
 
+// In-page confirm (native confirm() freezes some browsers/automation).
+function ask(text, yesLabel) {
+  return new Promise((resolve) => {
+    const el = $("modalBody");
+    el.innerHTML = `<h3>Are you sure?</h3><p style="font-size:14px;color:#6b5d4a;line-height:1.5;">${text}</p>
+      <div class="actions"><button class="btn btn-plain" id="aNo">Cancel</button>
+      <button class="btn btn-gold" id="aYes">${yesLabel}</button></div>`;
+    show(true);
+    $("aNo").onclick = () => { show(false); resolve(false); };
+    $("aYes").onclick = () => { show(false); resolve(true); };
+  });
+}
+
 // ── publish ──────────────────────────────────────────────────────
 $("pubBtn").onclick = async () => {
-  if (!confirm("Publish the current menu to shaahibiryanidfw.com?")) return;
+  if (!await ask("Publish the current menu to shaahibiryanidfw.com? Prices on the website and at checkout update together.", "Publish")) return;
   $("pubBtn").disabled = true; $("pubSt").textContent = "Publishing…";
   try {
     const { data: { session } } = await sb.auth.getSession();
