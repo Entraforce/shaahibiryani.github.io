@@ -2,7 +2,7 @@
 // commits the result to GitHub (GitHub Pages redeploys automatically, live in
 // about a minute).
 //
-// Called by /admin.html when the owner presses Publish. Auth: the request must
+// Called by /kadmin when the owner presses Publish. Auth: the request must
 // carry a Supabase user JWT whose email matches OWNER_EMAIL.
 //
 // Secrets required (supabase secrets set ...):

@@ -3,7 +3,7 @@
 // Flow:
 //   1. Website POSTs item references (+ guest name/phone). NEVER a price.
 //   2. We price the order from the web_menu_items table (owner-editable via
-//      /admin.html) — the customer's browser can't tamper with it. The static
+//      /kadmin) — the customer's browser can't tamper with it. The static
 //      PRICES map is kept only as a fallback for keys missing from the table
 //      (or if the table read fails), so ordering never goes down.
 //   3. We create a Stripe PaymentIntent and insert a PENDING/unpaid order +

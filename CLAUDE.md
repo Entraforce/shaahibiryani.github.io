@@ -49,7 +49,7 @@ The menu is **no longer hand-edited in index.html**. Source of truth is the
 `web_menu_items` / `web_menu_cards` / `web_menu_categories` tables in the
 Supabase project `wtdthjhqgsbnyjucdqxl` (same project as online ordering).
 
-- **Owner edits** happen at `/admin.html` (email-link login, restricted to the
+- **Owner edits** happen at `/kadmin` (email-link login, restricted to the
   owner's email via RLS + `OWNER_EMAIL` secret). Prices are *staged*: checkout
   charges `published_price` until the owner presses **Publish**.
 - **Publish** calls the `publish-menu` edge function, which regenerates the
@@ -62,7 +62,7 @@ Supabase project `wtdthjhqgsbnyjucdqxl` (same project as online ordering).
   (`published_price ?? price`), rejects `available=false` items, and falls back
   to the static `_shared/prices.ts` map only for keys missing from the table.
 - **NEVER hand-edit inside the GEN marker regions** — the next publish will
-  overwrite those edits. Change the database (via admin.html or SQL) instead.
+  overwrite those edits. Change the database (via /kadmin or SQL) instead.
 - The mobile app's `create-payment-intent` still uses its own bundled
   `prices.ts` — app prices do NOT follow admin edits (menu shown in the app is
   bundled with the app). Keep them in sync manually when prices change.
