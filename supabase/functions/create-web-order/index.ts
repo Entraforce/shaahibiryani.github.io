@@ -22,6 +22,9 @@
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PRICES } from "../_shared/prices.ts";
+// deno-lint-ignore-file
+// @ts-ignore — shared plain-JS module (also used by publish-menu and locally)
+import { inScheduleWindow, scheduleLabel } from "../_shared/render-menu.js";
 
 // The website uses its OWN Stripe key (STRIPE_SECRET_KEY_WEB = the live, real
 // account) so it is fully independent of the app's create-payment-intent, which
@@ -97,16 +100,23 @@ Deno.serve(async (req) => {
     // keys the table doesn't have (e.g. cached pages ordering a removed item).
     // published_price is what the live site shows; `price` may hold a staged
     // edit awaiting Publish. Charge what the customer saw.
-    const dbPrices: Record<string, { price: number; available: boolean }> = {};
+    const dbPrices: Record<
+      string,
+      { price: number; available: boolean; schedule: unknown }
+    > = {};
     const { data: menuRows, error: menuErr } = await supabase
       .from("web_menu_items")
-      .select("pid, price, published_price, available")
+      .select("pid, price, published_price, available, schedule")
       .not("pid", "is", null);
     if (!menuErr && menuRows) {
       for (const r of menuRows) {
         const p = r.published_price ?? r.price;
         if (r.pid != null && p != null) {
-          dbPrices[r.pid] = { price: Number(p), available: !!r.available };
+          dbPrices[r.pid] = {
+            price: Number(p),
+            available: !!r.available,
+            schedule: r.schedule ?? null,
+          };
         }
       }
     }
@@ -121,6 +131,13 @@ Deno.serve(async (req) => {
       if (entry && !entry.available) {
         const label = clean(line.itemName, 120) ?? key;
         return json({ error: `${label} is sold out right now — please remove it from your cart.` }, 400);
+      }
+      if (entry && entry.schedule && !inScheduleWindow(entry.schedule)) {
+        const label = clean(line.itemName, 120) ?? key;
+        const when = scheduleLabel(entry.schedule);
+        return json({
+          error: `${label} is only available ${when} — please remove it from your cart.`,
+        }, 400);
       }
       const price = entry ? entry.price : PRICES[key];
       const qty = Number(line.quantity);

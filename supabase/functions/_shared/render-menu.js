@@ -44,10 +44,66 @@ function paneRows(data, code) {
       (r.kind === "subhead" || (r.kind === "item" && r.available)))
     .sort((a, b) => a.sort - b.sort);
 }
+// Categories with no available items (e.g. Specials with nothing running)
+// disappear from the menu entirely.
 function visibleCategories(data) {
   return data.categories
     .filter((c) => !HIDDEN_CATS.has(c.code))
+    .filter((c) => paneRows(data, c.code).some((r) => r.kind === "item"))
     .sort((a, b) => a.sort - b.sort);
+}
+
+// ── schedules ────────────────────────────────────────────────────
+// schedule = {days:[0..6 Sun..Sat], start:"11:30", end:"15:00"}; null = always.
+// Times are America/Chicago (the restaurant's clock).
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function fmtTime(hm) {
+  const [h, m] = hm.split(":").map(Number);
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = ((h + 11) % 12) + 1;
+  return m ? `${h12}:${String(m).padStart(2, "0")} ${ampm}` : `${h12} ${ampm}`;
+}
+
+export function scheduleLabel(s) {
+  if (!s || (!s.days?.length && !s.start && !s.end)) return "";
+  const parts = [];
+  let days = [...new Set(s.days || [])].sort((a, b) => a - b);
+  if (days.length && days.length < 7) {
+    // Sat+Sun should read "Sat–Sun", not "Sun, Sat": treat Sunday as day 7
+    // when Saturday is also present so weekend runs group naturally.
+    if (days.includes(0) && days.includes(6)) {
+      days = days.filter((d) => d !== 0).concat(7);
+    }
+    const runs = [];
+    for (const d of days) {
+      const last = runs[runs.length - 1];
+      if (last && d === last[1] + 1) last[1] = d;
+      else runs.push([d, d]);
+    }
+    parts.push(runs.map(([a, b]) =>
+      a === b ? DAY_NAMES[a % 7] : `${DAY_NAMES[a % 7]}–${DAY_NAMES[b % 7]}`).join(", "));
+  }
+  if (s.start && s.end) parts.push(`${fmtTime(s.start)}–${fmtTime(s.end)}`);
+  else if (s.start) parts.push(`from ${fmtTime(s.start)}`);
+  else if (s.end) parts.push(`until ${fmtTime(s.end)}`);
+  return parts.join(" ");
+}
+
+export function inScheduleWindow(s, now = new Date()) {
+  if (!s) return true;
+  const chi = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago", weekday: "short",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(now);
+  const get = (t) => chi.find((p) => p.type === t)?.value;
+  const day = DAY_NAMES.indexOf(get("weekday"));
+  const mins = (Number(get("hour")) % 24) * 60 + Number(get("minute"));
+  if (s.days?.length && !s.days.includes(day)) return false;
+  const toMins = (hm) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
+  if (s.start && mins < toMins(s.start)) return false;
+  if (s.end && mins >= toMins(s.end)) return false;
+  return true;
 }
 
 // r.name is the stable identity the cart + PID_MAP key on (data-name); the
@@ -66,9 +122,14 @@ function renderItemLine(r) {
     const cls = r.badge === "Check Avail." ? "mbadge av" : "mbadge";
     min += ` <span class="${cls}">${escText(r.badge)}</span>`;
   }
+  const schedLabel = scheduleLabel(r.schedule);
+  if (schedLabel) min += ` <span class="mnote">${escText(schedLabel)}</span>`;
+  const schedAttr = r.schedule
+    ? ` data-schedule='${JSON.stringify(r.schedule).replace(/'/g, "&#39;")}' data-schedule-label="${escAttr(schedLabel)}"`
+    : "";
   const mdesc = desc ? `<div class="mdesc">${escText(desc)}</div>` : "";
   return `    <div class="mi" data-name="${dn}" data-price="${escAttr(price)}" ` +
-    `data-desc="${escAttr(desc)}" onclick="openItemModal(this)">` +
+    `data-desc="${escAttr(desc)}"${schedAttr} onclick="openItemModal(this)">` +
     `<div class="mib"><div class="min">${min}</div>` +
     mdesc +
     `<button class="mi-add" onclick="event.stopPropagation();openItemModal(this.closest('.mi'))">+</button>` +

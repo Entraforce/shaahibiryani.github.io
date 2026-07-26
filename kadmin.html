@@ -52,6 +52,11 @@ main{max-width:760px;margin:0 auto;padding:16px 12px 90px;}
 .f input,.f textarea,.f select{width:100%;font-size:16px;padding:10px;border:1px solid #d8cfb6;border-radius:8px;background:#fffdf7;}
 .f textarea{min-height:70px;resize:vertical;}
 .f .hint{font-size:11px;color:#9a8a6e;margin-top:3px;}
+.days{display:flex;gap:6px;flex-wrap:wrap;}
+.days label{flex:1;min-width:40px;text-align:center;font-size:13px;font-weight:600;padding:8px 0;border:1px solid #d8cfb6;border-radius:8px;background:#fffdf7;cursor:pointer;}
+.days input{display:none;}
+.days label:has(input:checked){background:var(--maroon);color:#fff;border-color:var(--maroon);}
+.sched-note{font-size:11px;color:#7a5c00;background:#fdf3d0;border-radius:4px;padding:1px 6px;}
 .mrow{display:flex;gap:10px;}
 .mrow .f{flex:1;}
 .actions{display:flex;gap:10px;margin-top:16px;}
@@ -114,7 +119,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SB_URL = "https://wtdthjhqgsbnyjucdqxl.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZHRoamhxZ3NibnlqdWNkcXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcxMzcsImV4cCI6MjA5MjQ0MzEzN30.1WYVcbrulkg0l7QB-scj4KcJCnMwFKSLHXucEdEZV3Q";
 const OWNER_EMAIL = "kitchen@shaahibiryanidfw.com";
-const HIDDEN_INFO = { ctr: "Prices used by the biryani cards' Half/Full Tray options.", sys: "System items — do not change unless asked." };
+const HIDDEN_INFO = {
+  ctr: "Prices used by the biryani cards' Half/Full Tray options.",
+  sys: "System items — do not change unless asked.",
+  spc: "Items here show in a Specials tab at the FRONT of the menu. Give each one a day/time schedule (e.g. Lunch Special Mon–Fri 11:30–3) — outside those hours it can't be ordered. When this section is empty (or nothing is available), the Specials tab disappears from the website automatically.",
+};
 
 const sb = createClient(SB_URL, SB_ANON);
 const $ = (id) => document.getElementById(id);
@@ -208,9 +217,10 @@ function rowHtml(r) {
       <button class="btn btn-plain btn-sm" data-edit="${r.id}">Edit</button></div>`;
   }
   const staged = r.published_price != null && Number(r.published_price) !== Number(r.price);
+  const sched = schedLabel(r.schedule);
   return `<div class="row" data-id="${r.id}">
     <label class="sw"><input type="checkbox" data-avail="${r.id}" ${r.available ? "checked" : ""}><span></span></label>
-    <div class="nm"><div class="t">${esc(r.display || r.name)} ${r.note ? `<span class="badge">${esc(r.note)}</span>` : ""} ${r.badge ? `<span class="badge">${esc(r.badge)}</span>` : ""}</div>
+    <div class="nm"><div class="t">${esc(r.display || r.name)} ${r.note ? `<span class="badge">${esc(r.note)}</span>` : ""} ${r.badge ? `<span class="badge">${esc(r.badge)}</span>` : ""} ${sched ? `<span class="sched-note">${esc(sched)}</span>` : ""}</div>
       <div class="d">${esc(r.description || "")}</div></div>
     <div class="pr">${money(r.price)}${staged ? `<span class="staged">live: ${money(r.published_price)}</span>` : ""}</div>
     <button class="btn btn-plain btn-sm" data-edit="${r.id}">Edit</button></div>`;
@@ -235,6 +245,32 @@ function bind() {
   document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => openItem(b.dataset.edit));
   document.querySelectorAll("[data-add]").forEach((b) => b.onclick = () => openItem(null, b.dataset.add));
   document.querySelectorAll("[data-editcard]").forEach((b) => b.onclick = () => openCard(b.dataset.editcard));
+}
+
+// ── schedules (matches the website + server logic) ───────────────
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function fmtT(hm) {
+  const [h, m] = hm.split(":").map(Number);
+  const ap = h < 12 ? "AM" : "PM", h12 = ((h + 11) % 12) + 1;
+  return m ? `${h12}:${String(m).padStart(2, "0")} ${ap}` : `${h12} ${ap}`;
+}
+function schedLabel(s) {
+  if (!s || (!s.days?.length && !s.start && !s.end)) return "";
+  const parts = [];
+  let days = [...new Set(s.days || [])].sort((a, b) => a - b);
+  if (days.length && days.length < 7) {
+    if (days.includes(0) && days.includes(6)) days = days.filter((d) => d !== 0).concat(7);
+    const runs = [];
+    for (const d of days) {
+      const last = runs[runs.length - 1];
+      if (last && d === last[1] + 1) last[1] = d; else runs.push([d, d]);
+    }
+    parts.push(runs.map(([a, b]) => a === b ? DAYS[a % 7] : `${DAYS[a % 7]}–${DAYS[b % 7]}`).join(", "));
+  }
+  if (s.start && s.end) parts.push(`${fmtT(s.start)}–${fmtT(s.end)}`);
+  else if (s.start) parts.push(`from ${fmtT(s.start)}`);
+  else if (s.end) parts.push(`until ${fmtT(s.end)}`);
+  return parts.join(" ");
 }
 
 // ── item editor ──────────────────────────────────────────────────
@@ -267,6 +303,13 @@ function openItem(id, addToCat) {
       <div class="f"><label>Badge</label><select id="f_badge">${BADGES.map((b) => `<option value="${b}" ${r?.badge === b || (!r?.badge && !b) ? "selected" : ""}>${b || "None"}</option>`).join("")}</select></div>
     </div>
     <div class="f"><label>Description</label><textarea id="f_desc">${esc(r?.description || "")}</textarea></div>
+    <div class="f"><label>Only available on certain days/times? (leave blank = always)</label>
+      <div class="days">${DAYS.map((d, i) => `<label><input type="checkbox" data-day="${i}" ${r?.schedule?.days?.includes(i) ? "checked" : ""}>${d}</label>`).join("")}</div>
+      <div class="mrow" style="margin-top:8px;">
+        <div class="f" style="margin-bottom:0;"><label>From</label><input id="f_start" type="time" value="${esc(r?.schedule?.start || "")}"></div>
+        <div class="f" style="margin-bottom:0;"><label>Until</label><input id="f_end" type="time" value="${esc(r?.schedule?.end || "")}"></div>
+      </div>
+      <div class="hint">Great for a Lunch Special (Mon–Fri, 11:30 AM–3:00 PM) or a Weekend Special (Sat + Sun). Outside these hours customers see the schedule and can't order it. Times are restaurant time (Texas).</div></div>
     <div class="f"><label>Receipt name</label><input id="f_name" value="${esc(r?.name || "")}" placeholder="(filled in automatically)">
       <div class="hint">Shown on order receipts. Leave as-is unless two items would clash.</div></div>
     <div class="actions">${r ? `<button class="btn btn-danger" id="mDel">Delete</button>` : ""}
@@ -292,8 +335,20 @@ function openItem(id, addToCat) {
     const price = parseFloat($("f_price").value);
     if (!display) return toast("The item needs a name.");
     if (!(price >= 0)) return toast("Enter a valid price.");
+    const schedDays = [...document.querySelectorAll("[data-day]:checked")].map((x) => Number(x.dataset.day));
+    const schedStart = $("f_start").value || null;
+    const schedEnd = $("f_end").value || null;
+    let schedule = null;
+    if (schedDays.length === 7 && !schedStart && !schedEnd) schedule = null;
+    else if (schedDays.length || schedStart || schedEnd) {
+      if (schedStart && schedEnd && schedEnd <= schedStart) return toast("The 'Until' time must be after the 'From' time.");
+      schedule = { ...(schedDays.length && schedDays.length < 7 ? { days: schedDays } : {}),
+                   ...(schedStart ? { start: schedStart } : {}),
+                   ...(schedEnd ? { end: schedEnd } : {}) };
+      if (!Object.keys(schedule).length) schedule = null;
+    }
     const row = {
-      display, price,
+      display, price, schedule,
       note: $("f_note").value.trim() || null,
       badge: $("f_badge").value || null,
       description: $("f_desc").value.trim() || null,

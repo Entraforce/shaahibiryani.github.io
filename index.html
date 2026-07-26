@@ -2596,10 +2596,37 @@ function openItemModal(el){
       srow.style.display='none';
     }
   }
+  // Scheduled specials: outside their window the Add button is disabled.
+  var addBtn=gi('modalAddBtn');
+  if(addBtn){
+    var schedOk=true, schedLabel=(ds.scheduleLabel||'').trim();
+    if((ds.schedule||'').trim()){
+      try{ schedOk=_schedNow(JSON.parse(ds.schedule)); }catch(e){ schedOk=true; }
+    }
+    addBtn.disabled=!schedOk;
+    addBtn.style.opacity=schedOk?'':'.45';
+    addBtn.textContent=schedOk?'Add to Order':('Available '+(schedLabel||'later')+' only');
+  }
   var ov=gi('itemModalOverlay'); if(!ov) return;
   ov.dataset.name=n; ov.dataset.price=pr;
   ov.dataset.sizes=sj||'';
   ov.classList.add('open'); document.body.style.overflow='hidden';
+}
+
+// True when Plano local time (America/Chicago) is inside the schedule window.
+function _schedNow(s){
+  if(!s) return true;
+  try{
+    var parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+    var get=function(t){var p=parts.find(function(x){return x.type===t;});return p?p.value:'';};
+    var day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(get('weekday'));
+    var mins=(Number(get('hour'))%24)*60+Number(get('minute'));
+    var tm=function(hm){var a=hm.split(':');return Number(a[0])*60+Number(a[1]);};
+    if(s.days&&s.days.length&&s.days.indexOf(day)<0) return false;
+    if(s.start&&mins<tm(s.start)) return false;
+    if(s.end&&mins>=tm(s.end)) return false;
+    return true;
+  }catch(e){ return true; }
 }
 
 function closeModal(){
