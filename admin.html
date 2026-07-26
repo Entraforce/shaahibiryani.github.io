@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Shaahi Biryani — Menu Manager</title>
+<style>
+:root{--maroon:#5C0A14;--maroon-d:#3A0509;--gold:#C9A227;--gold-l:#E6C55C;--cream:#F7F1E3;--ink:#2A2118;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#F3EDDF;color:var(--ink);min-height:100vh;}
+header{position:sticky;top:0;z-index:50;background:var(--maroon-d);color:var(--cream);padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+header h1{font-size:17px;font-weight:700;letter-spacing:.02em;flex:1;}
+.btn{border:0;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:600;cursor:pointer;}
+.btn:disabled{opacity:.5;cursor:default;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-l));color:var(--maroon-d);}
+.btn-plain{background:#e8e0cd;color:var(--ink);}
+.btn-danger{background:#b3261e;color:#fff;}
+.btn-sm{padding:6px 10px;font-size:13px;}
+main{max-width:760px;margin:0 auto;padding:16px 12px 90px;}
+.note{font-size:13px;color:#6b5d4a;margin:8px 2px 16px;line-height:1.5;}
+.pill{display:inline-block;font-size:12px;font-weight:700;border-radius:99px;padding:3px 10px;}
+.pill-dirty{background:#fde293;color:#6b4e00;}
+.pill-ok{background:#d3e8d3;color:#1e5a1e;}
+.cat{background:#fff;border:1px solid #e3dac2;border-radius:12px;margin-bottom:14px;overflow:hidden;}
+.cat-h{display:flex;align-items:center;gap:8px;padding:12px 14px;background:linear-gradient(135deg,var(--maroon),var(--maroon-d));color:var(--cream);cursor:pointer;}
+.cat-h h2{font-size:15px;flex:1;}
+.cat-h .cnt{font-size:12px;opacity:.8;}
+.cat-body{display:none;}
+.cat.open .cat-body{display:block;}
+.row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid #f0e9d6;}
+.row.sub{background:#faf6ea;}
+.row .nm{flex:1;min-width:0;}
+.row .nm .t{font-size:15px;font-weight:600;}
+.row .nm .d{font-size:12px;color:#8a7a60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.row .pr{font-weight:700;font-size:15px;white-space:nowrap;}
+.row .pr .staged{color:#b3261e;font-size:11px;display:block;text-align:right;}
+.badge{font-size:10px;font-weight:700;background:var(--gold);color:var(--maroon-d);border-radius:4px;padding:1px 5px;vertical-align:middle;}
+.sw{position:relative;width:44px;height:26px;flex-shrink:0;}
+.sw input{opacity:0;width:0;height:0;}
+.sw span{position:absolute;inset:0;background:#ccc;border-radius:99px;transition:.15s;cursor:pointer;}
+.sw span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;}
+.sw input:checked+span{background:#2e7d32;}
+.sw input:checked+span:before{transform:translateX(18px);}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:100;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:18px 16px 26px;max-height:88vh;overflow-y:auto;}
+@media(min-width:600px){.modal-bg.show{align-items:center;}.modal{border-radius:16px;}}
+.modal h3{font-size:17px;margin-bottom:12px;}
+.f{margin-bottom:12px;}
+.f label{display:block;font-size:12px;font-weight:700;color:#6b5d4a;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+.f input,.f textarea,.f select{width:100%;font-size:16px;padding:10px;border:1px solid #d8cfb6;border-radius:8px;background:#fffdf7;}
+.f textarea{min-height:70px;resize:vertical;}
+.f .hint{font-size:11px;color:#9a8a6e;margin-top:3px;}
+.mrow{display:flex;gap:10px;}
+.mrow .f{flex:1;}
+.actions{display:flex;gap:10px;margin-top:16px;}
+.actions .btn{flex:1;}
+#login{max-width:400px;margin:10vh auto;background:#fff;border-radius:14px;padding:26px 22px;border:1px solid #e3dac2;}
+#login h2{font-size:19px;color:var(--maroon-d);margin-bottom:6px;}
+#login p{font-size:14px;color:#6b5d4a;margin-bottom:16px;line-height:1.5;}
+#login input{width:100%;font-size:16px;padding:12px;border:1px solid #d8cfb6;border-radius:8px;margin-bottom:12px;}
+#msg{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;max-width:92vw;display:none;z-index:200;text-align:center;}
+.addbar{padding:10px 14px;border-top:1px solid #f0e9d6;}
+.hid{display:none!important;}
+footer{position:fixed;bottom:0;left:0;right:0;background:#fffef9;border-top:1px solid #e3dac2;padding:10px 14px;display:none;z-index:60;}
+footer.show{display:block;}
+footer .inner{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center;}
+footer .inner .st{flex:1;font-size:13px;color:#6b5d4a;}
+</style>
+</head>
+<body>
+<header class="hid" id="hdr">
+  <h1>Menu Manager</h1>
+  <span id="dirtyPill" class="pill pill-ok">Published</span>
+  <button class="btn btn-plain btn-sm" id="logoutBtn">Log out</button>
+</header>
+
+<div id="login">
+  <h2>Shaahi Biryani — Menu Manager</h2>
+  <p>Enter your email and we'll send you a sign-in link. Open the email on this
+  device and tap the link — you'll come right back here, signed in.</p>
+  <input type="email" id="emailIn" placeholder="you@example.com" autocomplete="email">
+  <button class="btn btn-gold" id="sendLink" style="width:100%;">Email me a sign-in link</button>
+  <p id="loginNote" style="margin-top:12px;"></p>
+</div>
+
+<main id="app" class="hid">
+  <p class="note"><b>How it works:</b> price and wording changes are saved here first —
+  customers keep seeing (and paying) the old menu until you press <b>Publish</b>.
+  The <b>Available</b> switch is the exception: turning it off blocks new orders of
+  that dish <i>immediately</i> (publish to also hide it from the menu).</p>
+  <div id="cats"></div>
+
+  <div class="cat" id="cardsBox">
+    <div class="cat-h" data-acc><h2>Bestseller Cards (photo cards on the home page)</h2><span class="cnt" id="cardCnt"></span></div>
+    <div class="cat-body" id="cardsBody"></div>
+  </div>
+</main>
+
+<footer id="pubBar">
+  <div class="inner">
+    <span class="st" id="pubSt"></span>
+    <button class="btn btn-gold" id="pubBtn">Publish to website</button>
+  </div>
+</footer>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modalBody"></div></div>
+<div id="msg"></div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SB_URL = "https://wtdthjhqgsbnyjucdqxl.supabase.co";
+const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZHRoamhxZ3NibnlqdWNkcXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcxMzcsImV4cCI6MjA5MjQ0MzEzN30.1WYVcbrulkg0l7QB-scj4KcJCnMwFKSLHXucEdEZV3Q";
+const OWNER_EMAIL = "osmanm08@gmail.com";
+const HIDDEN_INFO = { ctr: "Prices used by the biryani cards' Half/Full Tray options.", sys: "System items — do not change unless asked." };
+
+const sb = createClient(SB_URL, SB_ANON);
+const $ = (id) => document.getElementById(id);
+let DATA = { categories: [], items: [], cards: [] };
+let dirty = localStorage.getItem("menuDirty") === "1";
+
+function toast(t, ms = 3200) {
+  const m = $("msg"); m.textContent = t; m.style.display = "block";
+  clearTimeout(toast._t); toast._t = setTimeout(() => m.style.display = "none", ms);
+}
+function money(n) { return "$" + Number(n).toFixed(2); }
+function setDirty(v) {
+  dirty = v; localStorage.setItem("menuDirty", v ? "1" : "0");
+  $("dirtyPill").className = "pill " + (v ? "pill-dirty" : "pill-ok");
+  $("dirtyPill").textContent = v ? "Unpublished changes" : "Published";
+  $("pubBar").classList.toggle("show", v);
+  $("pubSt").textContent = v ? "Your edits are saved but not on the website yet." : "";
+}
+
+// ── auth ─────────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) return onLogin(session);
+  sb.auth.onAuthStateChange((_e, s) => { if (s) onLogin(s); });
+}
+$("sendLink").onclick = async () => {
+  const email = $("emailIn").value.trim();
+  if (!email) return toast("Type your email first.");
+  $("sendLink").disabled = true;
+  const { error } = await sb.auth.signInWithOtp({
+    email, options: { emailRedirectTo: location.origin + location.pathname },
+  });
+  $("sendLink").disabled = false;
+  $("loginNote").textContent = error
+    ? "Could not send: " + error.message
+    : "Sent! Check your email and tap the sign-in link. (It can take a minute. Only 2 emails per hour are allowed, so keep this tab open.)";
+};
+$("logoutBtn").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+async function onLogin(session) {
+  if ((session.user.email || "").toLowerCase() !== OWNER_EMAIL) {
+    $("loginNote").textContent = "This account (" + session.user.email + ") is not allowed to manage the menu.";
+    await sb.auth.signOut(); return;
+  }
+  $("login").classList.add("hid");
+  $("hdr").classList.remove("hid");
+  $("app").classList.remove("hid");
+  await load();
+}
+
+// ── data ─────────────────────────────────────────────────────────
+async function load() {
+  const [c, i, k] = await Promise.all([
+    sb.from("web_menu_categories").select("*").order("sort"),
+    sb.from("web_menu_items").select("*").order("sort"),
+    sb.from("web_menu_cards").select("*").order("sort"),
+  ]);
+  if (c.error || i.error || k.error) return toast("Could not load menu: " + (c.error || i.error || k.error).message);
+  DATA = { categories: c.data, items: i.data, cards: k.data };
+  const priceDirty = DATA.items.some((r) => r.kind === "item" && r.published_price != null && Number(r.published_price) !== Number(r.price));
+  setDirty(dirty || priceDirty);
+  render();
+}
+
+function render() {
+  const box = $("cats"); box.innerHTML = "";
+  for (const c of DATA.categories) {
+    const rows = DATA.items.filter((r) => r.category === c.code);
+    const el = document.createElement("div");
+    el.className = "cat"; el.dataset.code = c.code;
+    const extra = HIDDEN_INFO[c.code] ? `<div class="note" style="margin:8px 14px;">${HIDDEN_INFO[c.code]}</div>` : "";
+    el.innerHTML = `<div class="cat-h" data-acc><h2>${esc(c.label)}</h2><span class="cnt">${rows.filter(r=>r.kind==='item').length} items</span></div>
+      <div class="cat-body">${extra}
+        ${rows.map(rowHtml).join("")}
+        <div class="addbar"><button class="btn btn-plain btn-sm" data-add="${c.code}">+ Add item</button></div>
+      </div>`;
+    box.appendChild(el);
+  }
+  $("cardCnt").textContent = DATA.cards.length + " cards";
+  $("cardsBody").innerHTML = DATA.cards.map(cardHtml).join("") +
+    `<div class="note" style="margin:10px 14px;">Card prices follow the matching menu item automatically — edit the item's price and the card updates on publish. Only the wording here is editable.</div>`;
+  bind();
+}
+
+function esc(s) { return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
+
+function rowHtml(r) {
+  if (r.kind === "subhead") {
+    return `<div class="row sub" data-id="${r.id}"><div class="nm"><div class="t">— ${esc(r.name)}</div>
+      ${r.note ? `<div class="d">${esc(r.note)}</div>` : ""}</div>
+      <button class="btn btn-plain btn-sm" data-edit="${r.id}">Edit</button></div>`;
+  }
+  const staged = r.published_price != null && Number(r.published_price) !== Number(r.price);
+  return `<div class="row" data-id="${r.id}">
+    <label class="sw"><input type="checkbox" data-avail="${r.id}" ${r.available ? "checked" : ""}><span></span></label>
+    <div class="nm"><div class="t">${esc(r.display || r.name)} ${r.note ? `<span class="badge">${esc(r.note)}</span>` : ""} ${r.badge ? `<span class="badge">${esc(r.badge)}</span>` : ""}</div>
+      <div class="d">${esc(r.description || "")}</div></div>
+    <div class="pr">${money(r.price)}${staged ? `<span class="staged">live: ${money(r.published_price)}</span>` : ""}</div>
+    <button class="btn btn-plain btn-sm" data-edit="${r.id}">Edit</button></div>`;
+}
+
+function cardHtml(k) {
+  return `<div class="row" data-cid="${k.id}"><div class="nm"><div class="t">${esc(k.name)}</div>
+    <div class="d">${esc(k.description || "")}</div></div>
+    <button class="btn btn-plain btn-sm" data-editcard="${k.id}">Edit</button></div>`;
+}
+
+function bind() {
+  document.querySelectorAll("[data-acc]").forEach((h) => h.onclick = () => h.parentElement.classList.toggle("open"));
+  document.querySelectorAll("[data-avail]").forEach((t) => t.onchange = async () => {
+    const id = t.dataset.avail, on = t.checked;
+    const { error } = await sb.from("web_menu_items").update({ available: on }).eq("id", id);
+    if (error) { t.checked = !on; return toast("Save failed: " + error.message); }
+    const r = DATA.items.find((x) => String(x.id) === id); r.available = on;
+    toast(on ? "Back on sale — orders accepted again." : "Marked sold out — online orders for it are blocked NOW. Publish to also hide it from the menu.");
+    setDirty(true);
+  });
+  document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => openItem(b.dataset.edit));
+  document.querySelectorAll("[data-add]").forEach((b) => b.onclick = () => openItem(null, b.dataset.add));
+  document.querySelectorAll("[data-editcard]").forEach((b) => b.onclick = () => openCard(b.dataset.editcard));
+}
+
+// ── item editor ──────────────────────────────────────────────────
+const BADGES = ["", "Signature", "Popular", "Bestseller", "Check Avail."];
+function openItem(id, addToCat) {
+  const r = id ? DATA.items.find((x) => String(x.id) === String(id)) : null;
+  const isSub = r?.kind === "subhead";
+  const cat = r?.category ?? addToCat;
+  const el = $("modalBody");
+  if (isSub) {
+    el.innerHTML = `<h3>Edit section heading</h3>
+      <div class="f"><label>Heading</label><input id="f_name" value="${esc(r.name)}"></div>
+      <div class="f"><label>Small note under it (optional)</label><input id="f_note" value="${esc(r.note || "")}"></div>
+      <div class="actions"><button class="btn btn-plain" id="mCancel">Cancel</button>
+      <button class="btn btn-gold" id="mSave">Save</button></div>`;
+    show(true);
+    $("mCancel").onclick = () => show(false);
+    $("mSave").onclick = async () => {
+      const { error } = await sb.from("web_menu_items").update({ name: $("f_name").value.trim(), note: $("f_note").value.trim() || null }).eq("id", r.id);
+      if (error) return toast("Save failed: " + error.message);
+      show(false); setDirty(true); await load();
+    };
+    return;
+  }
+  el.innerHTML = `<h3>${r ? "Edit item" : "New item"}</h3>
+    <div class="f"><label>Name shown on menu</label><input id="f_display" value="${esc(r?.display || "")}"></div>
+    <div class="mrow">
+      <div class="f"><label>Price ($)</label><input id="f_price" type="number" step="0.01" min="0" inputmode="decimal" value="${r ? Number(r.price).toFixed(2) : ""}"></div>
+      <div class="f"><label>Portion note</label><input id="f_note" placeholder="e.g. 2pc" value="${esc(r?.note || "")}"></div>
+      <div class="f"><label>Badge</label><select id="f_badge">${BADGES.map((b) => `<option value="${b}" ${r?.badge === b || (!r?.badge && !b) ? "selected" : ""}>${b || "None"}</option>`).join("")}</select></div>
+    </div>
+    <div class="f"><label>Description</label><textarea id="f_desc">${esc(r?.description || "")}</textarea></div>
+    <div class="f"><label>Receipt name</label><input id="f_name" value="${esc(r?.name || "")}" placeholder="(filled in automatically)">
+      <div class="hint">Shown on order receipts. Leave as-is unless two items would clash.</div></div>
+    <div class="actions">${r ? `<button class="btn btn-danger" id="mDel">Delete</button>` : ""}
+      <button class="btn btn-plain" id="mCancel">Cancel</button>
+      <button class="btn btn-gold" id="mSave">Save</button></div>`;
+  show(true);
+  const derived = () => [$("f_display").value.trim(), $("f_note").value.trim(), $("f_badge").value].filter(Boolean).join(" ");
+  const wasDerived = !r || r.name === [r.display, r.note, r.badge].filter(Boolean).join(" ");
+  if (wasDerived) {
+    const syncName = () => { $("f_name").value = derived(); };
+    ["f_display", "f_note", "f_badge"].forEach((f) => $(f).addEventListener("input", syncName));
+    if (!r) syncName();
+  }
+  $("mCancel").onclick = () => show(false);
+  if (r) $("mDel").onclick = async () => {
+    if (!confirm(`Delete "${r.display || r.name}" from the menu? This cannot be undone.`)) return;
+    const { error } = await sb.from("web_menu_items").delete().eq("id", r.id);
+    if (error) return toast("Delete failed: " + error.message);
+    show(false); setDirty(true); await load();
+  };
+  $("mSave").onclick = async () => {
+    const display = $("f_display").value.trim();
+    const price = parseFloat($("f_price").value);
+    if (!display) return toast("The item needs a name.");
+    if (!(price >= 0)) return toast("Enter a valid price.");
+    const row = {
+      display, price,
+      note: $("f_note").value.trim() || null,
+      badge: $("f_badge").value || null,
+      description: $("f_desc").value.trim() || null,
+      name: $("f_name").value.trim() || derived(),
+    };
+    let error;
+    if (r) ({ error } = await sb.from("web_menu_items").update(row).eq("id", r.id));
+    else {
+      const slugBase = display.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      let slug = slugBase, n = 2;
+      const pids = new Set(DATA.items.map((x) => x.pid).filter(Boolean));
+      while (pids.has(`${slug}|${slug}-standard`)) slug = `${slugBase}-${n++}`;
+      const maxSort = Math.max(0, ...DATA.items.filter((x) => x.category === cat).map((x) => x.sort));
+      ({ error } = await sb.from("web_menu_items").insert({
+        ...row, kind: "item", category: cat, sort: maxSort + 10,
+        pid: `${slug}|${slug}-standard`, available: true,
+      }));
+    }
+    if (error) return toast("Save failed: " + error.message);
+    show(false); setDirty(true); await load();
+  };
+}
+
+function openCard(id) {
+  const k = DATA.cards.find((x) => String(x.id) === String(id));
+  const el = $("modalBody");
+  el.innerHTML = `<h3>Edit card — ${esc(k.name)}</h3>
+    <div class="f"><label>Description on the card</label><textarea id="f_cdesc">${esc(k.description || "")}</textarea></div>
+    <div class="f"><label>Name on the welcome-screen price list (blank = not listed)</label><input id="f_csplash" value="${esc(k.splash_name || "")}"></div>
+    <div class="actions"><button class="btn btn-plain" id="mCancel">Cancel</button>
+    <button class="btn btn-gold" id="mSave">Save</button></div>`;
+  show(true);
+  $("mCancel").onclick = () => show(false);
+  $("mSave").onclick = async () => {
+    const { error } = await sb.from("web_menu_cards").update({
+      description: $("f_cdesc").value.trim() || null,
+      splash_name: $("f_csplash").value.trim() || null,
+    }).eq("id", k.id);
+    if (error) return toast("Save failed: " + error.message);
+    show(false); setDirty(true); await load();
+  };
+}
+
+function show(v) { $("modalBg").classList.toggle("show", v); }
+$("modalBg").onclick = (e) => { if (e.target === $("modalBg")) show(false); };
+
+// ── publish ──────────────────────────────────────────────────────
+$("pubBtn").onclick = async () => {
+  if (!confirm("Publish the current menu to shaahibiryanidfw.com?")) return;
+  $("pubBtn").disabled = true; $("pubSt").textContent = "Publishing…";
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(SB_URL + "/functions/v1/publish-menu", {
+      method: "POST",
+      headers: { apikey: SB_ANON, Authorization: "Bearer " + session.access_token },
+    });
+    const out = await res.json();
+    if (!res.ok || out.error) throw new Error(out.error || "Publish failed");
+    toast(out.message || "Published!", 5000);
+    if (out.warning) toast(out.warning, 8000);
+    setDirty(false); await load();
+  } catch (e) {
+    toast("Publish failed: " + e.message, 6000);
+    $("pubSt").textContent = "Publish failed — try again or call for help.";
+  }
+  $("pubBtn").disabled = false;
+};
+
+init();
+</script>
+</body>
+</html>
