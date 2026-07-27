@@ -1,0 +1,8 @@
+# Confidential Shaahi Biryani data — NEVER publish to the public site
+private-data/
+
+# Local backups / scratch
+*.bak
+
+# Supabase CLI temp files
+supabase/.temp/

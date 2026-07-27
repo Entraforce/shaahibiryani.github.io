@@ -43,6 +43,34 @@ No build step, no framework, no package manager.
 - Google: `https://g.page/r/CdoUnFi5PmB4EBM`
 - Yelp: `https://www.yelp.com/biz/shaahi-biryani-plano`
 
+## Menu management system (added July 2026)
+
+The menu is **no longer hand-edited in index.html**. Source of truth is the
+`web_menu_items` / `web_menu_cards` / `web_menu_categories` tables in the
+Supabase project `wtdthjhqgsbnyjucdqxl` (same project as online ordering).
+
+- **Owner edits** happen at `/kadmin` (email-link login, restricted to the
+  owner's email via RLS + `OWNER_EMAIL` secret). Prices are *staged*: checkout
+  charges `published_price` until the owner presses **Publish**.
+- **Publish** calls the `publish-menu` edge function, which regenerates the
+  marked regions of `index.html` (`<!-- GEN:MENU -->`, `<!-- GEN:SPLASH -->`,
+  `var PID_MAP=…`, the schema `hasMenuSection`, bestseller-card price attrs)
+  via `supabase/functions/_shared/render-menu.js`, commits to GitHub with the
+  `GITHUB_TOKEN` secret, bumps the sitemap lastmod, then copies `price` →
+  `published_price` (RPC `web_menu_sync_published`).
+- **`create-web-order`** prices orders from the table
+  (`published_price ?? price`), rejects `available=false` items, and falls back
+  to the static `_shared/prices.ts` map only for keys missing from the table.
+- **NEVER hand-edit inside the GEN marker regions** — the next publish will
+  overwrite those edits. Change the database (via /kadmin or SQL) instead.
+- The mobile app's `create-payment-intent` still uses its own bundled
+  `prices.ts` — app prices do NOT follow admin edits (menu shown in the app is
+  bundled with the app). Keep them in sync manually when prices change.
+- Edge-function sources for the website live in this repo under
+  `supabase/functions/` and deploy with
+  `supabase functions deploy <name> --project-ref wtdthjhqgsbnyjucdqxl`
+  (create-web-order needs `--no-verify-jwt`).
+
 ## Editing rules
 
 1. **NAP (name/address/phone), hours, and certifications must stay in sync across
