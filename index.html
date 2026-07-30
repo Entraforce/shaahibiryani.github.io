@@ -830,6 +830,7 @@ nav.scrolled{background:rgba(8,2,10,.96);border-bottom:1px solid rgba(201,168,76
 .nav-cta:hover{box-shadow:0 6px 26px rgba(201,168,76,.5);transform:translateY(-2px);filter:brightness(1.05);}
 .nav-call{font-family:"Cinzel",serif;font-size:.62rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-l);border:1px solid rgba(201,168,76,.35);background:transparent;padding:9px 18px;text-decoration:none;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:color .4s ease,border-color .4s ease,background .4s ease;white-space:nowrap;}
 .nav-call:hover{color:var(--gold-p);border-color:var(--gold);background:rgba(201,168,76,.08);}
+.nav-actions{display:flex;gap:12px;align-items:center;}
 .nav-burger{display:none;background:none;border:0;cursor:pointer;padding:6px;width:40px;height:40px;flex-direction:column;justify-content:center;align-items:center;gap:5px;}
 .nav-burger span{display:block;width:24px;height:2px;background:var(--gold);transition:transform .3s,opacity .3s;}
 .nav-burger.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}
@@ -843,6 +844,18 @@ nav.scrolled{background:rgba(8,2,10,.96);border-bottom:1px solid rgba(201,168,76
   .nav-links li{padding:14px 0;border-bottom:1px solid rgba(201,168,76,.08);}
   .nav-links li:last-child{border-bottom:0;}
   .nav-links a{font-size:.72rem;display:block;}
+  .nav-logo img{height:46px;}
+  .nav-actions{gap:8px;}
+  .cart-icon{padding:7px 10px;font-size:.56rem;}
+  .nav-call{padding:7px 12px;font-size:.56rem;}
+  .nav-cta{padding:8px 16px;font-size:.56rem;}
+}
+@media(max-width:400px){
+  .nav-call-txt{display:none;}
+  .nav-call{padding:8px 10px;}
+  .nav-cta{padding:8px 12px;font-size:.52rem;}
+  .nav-actions{gap:6px;}
+  .nav-logo img{height:40px;}
 }
 
 /* HERO */
@@ -1712,9 +1725,9 @@ p.s-intro {
     <li><a href="careers.html">Careers</a></li>
     <li><a href="#contact">Contact Us</a></li>
   </ul>
-  <div style="display:flex;gap:12px;align-items:center;">
+  <div class="nav-actions">
     <div class="cart-icon" id="cartToggle">🛒 <span class="cart-count" id="cartCount">0</span></div>
-    <a href="tel:4699603300" class="nav-call" aria-label="Call Shaahi Biryani at (469) 960-3300">📞 Call</a>
+    <a href="tel:4699603300" class="nav-call" aria-label="Call Shaahi Biryani at (469) 960-3300">📞 <span class="nav-call-txt">Call</span></a>
     <a href="#menu" class="nav-cta">🍽 Order Online</a>
     <button class="nav-burger" id="navBurger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </div>
