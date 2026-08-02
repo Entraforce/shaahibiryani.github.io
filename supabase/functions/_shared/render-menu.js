@@ -112,7 +112,36 @@ export function itemDataName(r) {
   return r.name;
 }
 
-function renderItemLine(r) {
+// ── Naan-or-Rice picker ─────────────────────────────────────────
+// Chicken + Goat curries always come with a Naan-or-Rice choice; within
+// Grill, only the items grouped under the "Platters" subhead do (the
+// individual kabab rows below it are excluded on purpose). Same price
+// either way, so this never touches pricing — it just records which side
+// the guest picked (as variant_name) for the kitchen to see.
+const SIDE_CHOICE_CATS = new Set(["chk", "lmb"]);
+const SIDE_CHOICE_SUBHEADS = new Set(["Platters"]);
+
+// Maps each item row to the subhead text it currently sits under, per
+// category (subheads reset per category and only items — not the subhead
+// rows themselves — are keyed).
+function buildSubheadMap(data) {
+  const map = new Map();
+  for (const c of data.categories) {
+    let cur = "";
+    for (const r of paneRows(data, c.code)) {
+      if (r.kind === "subhead") cur = r.name;
+      else map.set(r, cur);
+    }
+  }
+  return map;
+}
+
+function offersSideChoice(r, subheadMap) {
+  if (SIDE_CHOICE_CATS.has(r.category)) return true;
+  return SIDE_CHOICE_SUBHEADS.has(subheadMap.get(r) || "");
+}
+
+function renderItemLine(r, offersSides) {
   const dn = escAttr(r.name);
   const price = fmt2(r.price);
   const desc = r.description || "";
@@ -127,9 +156,12 @@ function renderItemLine(r) {
   const schedAttr = r.schedule
     ? ` data-schedule='${JSON.stringify(r.schedule).replace(/'/g, "&#39;")}' data-schedule-label="${escAttr(schedLabel)}"`
     : "";
+  const sizesAttr = offersSides
+    ? ` data-sizes='${JSON.stringify({ Naan: price, Rice: price })}'`
+    : "";
   const mdesc = desc ? `<div class="mdesc">${escText(desc)}</div>` : "";
   return `    <div class="mi" data-name="${dn}" data-price="${escAttr(price)}" ` +
-    `data-desc="${escAttr(desc)}"${schedAttr} onclick="openItemModal(this)">` +
+    `data-desc="${escAttr(desc)}"${schedAttr}${sizesAttr} onclick="openItemModal(this)">` +
     `<div class="mib"><div class="min">${min}</div>` +
     mdesc +
     `<button class="mi-add" onclick="event.stopPropagation();openItemModal(this.closest('.mi'))">+</button>` +
@@ -138,6 +170,7 @@ function renderItemLine(r) {
 
 export function renderMenuSection(data) {
   const cats = visibleCategories(data);
+  const subheadMap = buildSubheadMap(data);
   const out = [];
   out.push(`  <div class="menu-tabs rv" id="mtabs">`);
   cats.forEach((c, i) => {
@@ -156,7 +189,7 @@ export function renderMenuSection(data) {
         if (r.note) line += `<div class="msubnote">${escText(r.note)}</div>`;
         out.push(line);
       } else {
-        out.push(renderItemLine(r));
+        out.push(renderItemLine(r, offersSideChoice(r, subheadMap)));
       }
       first = false;
     }
@@ -220,10 +253,14 @@ export function renderPidMap(data) {
       map[card.name] = { "": card.pid };
     }
   }
+  const subheadMap = buildSubheadMap(data);
   for (const r of data.items) {
     if (r.kind !== "item" || !r.pid || HIDDEN_CATS.has(r.category)) continue;
     const dn = itemDataName(r);
-    if (!(dn in map)) map[dn] = { "": r.pid };
+    if (dn in map) continue;
+    map[dn] = offersSideChoice(r, subheadMap)
+      ? { Naan: r.pid, Rice: r.pid }
+      : { "": r.pid };
   }
   return "var PID_MAP=" + JSON.stringify(map) + ";";
 }
