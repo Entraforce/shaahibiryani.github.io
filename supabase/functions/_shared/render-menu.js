@@ -278,6 +278,7 @@ export function renderSchemaMenu(data) {
       `          "@type": "MenuItem",`,
       `          "name": ${JSON.stringify([r.display || r.name, r.note].filter(Boolean).join(" "))},`,
       `          "description": ${JSON.stringify(r.description || "")},`,
+      `          "suitableForDiet": "https://schema.org/HalalDiet",`,
       `          "offers": {"@type":"Offer","price":${JSON.stringify(schemaPrice(r.price))},"priceCurrency":"USD"}`,
       `        }`,
     ].join("\n")).join(",\n");
