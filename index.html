@@ -2605,6 +2605,10 @@ async function payWeb(){
         await fetch(SB_URL+'/functions/v1/confirm-web-order',{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},body:JSON.stringify({orderId:_wpOrder.orderId})});
       }
     }catch(e){/* payment already went through; order will reconcile */}
+    if(typeof gtag==='function'&&_wpOrder){
+      var _wpAmt=(_wpOrder.breakdown&&_wpOrder.breakdown.totalCents)?(_wpOrder.breakdown.totalCents/100):0;
+      gtag('event','conversion',{'send_to':'AW-17075652554/UTt2CMiQq98cEMqPp84_','value':_wpAmt,'currency':'USD','transaction_id':_wpOrder.orderId||''});
+    }
     gi('webPayArea').style.display='none';
     var s=gi('webPaySuccess'); if(s)s.style.display='block';
     var sm=gi('webPaySuccessMsg');
