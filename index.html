@@ -1510,14 +1510,6 @@ p.s-intro {
 }
 
 
-/* ════ BOOK OVERLAY ══
-
-
-══ */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
-
-
-
 /* ── MOBILE FIXES ── */
 @media(max-width:768px){
 
@@ -1584,17 +1576,6 @@ p.s-intro {
   .about-photo-side{ position:static !important; }
   .about-storefront-img{ height:220px !important; }
 
-  /* ── BOOK OVERLAY MOBILE ── */
-  .sb-scene{
-    width:min(340px,92vw) !important;
-    height:min(440px,120vw) !important;
-  }
-  .sb-cv-ttl{ font-size:clamp(22px,7vw,32px) !important; }
-  .sb-pgli{ padding:24px 18px !important; gap:10px !important; }
-  .sb-pgri{ padding:20px 18px !important; gap:8px !important; }
-  .sb-pr-ttl{ font-size:14px !important; }
-  .sb-pr-name{ font-size:11px !important; }
-
 }
 
 @media(max-width:480px){
@@ -1605,69 +1586,10 @@ p.s-intro {
 </head>
 
 <body>
-<!-- BOOK OVERLAY -->
-<div id="SBov" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:#09030C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
-<style id="sbSt">
-.sb-scene{position:relative;width:min(400px,90vw);height:min(520px,116vw);perspective:1400px;perspective-origin:50% 48%}
-.sb-spread{position:absolute;inset:0;display:flex;border-radius:5px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8)}
-.sb-pgl{width:50%;height:100%;background:linear-gradient(160deg,#1c0e0b,#0f0507);border-right:2px solid rgba(201,168,76,.25);display:flex;align-items:center;justify-content:center}
-.sb-pgli{display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 28px}
-.sb-pgli img{width:70px;height:70px;border-radius:50%;border:1.5px solid rgba(201,168,76,.3);object-fit:contain;opacity:.85}
-.sb-pl-est{font-family:"Cinzel",serif;font-size:7px;font-weight:700;letter-spacing:.44em;text-transform:uppercase;color:rgba(201,168,76,.75)}
-.sb-pl-rule{width:50px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.4),transparent)}
-.sb-pl-ttl{font-family:"Cinzel",serif;font-size:18px;font-weight:900;color:#F5E4B0;text-align:center;line-height:1.2;text-shadow:0 1px 8px rgba(0,0,0,.4)}
-.sb-pl-tag{font-family:"Cormorant Garamond",serif;font-size:11px;font-weight:700;font-style:italic;color:rgba(201,168,76,.85);text-align:center}
-.sb-pl-qt{font-family:"Cormorant Garamond",serif;font-size:11px;font-weight:600;font-style:italic;color:rgba(201,168,76,.75);text-align:center;line-height:1.7;max-width:160px}
-.sb-pgr{width:50%;height:100%;background:#f5edd8;display:flex;align-items:center;justify-content:center}
-.sb-pgri{display:flex;flex-direction:column;align-items:center;gap:9px;padding:28px 26px;width:100%}
-.sb-pr-lbl{font-family:"Cinzel",serif;font-size:7px;letter-spacing:.42em;text-transform:uppercase;color:rgba(92,10,20,.4)}
-.sb-pr-ttl{font-family:"Cinzel",serif;font-size:16px;font-weight:700;color:#3A0509}
-.sb-pr-rule{display:flex;align-items:center;gap:6px;width:100%}
-.sb-pr-rule::before,.sb-pr-rule::after{content:"";flex:1;height:1px;background:rgba(139,105,20,.2)}
-.sb-pr-rule span{font-size:8px;color:rgba(139,105,20,.3)}
-.sb-pr-list{width:100%;display:flex;flex-direction:column;gap:5px}
-.sb-pr-item{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted rgba(139,105,20,.2)}
-.sb-pr-name{font-family:"Cormorant Garamond",serif;font-size:12px;color:#3A0509}
-.sb-pr-price{font-family:"Cinzel",serif;font-size:9px;color:rgba(139,105,20,.65);flex-shrink:0;margin-left:6px}
-.sb-pr-btn{margin-top:6px;font-family:"Cinzel",serif;font-size:8px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#08020A;background:linear-gradient(135deg,#F5E4B0,#C9A84C,#8B6914);border:none;padding:10px 22px;cursor:pointer;clip-path:polygon(7px 0%,100% 0%,calc(100% - 7px) 100%,0% 100%);opacity:0;transform:translateY(6px);transition:opacity .5s .3s,transform .5s .3s}
-.sb-pr-btn.vis{opacity:1;transform:translateY(0)}
-.sb-cover{position:absolute;top:0;left:0;width:100%;height:100%;transform-origin:left center;transition:transform 1.4s cubic-bezier(.645,.045,.355,1);cursor:pointer;z-index:10;transform-style:preserve-3d;border-radius:5px}
-.sb-cover.open{transform:rotateY(-160deg)}
-.sb-cf{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:linear-gradient(160deg,#1e0e0b,#120608);border:1px solid rgba(201,168,76,.38);border-radius:5px;overflow:hidden;box-shadow:8px 8px 40px rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center}
-.sb-cf::before{content:"";position:absolute;left:0;top:0;bottom:0;width:22px;background:linear-gradient(to right,rgba(201,168,76,.2),rgba(201,168,76,.06),transparent);border-right:1px solid rgba(201,168,76,.2)}
-.sb-cf::after{content:"";position:absolute;inset:12px;border:1px solid rgba(201,168,76,.12);border-radius:2px;pointer-events:none}
-.sb-ci{display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 44px;z-index:1}
-.sb-cv-est{font-family:"Cinzel",serif;font-size:8px;font-weight:700;letter-spacing:.44em;text-transform:uppercase;color:rgba(201,168,76,.7)}
-.sb-cv-rule{width:52px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.5),transparent)}
-.sb-cv-logo{width:76px;height:76px;border-radius:50%;border:2px solid rgba(201,168,76,.35);object-fit:contain}
-.sb-cv-ttl{font-family:"Cinzel",serif;font-size:34px;font-weight:700;color:#F5E4B0;text-align:center;line-height:1.15;text-shadow:0 2px 12px rgba(0,0,0,.5)}
-.sb-cv-dm{width:8px;height:8px;background:rgba(201,168,76,.5);transform:rotate(45deg)}
-.sb-cv-tag{font-family:"Cormorant Garamond",serif;font-size:13px;font-weight:700;font-style:italic;color:rgba(201,168,76,.75);text-align:center}
-.sb-cv-cta{display:flex;align-items:center;gap:10px;font-family:"Cinzel",serif;font-size:8px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:rgba(201,168,76,.65);margin-top:4px;transition:color .3s}
-.sb-cv-cta::before,.sb-cv-cta::after{content:"";display:block;width:20px;height:1px;background:currentColor}
-.sb-cover:hover .sb-cv-cta{color:rgba(201,168,76,.8)}
-.sb-cb{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);background:linear-gradient(160deg,#1a0e0b,#0e0506);border-radius:5px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(201,168,76,.15)}
-.sb-hint{font-family:"Cinzel",serif;font-size:8px;letter-spacing:.3em;text-transform:uppercase;color:rgba(201,168,76,.25);text-align:center;transition:opacity .5s}
-.sb-hint.gone{opacity:0;pointer-events:none}
-.sb-skip{background:none;border:none;cursor:pointer;font-family:"Cinzel",serif;font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.18);padding:4px 8px;transition:color .3s}
-.sb-skip:hover{color:rgba(201,168,76,.6)}
-</style>
-<div class="sb-scene">
-<div class="sb-spread">
-<div class="sb-pgl"><div class="sb-pgli">
-<div class="sb-pl-est">Est. 2025</div>
-<div class="sb-pl-rule"></div>
-<img src="assets/sb-logo.webp" alt="Shaahi Biryani">
-<div class="sb-pl-ttl">Shaahi<br>Bi<span style="display:inline-block;transform:scaleX(-1);font-size:1em;line-height:inherit;vertical-align:baseline">R</span>yani</div>
-<div class="sb-pl-tag">Plano, Texas</div>
-<div class="sb-pl-rule"></div>
-<div class="sb-pl-qt">&ldquo;Centuries of Hyderabadi tradition, served with royal hospitality.&rdquo;</div>
-</div></div>
-<div class="sb-pgr"><div class="sb-pgri">
-<div class="sb-pr-lbl">Our Bestsellers</div>
-<div class="sb-pr-ttl">Chef's Special</div>
-<div class="sb-pr-rule"><span>&#10022;</span></div>
+<!-- Splash/book intro removed 2026-08-10 so visitors land directly on the site.
+     Hidden placeholder below keeps the GEN:SPLASH markers intact so the
+     /kadmin menu-publish automation (render-menu.js) doesn't error out. -->
+<div style="display:none" aria-hidden="true">
 <!-- GEN:SPLASH START -->
 <div class="sb-pr-list">
 <div class="sb-pr-item"><span class="sb-pr-name">Goat Dum Biryani</span><span class="sb-pr-price">From $20</span></div>
@@ -1678,60 +1600,7 @@ p.s-intro {
 <div class="sb-pr-item"><span class="sb-pr-name">Chicken Tikka Masala</span><span class="sb-pr-price">$18</span></div>
 </div>
 <!-- GEN:SPLASH END -->
-<div class="sb-pr-rule"><span>&#10022;</span></div>
-<button class="sb-pr-btn" id="sbEnter">Enter Restaurant &#8250;</button>
-</div></div>
 </div>
-<div class="sb-cover" id="sbCover">
-<div class="sb-cf"><div class="sb-ci">
-<div class="sb-cv-est">Est. 2025 &middot; Plano, Texas</div>
-<div class="sb-cv-rule"></div>
-<img class="sb-cv-logo" src="assets/sb-logo.webp" alt="Shaahi Biryani">
-<div class="sb-cv-ttl">Shaahi<br>Bi<span style="display:inline-block;transform:scaleX(-1);font-size:1em;line-height:inherit;vertical-align:baseline">R</span>yani</div>
-<div class="sb-cv-dm"></div>
-<div class="sb-cv-tag">The Pride of Biryani &amp; Kababs</div>
-<div class="sb-cv-rule"></div>
-<div class="sb-cv-cta">Open Menu</div>
-</div></div>
-<div class="sb-cb"><span style="opacity:.06;font-size:60px;color:rgba(201,168,76,1)">&#10022;</span></div>
-</div>
-</div>
-<div class="sb-hint" id="sbHint">Click the cover to open</div>
-<button class="sb-skip" id="sbSkip">Skip intro &#8250;</button>
-<script>
-(function(){
-  document.body.style.overflow="hidden";
-  var ov    = document.getElementById("SBov");
-  var cover = document.getElementById("sbCover");
-  var hint  = document.getElementById("sbHint");
-  var enter = document.getElementById("sbEnter");
-  var skip  = document.getElementById("sbSkip");
-  var opened = false;
-
-  function doOpen(){
-    if(opened) return;
-    opened = true;
-    cover.classList.add("open");
-    hint.classList.add("gone");
-    setTimeout(function(){ enter.classList.add("vis"); }, 1100);
-  }
-
-  function doEnter(){
-    ov.style.transition = "opacity .8s ease";
-    ov.style.opacity = "0";
-    document.body.style.overflow = "";
-    setTimeout(function(){ ov.style.display = "none"; }, 850);
-  }
-
-  cover.addEventListener("click", doOpen);
-  cover.addEventListener("touchend", function(e){ e.preventDefault(); doOpen(); });
-  enter.addEventListener("click", function(e){ e.stopPropagation(); doEnter(); });
-  skip.addEventListener("click", doEnter);
-})();
-</script>
-</div>
-<!-- /BOOK OVERLAY -->
-
 
 <nav id="nav">
   <a href="/" class="nav-logo"><img src="assets/sb-logo.webp" alt="Shaahi Biryani"></a>
