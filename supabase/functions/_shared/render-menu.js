@@ -160,9 +160,13 @@ function renderItemLine(r, offersSides) {
     ? ` data-sizes='${JSON.stringify({ Naan: price, Rice: price })}'`
     : "";
   const imageAttr = r.image_url ? ` data-image="${escAttr(r.image_url)}"` : "";
+  const thumb = r.image_url
+    ? `<img class="mi-thumb" src="${escAttr(r.image_url)}" alt="" loading="lazy">`
+    : "";
   const mdesc = desc ? `<div class="mdesc">${escText(desc)}</div>` : "";
   return `    <div class="mi" data-name="${dn}" data-price="${escAttr(price)}" ` +
     `data-desc="${escAttr(desc)}"${schedAttr}${sizesAttr}${imageAttr} onclick="openItemModal(this)">` +
+    thumb +
     `<div class="mib"><div class="min">${min}</div>` +
     mdesc +
     `<button class="mi-add" onclick="event.stopPropagation();openItemModal(this.closest('.mi'))">+</button>` +
