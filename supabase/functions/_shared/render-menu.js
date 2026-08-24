@@ -120,6 +120,11 @@ export function itemDataName(r) {
 // the guest picked (as variant_name) for the kitchen to see.
 const SIDE_CHOICE_CATS = new Set(["chk", "lmb"]);
 const SIDE_CHOICE_SUBHEADS = new Set(["Platters"]);
+// Dishes that sit inside a side-choice category but are served as a bowl on
+// their own, so a naan-or-rice pick is meaningless. Keyed by the menu-item
+// half of the pid (not the display name) so renaming the dish on the menu
+// can't silently switch the picker back on.
+const NO_SIDE_CHOICE_ITEMS = new Set(["goat-haleem"]);
 
 // Maps each item row to the subhead text it currently sits under, per
 // category (subheads reset per category and only items — not the subhead
@@ -137,6 +142,7 @@ function buildSubheadMap(data) {
 }
 
 function offersSideChoice(r, subheadMap) {
+  if (NO_SIDE_CHOICE_ITEMS.has(String(r.pid || "").split("|")[0])) return false;
   if (SIDE_CHOICE_CATS.has(r.category)) return true;
   return SIDE_CHOICE_SUBHEADS.has(subheadMap.get(r) || "");
 }
