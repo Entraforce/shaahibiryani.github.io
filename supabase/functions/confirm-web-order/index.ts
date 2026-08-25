@@ -44,10 +44,12 @@ Deno.serve(async (req) => {
     const orderId = typeof body?.orderId === "string" ? body.orderId : null;
     if (!orderId) return json({ error: "Missing orderId." }, 400);
 
-    // Look up the order and its PaymentIntent reference.
+    // The PaymentIntent id is read from the ORDER, never from the request, so a
+    // caller cannot point an order at someone else's successful charge. The
+    // request supplies only which order to re-check.
     const { data: order, error: oErr } = await supabase
       .from("orders")
-      .select("id, payment_status, stripe_payment_intent")
+      .select("id, payment_status, stripe_payment_intent, total, subtotal, tax, delivery_fee, tip")
       .eq("id", orderId)
       .maybeSingle();
     if (oErr) return json({ error: oErr.message }, 500);
@@ -58,14 +60,37 @@ Deno.serve(async (req) => {
 
     // Ask Stripe — the source of truth — whether this charge actually succeeded.
     const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent);
+
+    // ── Every check below must pass before money is called received ────────
     if (pi.status !== "succeeded") {
       return json({ ok: true, paid: false, status: pi.status });
     }
+    // Test-mode charges must never mark a live order paid (or vice versa).
+    if (pi.livemode !== (Deno.env.get("STRIPE_LIVEMODE") !== "false")) {
+      console.error("livemode mismatch on", order.id);
+      return json({ ok: true, paid: false, status: "environment_mismatch" });
+    }
+    if ((pi.currency ?? "").toLowerCase() !== "usd") {
+      console.error("currency mismatch on", order.id);
+      return json({ ok: true, paid: false, status: "currency_mismatch" });
+    }
+    // The captured amount must match what this order actually costs. Guards
+    // against an order being re-pointed at a cheaper intent, and against a
+    // total having been altered after the intent was created.
+    const captured = pi.amount_received ?? pi.amount ?? 0;
+    const expected = Math.round(Number(order.total ?? 0) * 100);
+    if (expected > 0 && captured !== expected) {
+      console.error("amount mismatch on", order.id, { captured, expected });
+      return json({ ok: true, paid: false, status: "amount_mismatch" });
+    }
 
+    // Only flip a still-pending row. If the webhook won the race this matches
+    // nothing, which is the correct outcome — it is already paid.
     const { error: uErr } = await supabase
       .from("orders")
-      .update({ payment_status: "paid", paid_amount_cents: pi.amount_received ?? pi.amount })
-      .eq("id", order.id);
+      .update({ payment_status: "paid", paid_amount_cents: captured })
+      .eq("id", order.id)
+      .eq("payment_status", "pending");
     if (uErr) return json({ error: uErr.message }, 500);
 
     return json({ ok: true, paid: true });

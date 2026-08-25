@@ -53,6 +53,28 @@ Deno.serve(async (req) => {
     });
   }
 
+
+  // ── Replay defence ───────────────────────────────────────────────────────
+  // Stripe re-delivers events on any non-2xx, on timeouts, and on manual
+  // resend. Claim the event id first: the primary key on stripe_events means a
+  // second delivery loses the race and returns here before touching an order,
+  // so a replay cannot re-award points or re-print a ticket. Signature has
+  // already been verified above, so only genuine Stripe events get this far.
+  const { error: claimErr } = await supabase
+    .from("stripe_events")
+    .insert({ event_id: event.id, event_type: event.type, account: "web" });
+  if (claimErr) {
+    // 23505 = unique_violation: already processed. Ack so Stripe stops retrying.
+    if ((claimErr as { code?: string }).code === "23505") {
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    // Any other failure: do NOT process, and do NOT ack — let Stripe retry.
+    return new Response("Could not record event", { status: 500 });
+  }
+
   if (event.type === "payment_intent.succeeded") {
     const pi = event.data.object as Stripe.PaymentIntent;
 
