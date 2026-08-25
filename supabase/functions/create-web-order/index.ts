@@ -125,6 +125,36 @@ Deno.serve(async (req) => {
     let count = 0;
     const itemRows: Array<Record<string, unknown>> = [];
 
+    // Catering trays are cooked to order, so only a few can be bought online
+    // (mirrors the ceilings on the site); bigger orders need a phone call and
+    // 4-5 days. Enforced here too so editing the page can't slip an unfillable
+    // order past the kitchen. Ceilings are per pan size because one full tray
+    // of biryani already feeds 15-20 — the usual party order (one full plus a
+    // few halves) has to pass.
+    const MAX_FULL_TRAYS = 2, MAX_HALF_TRAYS = 4;
+    let fullTrays = 0, halfTrays = 0;
+    for (const line of items as LineRef[]) {
+      if (!String(line.menuItemId).startsWith("cat-")) continue;
+      const q = Number(line.quantity);
+      if (!Number.isFinite(q) || q < 1) continue;
+      if (line.variantId === "full") fullTrays += q;
+      else if (line.variantId === "half") halfTrays += q;
+    }
+    const over: string[] = [];
+    if (fullTrays > MAX_FULL_TRAYS) {
+      over.push(`${fullTrays} full trays (max ${MAX_FULL_TRAYS} online)`);
+    }
+    if (halfTrays > MAX_HALF_TRAYS) {
+      over.push(`${halfTrays} half trays (max ${MAX_HALF_TRAYS} online)`);
+    }
+    if (over.length) {
+      return json({
+        error: `Your order has ${over.join(" and ")}. Larger orders need ` +
+          `4–5 days' notice so we can prep properly — please call ` +
+          `(469) 960-3300 and we'll take care of you.`,
+      }, 400);
+    }
+
     for (const line of items as LineRef[]) {
       const key = `${String(line.menuItemId)}|${String(line.variantId)}`;
       const entry = dbPrices[key];

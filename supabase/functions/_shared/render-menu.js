@@ -147,6 +147,66 @@ function offersSideChoice(r, subheadMap) {
   return SIDE_CHOICE_SUBHEADS.has(subheadMap.get(r) || "");
 }
 
+// ── Catering trays ──────────────────────────────────────────────────
+// The catering category stores one row per pan size (pid `cat-<dish>|half`
+// and `|full`) so each size can be priced and toggled independently, but a
+// guest should see ONE line per dish with a Half/Full picker. Rows are
+// paired on the dish half of the pid; a dish sold in only one size (Fruit
+// Custard) simply yields a one-entry picker rather than a missing option.
+const TRAY_CAT = "ctg";
+const TRAY_LABELS = { half: "Half Tray", full: "Full Tray" };
+
+function trayGroups(rows) {
+  const groups = [];
+  const byDish = new Map();
+  for (const r of rows) {
+    if (r.kind !== "item" || !r.pid) continue;
+    const [dish, portion] = String(r.pid).split("|");
+    if (!TRAY_LABELS[portion]) continue;
+    let g = byDish.get(dish);
+    if (!g) {
+      g = { dish, lead: r, sizes: [] };
+      byDish.set(dish, g);
+      groups.push(g);
+    }
+    g.sizes.push({ label: TRAY_LABELS[portion], pid: r.pid, price: r.price });
+  }
+  // Half before Full regardless of row order.
+  const order = ["Half Tray", "Full Tray"];
+  for (const g of groups) g.sizes.sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
+  return groups;
+}
+
+// web_menu_items.name is UNIQUE, so a tray row is named "<Dish> Half Tray"
+// and the dish name lives in `display`. The cart, PID_MAP and the kitchen
+// ticket all key off data-name, which therefore has to be both unique across
+// the menu and readable — "Chana Masala (Catering)" distinguishes the tray
+// from the à la carte dish of the same name.
+export function trayDataName(r) {
+  return `${r.display || r.name} (Catering)`;
+}
+
+function renderTrayLine(g) {
+  const r = g.lead;
+  const dn = escAttr(trayDataName(r));
+  const sizes = {};
+  for (const s of g.sizes) sizes[s.label] = fmt2(s.price);
+  const from = fmt2(Math.min(...g.sizes.map((s) => s.price)));
+  let min = escText(r.display || r.name);
+  if (r.note) min += ` <span class="mnote">${escText(r.note)}</span>`;
+  const sizesAttr = ` data-sizes='${JSON.stringify(sizes).replace(/'/g, "&#39;")}'`;
+  const imageAttr = r.image_url ? ` data-image="${escAttr(r.image_url)}"` : "";
+  const thumb = r.image_url
+    ? `<img class="mi-thumb" src="${escAttr(r.image_url)}" alt="" loading="lazy">`
+    : "";
+  return `    <div class="mi" data-name="${dn}" data-price="${escAttr(from)}" ` +
+    `data-desc=""${sizesAttr}${imageAttr} onclick="openItemModal(this)">` +
+    thumb +
+    `<div class="mib"><div class="min">${min}</div>` +
+    `<button class="mi-add" onclick="event.stopPropagation();openItemModal(this.closest('.mi'))">+</button>` +
+    `</div><div class="mprice">${escText(from)}</div></div>`;
+}
+
 function renderItemLine(r, offersSides) {
   const dn = escAttr(r.name);
   const price = fmt2(r.price);
@@ -192,18 +252,34 @@ export function renderMenuSection(data) {
     out.push(`  <div class="mpane${ci === 0 ? " active" : ""}" id="p-${escAttr(c.code)}"><div class="mlist">`);
     if (c.note) out.push(`    <div class="msecnote">${escText(c.note)}</div>`);
     let first = true;
+    const isTray = c.code === TRAY_CAT;
+    // Trays are emitted one line per dish, so buffer each subhead's item rows
+    // and flush them paired instead of rendering row-by-row.
+    let pending = [];
+    const flush = () => {
+      if (!pending.length) return;
+      for (const g of trayGroups(pending)) out.push(renderTrayLine(g));
+      pending = [];
+    };
     for (const r of paneRows(data, c.code)) {
       if (r.kind === "subhead") {
+        flush();
+        // `display` wins: catering subheads carry a suffixed `name` purely to
+        // satisfy the UNIQUE constraint on web_menu_items.name.
+        const sh = escText(r.display || r.name);
         let line = first
-          ? `    <div class="msubhead">${escText(r.name)}</div>`
-          : `    <div class="msubhead" style="margin-top:24px;">${escText(r.name)}</div>`;
+          ? `    <div class="msubhead">${sh}</div>`
+          : `    <div class="msubhead" style="margin-top:24px;">${sh}</div>`;
         if (r.note) line += `<div class="msubnote">${escText(r.note)}</div>`;
         out.push(line);
+      } else if (isTray) {
+        pending.push(r);
       } else {
         out.push(renderItemLine(r, offersSideChoice(r, subheadMap)));
       }
       first = false;
     }
+    flush();
     out.push(`  </div></div>`);
   });
   return out.join("\n");
@@ -265,8 +341,20 @@ export function renderPidMap(data) {
     }
   }
   const subheadMap = buildSubheadMap(data);
+  // Catering trays first: the paired menu line offers Half/Full Tray, so the
+  // map has to key those exact labels back to their per-size pids.
+  for (const g of trayGroups(data.items.filter((r) => r.category === TRAY_CAT))) {
+    const dn = trayDataName(g.lead);
+    if (dn in map) continue;
+    const e = {};
+    for (const s of g.sizes) e[s.label] = s.pid;
+    map[dn] = e;
+  }
   for (const r of data.items) {
     if (r.kind !== "item" || !r.pid || HIDDEN_CATS.has(r.category)) continue;
+    // Trays were paired above; their raw per-size rows must not also land in
+    // the map under "<Dish> Half Tray", which no rendered line can produce.
+    if (r.category === TRAY_CAT) continue;
     const dn = itemDataName(r);
     if (dn in map) continue;
     map[dn] = offersSideChoice(r, subheadMap)
