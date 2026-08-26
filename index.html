@@ -1722,6 +1722,24 @@ body{background:var(--near-black);color:var(--cream);font-family:"Cormorant Gara
 ::-webkit-scrollbar-track{background:var(--maroon-d);}
 ::-webkit-scrollbar-thumb{background:var(--gold-d);}
 
+/* ── Z-INDEX SCALE ─────────────────────────────────────────────────────────
+   Documented intent, not just numbers that happened to work:
+     1-20    decorative hero layering (slides/overlays/counter) — self
+             contained, never needs to relate to anything outside the hero
+     500     sticky navigation
+     799     Ask Shaahi's one-time hint bubble (sits just under its own launcher)
+     800     floating controls: Ask Shaahi launcher/window, WhatsApp FAB —
+             transient, dismissable, never the guest's exclusive focus
+     900     cart drawer
+     1000    toast — must outrank a drawer so a confirmation is never hidden
+             behind one that's still open
+     1100+   focused modal dialogs (item detail, checkout confirmation) — these
+             ARE the guest's exclusive focus, so they must outrank every
+             floating control, not share a tier with them
+     9001-2  the full ordering system overlay + drawer — deliberately the
+             highest tier, since a checkout in progress must never be
+             interrupted or partially obscured by anything else on the page
+   ────────────────────────────────────────────────────────────────────────── */
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;transition:all .45s;}
 nav.scrolled{background:rgba(8,2,10,.96);border-bottom:1px solid rgba(201,168,76,.18);backdrop-filter:blur(14px);}
@@ -2028,7 +2046,7 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
 /* Item modal */
 .item-modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.72);
-  z-index:800;display:flex;align-items:center;justify-content:center;
+  z-index:1100;display:flex;align-items:center;justify-content:center;
   padding:20px;opacity:0;pointer-events:none;transition:opacity .3s;
   backdrop-filter:blur(4px);
 }
