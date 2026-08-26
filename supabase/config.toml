@@ -1,0 +1,7 @@
+
+# Stripe cannot present a Supabase JWT; authenticity is enforced inside the
+# function by signature verification. Pinned so a future deploy cannot re-gate
+# this endpoint and silently stop all webhook delivery.
+[functions.stripe-webhook-web]
+enabled = true
+verify_jwt = false
