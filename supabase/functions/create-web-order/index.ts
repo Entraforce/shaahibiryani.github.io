@@ -65,6 +65,34 @@ type LineRef = {
   specialInstructions?: unknown;
 };
 
+
+// ── Logical checkout identity ───────────────────────────────────────────────
+// One logical checkout must yield at most one PaymentIntent, however many
+// times the browser asks. The browser has no session, so the identity is
+// derived server-side from what actually defines this checkout: who is buying
+// and exactly what is in the basket. Same customer + same basket + same tip +
+// same fulfilment = same key = Stripe replays the original PaymentIntent
+// instead of creating a second one. Change the basket and the key changes,
+// which is precisely when a new PaymentIntent SHOULD be created.
+//
+// Deliberately not random, and deliberately not client-supplied.
+async function checkoutKey(parts: {
+  phone: string; items: LineRef[]; tipCents: number; fulfillment: string;
+}): Promise<string> {
+  const canonical = JSON.stringify({
+    p: parts.phone,
+    f: parts.fulfillment,
+    t: parts.tipCents,
+    // sorted so key order in the request cannot change the fingerprint
+    i: parts.items
+      .map((l) => `${String(l.menuItemId)}|${String(l.variantId)}x${Number(l.quantity)}`)
+      .sort(),
+  });
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+  return "sbco_" + Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 48);
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
 }
@@ -213,6 +241,16 @@ Deno.serve(async (req) => {
     const description = `Shaahi Biryani pickup order — ${itemSummary}`.slice(0, 900);
 
     // ── Stripe PaymentIntent ──
+    // The idempotency key is stable for this logical checkout, so concurrent
+    // or repeated calls collapse onto ONE PaymentIntent rather than racing
+    // into several. Stripe replays the original response for 24h.
+    const ckey = await checkoutKey({
+      phone: guestPhone,
+      items: items as LineRef[],
+      tipCents: Math.round(Number(body?.tipCents) || 0),
+      fulfillment: "pickup",
+    });
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: "usd",
@@ -226,8 +264,34 @@ Deno.serve(async (req) => {
         guest_name: guestName,
         guest_email: guestEmail || "",
         item_count: String(count),
+        checkout_key: ckey,
       },
-    });
+    }, { idempotencyKey: ckey });
+
+    // Stripe may have replayed an existing PaymentIntent. If an order already
+    // exists for it, return that one instead of inserting a second row — this
+    // is the reuse path, not an error path. orders_stripe_payment_intent_key
+    // remains the last line of defence if two inserts still race.
+    const { data: existing } = await supabase
+      .from("orders")
+      .select("id, order_number, subtotal, tax, delivery_fee, tip, total, payment_status")
+      .eq("stripe_payment_intent", paymentIntent.id)
+      .maybeSingle();
+    if (existing) {
+      return json({
+        paymentIntent: paymentIntent.client_secret,
+        orderId: existing.id,
+        orderNumber: existing.order_number,
+        reused: true,
+        alreadyPaid: existing.payment_status === "paid",
+        breakdown: {
+          subtotalCents: Math.round(Number(existing.subtotal) * 100),
+          taxCents: Math.round(Number(existing.tax) * 100),
+          tipCents: Math.round(Number(existing.tip) * 100),
+          totalCents: Math.round(Number(existing.total) * 100),
+        },
+      });
+    }
 
     // ── Insert the order (pending + unpaid until the webhook confirms) ──
     const { data: order, error: orderErr } = await supabase
@@ -255,6 +319,45 @@ Deno.serve(async (req) => {
       .single();
 
     if (orderErr || !order) {
+      // 23505 on orders_stripe_payment_intent_key means a concurrent request
+      // for this same logical checkout inserted first. That is the expected
+      // outcome of a race, not a failure: the idempotency key already
+      // guaranteed a single PaymentIntent, so the winner's order IS this
+      // caller's order. Return it instead of surfacing a database error —
+      // otherwise 19 of 20 simultaneous customers see "duplicate key".
+      const e = orderErr as { code?: string; message?: string } | null;
+      const isDuplicate = e?.code === "23505" ||
+        /duplicate key|already exists/i.test(e?.message ?? "");
+      if (isDuplicate) {
+        // Read-after-write: the request that won the insert may not have
+        // committed by the time we look. It commits in milliseconds, so retry
+        // briefly rather than failing a customer who did nothing wrong.
+        let won: Record<string, unknown> | null = null;
+        for (let attempt = 0; attempt < 6 && !won; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 120));
+          const { data } = await supabase
+            .from("orders")
+            .select("id, order_number, subtotal, tax, delivery_fee, tip, total, payment_status")
+            .eq("stripe_payment_intent", paymentIntent.id)
+            .maybeSingle();
+          won = data ?? null;
+        }
+        if (won) {
+          return json({
+            paymentIntent: paymentIntent.client_secret,
+            orderId: (won as any).id,
+            orderNumber: (won as any).order_number,
+            reused: true,
+            alreadyPaid: (won as any).payment_status === "paid",
+            breakdown: {
+              subtotalCents: Math.round(Number((won as any).subtotal) * 100),
+              taxCents: Math.round(Number((won as any).tax) * 100),
+              tipCents: Math.round(Number((won as any).tip) * 100),
+              totalCents: Math.round(Number((won as any).total) * 100),
+            },
+          });
+        }
+      }
       return json({ error: orderErr?.message ?? "Could not create order." }, 500);
     }
 
