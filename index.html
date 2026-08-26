@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
 <script>if(location.pathname.toLowerCase()==='/index.html'){location.replace('/'+location.search+location.hash);}</script>
+<script>
+  // Ask Shaahi first-time discovery. On a phone the launcher normally
+  // collapses to a small mark once a guest knows what it is — but a
+  // FIRST-time mobile visitor seeing only an unlabeled circle has no way to
+  // learn that. Runs synchronously in <head> so the class is present before
+  // first paint; toggling it after paint would cause a visible layout flash.
+  try {
+    if (localStorage.getItem('shaahi_ask_seen') !== '1') {
+      document.documentElement.classList.add('ask-first-visit');
+    }
+  } catch (e) {}
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3NJRL7V5NB"></script>
 <script>
@@ -2229,9 +2241,32 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
 /* Below the tablet breakpoint the label would crowd the thumb zone and the
    WhatsApp FAB, so it collapses to a circular mark of the same 48px height. */
 @media (max-width:560px){
-  #chat-bubble{padding:0;width:52px;min-height:52px;justify-content:center;border-radius:50%;}
-  #chat-bubble .ask-copy{display:none;}
+  html:not(.ask-first-visit) #chat-bubble{padding:0;width:52px;min-height:52px;justify-content:center;border-radius:50%;}
+  html:not(.ask-first-visit) #chat-bubble .ask-copy{display:none;}
+  /* First visit: keep the labeled pill so a guest can read what this is,
+     but shrink the padding slightly so it never crowds the corner. */
+  html.ask-first-visit #chat-bubble{padding:0 14px;}
 }
+/* One quiet capability line, shown once. Not a tutorial, not a loop of
+   animation — it fades in, sits still, and disappears the first time the
+   guest does anything (scroll, tap, or ~7s of simply looking at the page). */
+#ask-hint{
+  position:fixed;z-index:799;
+  bottom:84px;right:24px;max-width:220px;
+  background:rgba(16,3,8,.95);
+  border:1px solid rgba(201,168,76,.4);
+  border-radius:12px;
+  padding:10px 14px;
+  font-family:"Manrope",sans-serif;font-size:.78rem;line-height:1.35;
+  color:var(--cream,#FBF7EC);
+  opacity:0;transform:translateY(6px);
+  animation:askHintIn .5s ease .3s forwards;
+  pointer-events:none;
+}
+html:not(.ask-first-visit) #ask-hint{display:none;}
+@keyframes askHintIn{to{opacity:1;transform:translateY(0);}}
+@media (min-width:561px){#ask-hint{display:none;}}
+@media (prefers-reduced-motion:reduce){#ask-hint{animation:none;opacity:1;transform:none;}}
 @media (prefers-reduced-motion:reduce){
   #chat-bubble{transition:none;}
 }
@@ -4075,6 +4110,27 @@ window.toggleChat=function(){
   if(_co){var m=document.getElementById('chatMessages');if(m&&m.children.length===0)_ci();}
 };
 
+// Ask Shaahi first-visit hint: dismiss on the first sign of interaction, or
+// after a short window if the guest just keeps browsing. One-time only —
+// never re-armed, never re-shown, no pulsing loop.
+(function(){
+  if (!document.documentElement.classList.contains('ask-first-visit')) return;
+  var dismissed = false;
+  function markSeen(){
+    if (dismissed) return;
+    dismissed = true;
+    try { localStorage.setItem('shaahi_ask_seen','1'); } catch(e){}
+    document.documentElement.classList.remove('ask-first-visit');
+    var hint = document.getElementById('ask-hint');
+    if (hint) hint.remove();
+  }
+  window.addEventListener('scroll', markSeen, {once:true, passive:true});
+  window.addEventListener('touchstart', markSeen, {once:true, passive:true});
+  setTimeout(markSeen, 7000);
+  var b = document.getElementById('chat-bubble');
+  if (b) b.addEventListener('click', markSeen, {once:true});
+})();
+
 window.sendUserMessage=function(){
   var inp=document.getElementById('chatInput'); if(!inp) return;
   var txt=inp.value.trim(); if(!txt) return;
@@ -4399,6 +4455,10 @@ document.addEventListener('DOMContentLoaded',function(){
     <span class="ask-role">AI Dining Concierge</span>
   </span>
 </div>
+<!-- Shown once, to a first-time mobile visitor only. Sells the capability in
+     one line rather than a walkthrough; disappears the moment the guest does
+     anything, and never reappears once they have seen it. -->
+<div id="ask-hint" aria-hidden="true">Need help choosing? Ask me.</div>
 
 <div id="chat-window">
   <!-- Header -->
