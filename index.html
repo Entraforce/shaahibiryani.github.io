@@ -2758,11 +2758,20 @@ p.s-intro {
 </nav>
 
 <section id="hero">
-  <div class="slide active" style="background-image:url('2C5D89A2-5C7A-483A-B9AF-7C3814DB5DBE.PNG');"></div>
-  <div class="slide" style="background-image:url('A4F5F127-8CDE-4458-BB83-BBCF6F2A63D6.PNG');"></div>
-  <div class="slide" style="background-image:url('PHOTO-2026-07-08-18-39-53 3.jpeg');"></div>
-  <div class="slide" style="background-image:url('D1E486FC-2DC5-44D8-A0D0-BC6E0E6256E5.PNG');"></div>
-  <div class="slide" style="background-image:url('2386FC84-CB53-432B-8358-97187E76A26B.PNG');"></div>
+  <!-- Hero slides. Same five photographs, re-encoded to WebP from the original
+       masters by scripts/build-hero-images.mjs (format only — no resizing, no
+       retouching). They were PNGs: 8.9 MB for five slides, all five fetched
+       before the guest had done anything.
+
+       Only the first slide carries a background here, so it is the only one that
+       competes with first paint. The rest are held in data-bg and attached once
+       the page is idle — long before the 7s transition, and immediately if a dot
+       is clicked. -->
+  <div class="slide active" style="background-image:url('assets/hero-01.webp');"></div>
+  <div class="slide" data-bg="assets/hero-02.webp"></div>
+  <div class="slide" data-bg="assets/hero-03.webp"></div>
+  <div class="slide" data-bg="assets/hero-04.webp"></div>
+  <div class="slide" data-bg="assets/hero-05.webp"></div>
   <div class="hero-overlay-base"></div>
   <div class="hero-overlay-sides"></div>
   <div class="hero-overlay-maroon"></div>
@@ -4769,12 +4778,38 @@ document.addEventListener('DOMContentLoaded',function(){
     var slides=document.querySelectorAll('.slide'),dw=document.getElementById('hdots');
     if(!slides.length||!dw) return;
     var cur=0,tot=slides.length,timer;
+
+    // Attach a deferred slide's photograph. Idempotent: once a slide has its
+    // background the attribute is dropped, so nothing is fetched twice.
+    function hydrate(i){
+      var el=slides[i]; if(!el) return;
+      var bg=el.getAttribute('data-bg');
+      if(!bg) return;
+      el.style.backgroundImage="url('"+bg+"')";
+      el.removeAttribute('data-bg');
+    }
+    // Slide two is chased as soon as the first photograph has arrived, because
+    // the carousel advances at 7s and an unloaded slide would fade to nothing.
+    // The remaining three follow a second later. Measured on a throttled
+    // ~1.6Mbps connection, requestIdleCallback did NOT fire until 16s — the page
+    // never went idle — so the schedule is driven by the first image, not by
+    // idleness.
+    function hydrateRest(){ for(var i=2;i<tot;i++) hydrate(i); }
+    var first=new Image();
+    first.onload=first.onerror=function(){
+      hydrate(1);                 // next slide ready long before the 7s turn
+      setTimeout(hydrateRest,1000);
+    };
+    first.src='assets/hero-01.webp';   // already in flight; this resolves from cache
+    // Belt and braces if that never settles.
+    setTimeout(function(){ hydrate(1); hydrateRest(); },6000);
     slides.forEach(function(_,i){
       var d=document.createElement('div');
       d.className='hdot'+(i===0?' active':'');
       d.onclick=function(){go(i);}; dw.appendChild(d);
     });
     function go(n){
+      hydrate(n);   // in case a dot is clicked before the idle pass runs
       slides[cur].classList.remove('active'); dw.children[cur].classList.remove('active');
       cur=n; slides[cur].classList.add('active'); dw.children[cur].classList.add('active');
       var ne=document.getElementById('hnum'); if(ne) ne.textContent=String(cur+1).padStart(2,'0');
