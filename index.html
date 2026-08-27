@@ -2242,7 +2242,21 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
 .cart-close{background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;transition:color .3s;}
 .cart-close:hover{color:var(--gold);}
 .cart-items{flex:1;overflow-y:auto;padding:16px 24px;}
-.cart-empty{text-align:center;padding:48px 0;font-style:italic;color:var(--text-muted);font-size:.95rem;}
+.cart-empty{text-align:center;padding:44px 8px;}
+.cart-empty-title{font-family:"Cinzel",serif;font-size:1rem;color:var(--cream);letter-spacing:.04em;margin-bottom:8px;}
+.cart-empty-sub{font-style:italic;color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:20px;}
+.cart-empty-btn{
+  display:block;width:100%;min-height:46px;cursor:pointer;margin-bottom:10px;
+  background:var(--gold);color:var(--near-black);border:none;
+  font-family:"Cinzel",serif;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700;
+}
+.cart-empty-btn:focus-visible,.cart-empty-link:focus-visible{outline:2px solid var(--gold-l);outline-offset:2px;}
+.cart-empty-link{
+  display:block;width:100%;min-height:44px;cursor:pointer;
+  background:transparent;color:var(--gold-l);border:1px solid rgba(201,168,76,.32);
+  font-family:"Cinzel",serif;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
+}
+.cart-empty-link:hover{background:rgba(201,168,76,.08);}
 .cart-item{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid rgba(201,168,76,.08);align-items:flex-start;}
 .cart-item:last-child{border-bottom:none;}
 .cart-item-info{flex:1;}
@@ -3981,8 +3995,26 @@ function renderCart(){
   var tq=cart.reduce(function(s,i){return s+i.qty;},0);
   if(ce) ce.textContent=tq;
   if(!cart.length){
-    ie.innerHTML='<div class="cart-empty">Your order is empty.<br>Add something delicious!</div>';
-    if(te) te.textContent='$0.00'; return;
+    ie.innerHTML=
+      '<div class="cart-empty">'
+      +'<div class="cart-empty-title">Your order is empty</div>'
+      +'<p class="cart-empty-sub">Start with a biryani — or let our concierge put a meal together with you.</p>'
+      +'<button type="button" class="cart-empty-btn" onclick="closeCartAndBrowse()">Browse the menu</button>'
+      +'<button type="button" class="cart-empty-link" onclick="closeCartAndAsk()">Ask Shaahi</button>'
+      +'</div>';
+    if(te) te.textContent='$0.00';
+    // The button-state block further down never runs on this path, so set it
+    // here too — otherwise an empty cart keeps a live "Checkout & Pay".
+    var emptyBtn=document.querySelector('.cart-checkout');
+    if(emptyBtn){
+      emptyBtn.disabled=true; emptyBtn.style.opacity='.5'; emptyBtn.style.cursor='not-allowed';
+      emptyBtn.setAttribute('aria-disabled','true');
+      emptyBtn.textContent='Your order is empty';
+    }
+    ['cartTax','cartTipAmt','cartGrandTotal'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.textContent='$0.00';
+    });
+    return;
   }
   var tot=0;
   ie.innerHTML=cart.map(function(item,idx){
@@ -3999,34 +4031,43 @@ function renderCart(){
       +'<button class="cart-item-del" onclick="removeFromCart('+idx+')">x</button>'
       +'</div>';
   }).join('');
-  if(te) te.textContent = tot>0 ? '$'+tot.toFixed(2) : 'TBD';
-  var tax = tot * TAX_RATE;
-  var tip = tot * ((selectedTip||0) / 100);
-  var deliv = (fulfillment==='delivery' && tot>0) ? DELIVERY_FEE : 0;
-  var grand = tot + tax + tip + deliv;
+  var T = orderTotals(cart, selectedTip || 0,
+                      (fulfillment==='delivery' && tot>0) ? _cents(DELIVERY_FEE) : 0);
+  if(te) te.textContent = tot>0 ? _fmtCents(T.subtotalCents) : 'TBD';
+  var tax = T.taxCents / 100, tip = T.tipCents / 100,
+      deliv = T.deliveryFeeCents / 100, grand = T.totalCents / 100;
   var taxEl = document.getElementById('cartTax');
   var tipEl = document.getElementById('cartTipAmt');
   var gtEl  = document.getElementById('cartGrandTotal');
   var dRow  = document.getElementById('cartDelivRow');
   var dAmt  = document.getElementById('cartDelivAmt');
-  if(taxEl) taxEl.textContent = tot>0 ? '$'+tax.toFixed(2) : '$0.00';
-  if(tipEl) tipEl.textContent = tot>0 && selectedTip>0 ? '$'+tip.toFixed(2) : '$0.00';
+  if(taxEl) taxEl.textContent = tot>0 ? _fmtCents(T.taxCents) : '$0.00';
+  if(tipEl) tipEl.textContent = tot>0 && selectedTip>0 ? _fmtCents(T.tipCents) : '$0.00';
   if(dRow)  dRow.style.display = deliv>0 ? 'flex' : 'none';
-  if(dAmt)  dAmt.textContent = '$'+DELIVERY_FEE.toFixed(2);
-  if(gtEl)  gtEl.textContent  = tot>0 ? '$'+grand.toFixed(2) : '$0.00';
+  if(dAmt)  dAmt.textContent = _fmtCents(T.deliveryFeeCents);
+  if(gtEl)  gtEl.textContent  = tot>0 ? _fmtCents(T.totalCents) : '$0.00';
   // Enforce delivery minimum on the checkout button
   var coBtn = document.querySelector('.cart-checkout');
   if(coBtn){
-    if(fulfillment==='delivery' && tot>0 && tot<DELIVERY_MIN){
+    if(!cart.length){
+      // An empty cart used to open the customer-details form for a $0.00 order:
+      // name, phone and email collected for nothing. Nothing to check out.
       coBtn.disabled=true; coBtn.style.opacity='.5'; coBtn.style.cursor='not-allowed';
+      coBtn.setAttribute('aria-disabled','true');
+      coBtn.textContent='Your order is empty';
+    } else if(fulfillment==='delivery' && tot>0 && tot<DELIVERY_MIN){
+      coBtn.disabled=true; coBtn.style.opacity='.5'; coBtn.style.cursor='not-allowed';
+      coBtn.setAttribute('aria-disabled','true');
       coBtn.textContent='Add $'+(DELIVERY_MIN-tot).toFixed(2)+' more for delivery';
     } else if(_trayLimitError()){
       // Say it here rather than at the payment step — nobody should fill in
       // their card details before finding out we can't cook it that fast.
       coBtn.disabled=true; coBtn.style.opacity='.5'; coBtn.style.cursor='not-allowed';
+      coBtn.setAttribute('aria-disabled','true');
       coBtn.textContent='Large order — please call us';
     } else {
       coBtn.disabled=false; coBtn.style.opacity=''; coBtn.style.cursor='pointer';
+      coBtn.removeAttribute('aria-disabled');
       coBtn.innerHTML='Checkout &amp; Pay &#8594;';
     }
   }
@@ -4045,9 +4086,38 @@ function renderCart(){
   }
 }
 
+// Routes out of an empty cart. Both close the drawer first, so the guest is not
+// left looking at an empty panel over the thing they asked for.
+// Opening the cart always dismisses the add-confirmation toast. The toast is
+// fixed bottom-centre at z-index 1000, which is exactly where the Checkout & Pay
+// button lands once the drawer is open — measured covering it at 390px.
+function openCartDrawer(){
+  var t=document.getElementById('cartToast');
+  if(t) t.classList.remove('show');
+  var dr=document.getElementById('cartDrawer');
+  if(dr) dr.classList.add('open');
+}
+
+function closeCartAndBrowse(){
+  var dr=document.getElementById('cartDrawer');
+  if(dr) dr.classList.remove('open');
+  var menu=document.getElementById('menu');
+  if(menu) menu.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeCartAndAsk(){
+  var dr=document.getElementById('cartDrawer');
+  if(dr) dr.classList.remove('open');
+  if(window.askShaahiOpen) window.askShaahiOpen('cart');
+}
+
 function showToast(msg, clickable){
   var t=document.getElementById('cartToast');
   if(!t) return;
+  // Measured at 390px: the toast covered the top of the Checkout & Pay button.
+  // With the drawer open the cart line and the count already confirm the add, so
+  // the toast has nothing to say and no right to sit on the CTA.
+  var drawer=document.getElementById('cartDrawer');
+  if(drawer && drawer.classList.contains('open')) return;
   if(clickable){
     // Tappable toast → opens the cart, so adding an item flows straight to checkout
     t.innerHTML = '<span>'+msg+'</span><span class="toast-cta">View order &rarr;</span>';
@@ -4055,9 +4125,7 @@ function showToast(msg, clickable){
     t.setAttribute('role','button');
     t.onclick=function(e){
       if(e) e.stopPropagation();   // don't let the "click-outside closes cart" handler swallow this
-      t.classList.remove('show');
-      var dr=document.getElementById('cartDrawer');
-      if(dr) dr.classList.add('open');
+      openCartDrawer();
     };
   } else {
     t.textContent=msg;
@@ -4073,6 +4141,44 @@ function showToast(msg, clickable){
 // ── WHATSAPP CHECKOUT ──
 var WA_NUMBER = '19452083795';
 var TAX_RATE  = 0.0825;
+
+// ── Order money, in whole cents ────────────────────────────────────────────
+// The cart used to compute each figure as its own floating-point expression and
+// round them independently, which made the visible lines disagree with the
+// visible total:
+//
+//   118.00 * 0.0825  = 9.735000000000001  -> toFixed(2) = "9.74"   (rounds up)
+//   118.00 * 1.0825  = 127.735            -> toFixed(2) = "127.73" (rounds down)
+//
+// The card was always charged $127.74, because create-web-order has always
+// worked in integer cents. So the screen was a penny under the real charge.
+//
+// This mirrors create-web-order line for line: round to cents ONCE per line,
+// round tax ONCE, then only add integers. If that function changes, change this
+// with it.
+function _cents(dollars){ return Math.round(Number(dollars) * 100); }
+function _fmtCents(cents){ return '$' + (cents / 100).toFixed(2); }
+
+// tipPercent is a percentage of the subtotal; deliveryFeeCents is passed through
+// but is currently always 0 — setFulfillment() refuses 'delivery' while it is
+// still "coming soon". NOTE for whoever turns delivery on: create-web-order does
+// NOT add a delivery fee to totalCents today, so it must be taught to before the
+// UI is allowed to show one, or the screen will over-state the charge.
+function orderTotals(items, tipPercent, deliveryFeeCents){
+  var subtotalCents = items.reduce(function(sum, i){
+    return sum + _cents(_p(i.price)) * Math.max(0, Math.trunc(i.qty));
+  }, 0);
+  var taxCents = Math.round(subtotalCents * TAX_RATE);
+  var tipCents = Math.max(0, Math.round(subtotalCents * ((tipPercent || 0) / 100)));
+  var feeCents = Math.max(0, Math.round(deliveryFeeCents || 0));
+  return {
+    subtotalCents: subtotalCents,
+    taxCents: taxCents,
+    tipCents: tipCents,
+    deliveryFeeCents: feeCents,
+    totalCents: subtotalCents + taxCents + tipCents + feeCents
+  };
+}
 var selectedTip = 0; // percent
 
 // ── Fulfillment (pickup vs delivery) ──
@@ -4118,6 +4224,9 @@ function setTip(pct){
 }
 
 function initiateWhatsAppCheckout(){
+  // The button is disabled when the cart is empty; this is the second lock, so a
+  // stale click or a keyboard activation cannot open checkout for a $0 order.
+  if(!cart.length){ return; }
   if(!cart.length){ showToast('Your cart is empty!'); return; }
   if(typeof _wpResetModal==='function') _wpResetModal();
   if(typeof _lockScroll==='function') _lockScroll();
@@ -4128,10 +4237,12 @@ function initiateWhatsAppCheckout(){
     if(typeof _unlockScroll==='function') _unlockScroll();
     return;
   }
-  var tax      = subtotal * TAX_RATE;
-  var tip      = subtotal * (selectedTip / 100);
-  var deliv    = (fulfillment==='delivery') ? DELIVERY_FEE : 0;
-  var grand    = subtotal + tax + tip + deliv;
+  var T        = orderTotals(cart, selectedTip || 0,
+                            (fulfillment==='delivery') ? _cents(DELIVERY_FEE) : 0);
+  var tax      = T.taxCents / 100;
+  var tip      = T.tipCents / 100;
+  var deliv    = T.deliveryFeeCents / 100;
+  var grand    = T.totalCents / 100;
 
   var summaryHTML = cart.map(function(item){
     var p = _p(item.price);
@@ -4216,10 +4327,12 @@ function sendToWhatsApp(){
   if(err) err.style.display='none';
 
   var subtotal = cart.reduce(function(s,i){ return s + _p(i.price)*i.qty; }, 0);
-  var tax      = subtotal * TAX_RATE;
-  var tip      = subtotal * (selectedTip / 100);
-  var deliv    = (fulfillment==='delivery') ? DELIVERY_FEE : 0;
-  var grand    = subtotal + tax + tip + deliv;
+  var T        = orderTotals(cart, selectedTip || 0,
+                            (fulfillment==='delivery') ? _cents(DELIVERY_FEE) : 0);
+  var tax      = T.taxCents / 100;
+  var tip      = T.tipCents / 100;
+  var deliv    = T.deliveryFeeCents / 100;
+  var grand    = T.totalCents / 100;
 
   // Delivery: collect + require an address before sending
   var addrLine = '';
@@ -4981,7 +5094,12 @@ document.addEventListener('DOMContentLoaded',function(){
     // browsing; the count updates and the toast offers "View order" for anyone
     // who wants to go there now.
   };
-  if(ct) ct.onclick=function(){var dr=gi('cartDrawer');if(dr)dr.classList.toggle('open');};
+  if(ct) ct.onclick=function(){
+    var dr=gi('cartDrawer');
+    if(!dr) return;
+    if(dr.classList.contains('open')) dr.classList.remove('open');
+    else openCartDrawer();
+  };
   if(cc) cc.onclick=function(){var dr=gi('cartDrawer');if(dr)dr.classList.remove('open');};
   document.addEventListener('click',function(e){
     var dr=gi('cartDrawer'),tg=gi('cartToggle');
