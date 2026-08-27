@@ -2495,6 +2495,32 @@ html:not(.ask-first-visit) #ask-hint{display:none;}
 .msg-time{font-size:.58rem;color:rgba(201,168,76,.25);margin-top:4px;text-align:right;}
 
 /* Quick reply buttons */
+/* Concierge recommendations. Every value here is resolved from the rendered
+   menu, never from the model's prose — the AI names a dish, the page prices it. */
+.ask-recs{display:flex;flex-direction:column;gap:8px;padding:2px 16px 10px;}
+.ask-rec{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:8px;
+  background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22);
+}
+.ask-rec-body{display:flex;align-items:center;gap:7px;flex-wrap:wrap;flex:1;min-width:0;}
+.ask-rec-name{font-family:"Cinzel",serif;font-size:.78rem;color:var(--cream);font-weight:600;}
+.ask-rec-size{
+  font-family:"Cinzel",serif;font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(201,168,76,.75);border:1px solid rgba(201,168,76,.3);border-radius:3px;padding:2px 5px;
+}
+.ask-rec-veg{
+  font-family:"Cinzel",serif;font-size:.44rem;letter-spacing:.1em;font-weight:700;
+  color:#7BB661;border:1px solid rgba(123,182,97,.45);border-radius:3px;padding:2px 4px;
+}
+.ask-rec-price{font-family:"Cinzel",serif;font-size:.8rem;color:var(--gold-l);margin-left:auto;}
+.ask-rec-add{
+  flex-shrink:0;min-height:34px;padding:7px 14px;cursor:pointer;
+  background:var(--gold);color:var(--black);border:none;border-radius:4px;
+  font-family:"Cinzel",serif;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+}
+.ask-rec-add:disabled{background:transparent;color:var(--gold-l);border:1px solid rgba(201,168,76,.4);cursor:default;}
+.ask-rec-add:focus-visible{outline:2px solid var(--gold-l);outline-offset:2px;}
 .quick-replies{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px;}
 .qr-btn{
   font-family:"Cinzel",serif;font-size:.54rem;font-weight:600;letter-spacing:.08em;
@@ -4324,21 +4350,188 @@ window.toggleChat=function(){
   if (b) b.addEventListener('click', markSeen, {once:true});
 })();
 
-window.sendUserMessage=function(){
-  var inp=document.getElementById('chatInput'); if(!inp) return;
-  var txt=inp.value.trim(); if(!txt) return;
-  inp.value=''; _sq([]); _cm(txt,'user');
-  var t=txt.toLowerCase();
-  if(/biryani|rice|dum/.test(t)) _cd('biryani');
-  else if(/kabab|grill|tikka/.test(t)) _cd('grill');
-  else if(/butter|chicken|curry/.test(t)) _cd('chicken');
-  else if(/cater|event|wedding/.test(t)) _cd('catering');
-  else if(/location|address|where/.test(t)) _cd('location');
-  else if(/whatsapp|contact/.test(t)) _cd('whatsapp');
-  else if(/partner|nadeem|osman|ibrahim/.test(t)) _cd('partners');
-  else _br("I can help with our menu, catering, or contact! Please choose:",
-    [{l:'Menu',a:'menu'},{l:'Catering',a:'catering'},{l:'Location',a:'location'},{l:'WhatsApp',a:'whatsapp'}]);
+// ── Ask Shaahi: the real concierge ────────────────────────────────────────
+// This used to be a keyword decision tree wearing the label "AI Dining
+// Concierge". It now talks to the same secured Edge Function the mobile app
+// uses, so both surfaces answer from one menu and one set of guardrails.
+//
+// No provider key is anywhere near this file. The browser sends a message; the
+// server owns the model, the system prompt, the menu, the rate limiter, the
+// cost ceilings and the kill switch. Nothing here can choose any of them.
+var ASK = {
+  ENDPOINT: SB_URL + '/functions/v1/concierge',
+  history: [],            // [{role,content}] — trimmed server-side too
+  MAX_TURNS: 8,
+  sending: false,
+  sessionId: (function(){
+    // Per-browser-tab id so the rate limiter can tell sessions apart. Not an
+    // identity: no name, no login, nothing about the person.
+    try {
+      var k = sessionStorage.getItem('shaahi_ask_sid');
+      if (!k) { k = 'web-' + Math.random().toString(36).slice(2) + Date.now().toString(36); 
+                sessionStorage.setItem('shaahi_ask_sid', k); }
+      return k;
+    } catch(e) { return 'web-' + Math.random().toString(36).slice(2); }
+  })()
 };
+
+// Resolve an AI proposal against the page's OWN menu data. The model names a
+// dish; it never gets to say what that dish costs. Price, variant and
+// availability all come from the rendered menu — an item that is sold out or
+// not on the website simply has no row, and therefore no Add button.
+function _askResolve(menuItemId, variantId){
+  var want = menuItemId + '|' + variantId;
+  var rows = document.querySelectorAll('#menu .mi');
+  for (var i = 0; i < rows.length; i++) {
+    var el = rows[i], d = el.dataset, m = PID_MAP[d.name];
+    if (!m) continue;
+    var sizes = null; try { sizes = d.sizes ? JSON.parse(d.sizes) : null; } catch(e){}
+    var keys = sizes ? Object.keys(sizes) : [''];
+    for (var k = 0; k < keys.length; k++) {
+      var pid = m[keys[k]] || m[''];
+      if (pid !== want) continue;
+      return {
+        el: el,
+        identity: d.name,                                  // cart + PID_MAP key
+        label: d.label || d.name,                          // what a guest reads
+        size: sizes ? keys[k] : '',
+        price: sizes ? sizes[keys[k]] : d.price,           // from the menu, not the model
+        veg: d.veg === '1'
+      };
+    }
+  }
+  return null;
+}
+
+// Recommendation cards. Everything shown is resolved page data.
+function _askRenderItems(items){
+  if (!items || !items.length) return;
+  var msgs = document.getElementById('chatMessages'); if (!msgs) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'ask-recs';
+  var any = false;
+  items.forEach(function(it){
+    var r = _askResolve(it.menuItemId, it.variantId);
+    if (!r) return;                       // not orderable online — offer nothing
+    any = true;
+    var card = document.createElement('div');
+    card.className = 'ask-rec';
+    card.innerHTML =
+      '<div class="ask-rec-body"><span class="ask-rec-name"></span>' +
+      (r.size ? '<span class="ask-rec-size"></span>' : '') +
+      (r.veg ? '<span class="ask-rec-veg">VEG</span>' : '') +
+      '<span class="ask-rec-price"></span></div>';
+    card.querySelector('.ask-rec-name').textContent = r.label;
+    if (r.size) card.querySelector('.ask-rec-size').textContent = r.size;
+    card.querySelector('.ask-rec-price').textContent = r.price;
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'ask-rec-add';
+    btn.textContent = 'Add' + (it.quantity > 1 ? ' \u00d7' + it.quantity : '');
+    btn.addEventListener('click', function(){
+      // Straight into the existing cart, with the existing identity key.
+      addToCart(r.identity, r.price, Math.min(Math.max(it.quantity|0, 1), 20), r.size, r.label);
+      btn.textContent = 'Added \u2713'; btn.disabled = true;
+    });
+    card.appendChild(btn);
+    wrap.appendChild(card);
+  });
+  if (!any) return;
+  msgs.appendChild(wrap); msgs.scrollTop = msgs.scrollHeight;
+}
+
+// Deterministic fallback. Shown only when the AI genuinely cannot answer, and
+// never dressed up as one — telling someone a fixed menu is live AI reasoning
+// is the exact thing this change set out to stop.
+function _askFallback(reason){
+  var msg = reason === 'busy'
+    ? 'Ask Shaahi is handling a lot of questions right now — give it a moment.'
+    : 'Ask Shaahi is temporarily unavailable. You can still browse and order:';
+  _cm(msg, 'bot', false);
+  _sq([{l:'Browse the menu',a:'menu'},{l:'Best sellers',a:'bestsellers'},
+       {l:'Biryani',a:'biryani'},{l:'WhatsApp us',a:'whatsapp'}]);
+}
+
+window.askSend = function(text){
+  var inp = document.getElementById('chatInput');
+  var txt = (text != null ? text : (inp ? inp.value : '')).trim();
+  if (!txt || ASK.sending) return;
+  if (inp && text == null) inp.value = '';
+  ASK.sending = true;
+  _sq([]); _cm(txt, 'user'); _st();
+
+  var c = window.askShaahiContext || {};
+  var payload = {
+    message: txt.slice(0, 2000),
+    sessionId: ASK.sessionId,
+    history: ASK.history.slice(-ASK.MAX_TURNS),
+    orderType: 'Take-out',
+    source: 'website',
+    category: c.category || undefined,
+    query: c.query || undefined,
+    item: c.item || undefined
+  };
+  // Deliberately NOT sent: name, phone, email, address, cart contents, payment
+  // or Stripe identifiers. None of it would improve an answer about biryani.
+
+  var done = false;
+  var timer = setTimeout(function(){
+    if (done) return; done = true; _rt(); ASK.sending = false; _askFallback('down');
+  }, 30000);
+
+  fetch(ASK.ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON },
+    body: JSON.stringify(payload)
+  }).then(function(res){
+    return res.json().catch(function(){ return {}; }).then(function(j){ return { status: res.status, body: j }; });
+  }).then(function(r){
+    if (done) return; done = true; clearTimeout(timer);
+    _rt(); ASK.sending = false;
+    if (r.status === 429) { _askFallback('busy'); return; }
+    if (r.status !== 200 || !r.body || typeof r.body.reply !== 'string' || !r.body.reply.trim()) {
+      _askFallback('down'); return;
+    }
+    _cm(r.body.reply, 'bot', false);
+    ASK.history.push({ role: 'user', content: txt });
+    ASK.history.push({ role: 'assistant', content: r.body.reply });
+    if (ASK.history.length > ASK.MAX_TURNS * 2) ASK.history = ASK.history.slice(-ASK.MAX_TURNS * 2);
+    _askRenderItems(r.body.items);
+    _sq(ASK_PROMPTS_FOLLOWUP);
+  }).catch(function(){
+    if (done) return; done = true; clearTimeout(timer);
+    _rt(); ASK.sending = false; _askFallback('down');
+  });
+};
+
+// Opening prompts say what this can DO. "How can I help?" makes it look like a
+// support desk; these make it look like someone who knows the menu.
+var ASK_PROMPTS_OPEN = [
+  {l:'Pick my biryani', p:'Help me pick a biryani.'},
+  {l:'Best sellers', p:'What are your best sellers?'},
+  {l:'Feed my family', p:'I need to feed a family of four — what should I order?'},
+  {l:'Something spicy', p:'I want something spicy.'},
+  {l:'Vegetarian options', p:'What vegetarian dishes do you have?'},
+  {l:'Help me choose', p:'Help me put together a good order.'}
+];
+var ASK_PROMPTS_FOLLOWUP = [
+  {l:'What else?', p:'What else would go well with that?'},
+  {l:'Feed a group', p:'How would I scale this up for a group?'},
+  {l:'Vegetarian', p:'What vegetarian dishes do you have?'}
+];
+
+window.sendUserMessage = function(){ window.askSend(); };
+
+// Fallback shortcuts move the guest to the real page rather than reciting a
+// menu from memory — the decision tree used to carry its own hardcoded prices,
+// which is one more copy to drift.
+function closeChatAndScrollTo(id){
+  if(typeof toggleChat==='function'){
+    var w=document.getElementById('chat-window');
+    if(w&&w.classList.contains('open')) toggleChat();
+  }
+  var el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
 
 function _ct(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 
@@ -4364,7 +4557,10 @@ function _sq(list){
   qr.innerHTML='';
   list.forEach(function(r){
     var b=document.createElement('button'); b.className='qr-btn'; b.textContent=r.l;
-    b.onclick=function(){_cd(r.a);}; qr.appendChild(b);
+    // {p:"..."} sends a real message to the concierge; {a:"..."} runs the
+    // deterministic fallback route, used only when the AI is unavailable.
+    b.onclick = r.p ? function(){ window.askSend(r.p); } : function(){ _cd(r.a); };
+    qr.appendChild(b);
   });
 }
 
@@ -4386,6 +4582,10 @@ function _pp(){
 function _cd(action){
   _sq([]);
   var back=[{l:'Back',a:'back'}];
+  if(action==='bestsellers'){
+    closeChatAndScrollTo('bestsellers');
+    return;
+  }
   if(action==='menu'){
     _br('What would you like?',[{l:'Biryani',a:'biryani'},{l:'Grill',a:'grill'},{l:'Chicken',a:'chicken'},{l:'Back',a:'back'}]);
   } else if(action==='biryani'){
@@ -4430,11 +4630,16 @@ function _cd(action){
 
 function _ci(){
   setTimeout(function(){
-    _cm('Assalamu Alaikum! Welcome to Shaahi Biryani. How can I help?','bot',false);
+    _cm('Assalamu Alaikum, and welcome to Shaahi Biryani. I know the menu inside out \u2014 tell me who I\u2019m feeding and I\u2019ll build the order with you.','bot',false);
     setTimeout(function(){
-      _sq([{l:'View Menu',a:'menu'},{l:'Catering',a:'catering'},{l:'Location',a:'location'},{l:'WhatsApp',a:'whatsapp'}]);
-    },500);
-  },600);
+      // Openers that show what this can do. A bare "How can I help?" reads like
+      // a support desk; a guest is here to decide what to eat.
+      _sq(ASK_PROMPTS_OPEN);
+      // If the guest arrived from a menu context, offer that thread first.
+      var seed = window.askShaahiSeed;
+      if (seed) { window.askShaahiSeed = null; setTimeout(function(){ window.askSend(seed); }, 350); }
+    },450);
+  },500);
 }
 
 // DOM READY
@@ -4523,10 +4728,11 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(reason==='item'&&c.item) seed='Tell me about the '+c.item+'.';
     else if(reason==='category'&&c.category) seed='What do you recommend from '+c.category+'?';
     window.askShaahiSeed=seed;
-    if(typeof toggleChat==='function'){
-      var box=document.getElementById('chat-box');
-      if(!box||!box.classList.contains('open')) toggleChat();
-    }
+    var win=document.getElementById('chat-window');
+    var alreadyOpen=win&&win.classList.contains('open');
+    if(!alreadyOpen&&typeof toggleChat==='function') toggleChat();
+    // Already open: _ci() will not run again, so send the opener directly.
+    if(alreadyOpen&&seed&&window.askSend){ window.askShaahiSeed=null; window.askSend(seed); }
   };
 
   // ── Menu search ──────────────────────────────────────────────────────
