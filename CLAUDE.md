@@ -43,6 +43,23 @@ No build step, no framework, no package manager.
 - Google: `https://g.page/r/CdoUnFi5PmB4EBM`
 - Yelp: `https://www.yelp.com/biz/shaahi-biryani-plano`
 
+## ⚠️ DELIVERY MUST NOT BE ENABLED YET
+
+`create-web-order` computes `totalCents = subtotalCents + taxCents + tipCents`.
+**There is no delivery fee in that sum.** The cart UI has a `DELIVERY_FEE` of
+$4.99 and a `DELIVERY_MIN` of $20, but `setFulfillment()` refuses `'delivery'`
+and shows "Delivery is coming soon", so the fee is unreachable and nothing is
+mis-charged today.
+
+The moment delivery is switched on, the screen would show a fee the server does
+not charge — the restaurant would eat $4.99 per delivery order, silently.
+
+**Before enabling delivery:** implement and test server-side delivery fee
+calculation in `create-web-order` (the app's `create-payment-intent` already has
+`DELIVERY_FEE_CENTS`; the website's function does not), then re-run
+`scripts/verify-cart-math.mjs`, which compares the cart against the server line
+for line and will fail on the mismatch.
+
 ## Menu management system (added July 2026)
 
 The menu is **no longer hand-edited in index.html**. Source of truth is the

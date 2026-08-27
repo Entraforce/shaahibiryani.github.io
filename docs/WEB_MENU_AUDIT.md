@@ -182,3 +182,24 @@ node scripts/build-menu-facts.mjs     # after new photos or app dietary changes
 node scripts/render-index.mjs         # regenerate the generated regions
 node scripts/render-index.mjs --check # CI-style guard: fails if index.html is stale
 ```
+
+
+---
+
+## Addendum — checkout (Phase 3 / 3.1)
+
+**DELIVERY MUST NOT BE ENABLED UNTIL SERVER-SIDE DELIVERY FEE CALCULATION IS
+IMPLEMENTED AND TESTED.** `create-web-order` totals `subtotal + tax + tip` with
+no delivery fee. The cart carries a $4.99 fee that `setFulfillment()` currently
+makes unreachable, so nothing is mis-charged — but enabling delivery without the
+server change would show a fee the card is never charged, and the restaurant
+would absorb it. `scripts/verify-cart-math.mjs` fails on that mismatch.
+
+**Cart money is computed in whole cents** by `orderTotals()`, mirroring
+`create-web-order` line for line. This resolved a display that read
+$118.00 + $9.74 = $127.73 while the card was charged $127.74. Guarded across
+66,670 baskets by `scripts/verify-cart-math.mjs`.
+
+**Gratuity is never added without a choice.** The website already defaulted to
+no tip; the options (None / 15 / 18 / 20 / 22%) are the restaurant's own and are
+unchanged.
