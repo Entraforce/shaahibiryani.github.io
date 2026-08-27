@@ -62,7 +62,21 @@ Supabase project `wtdthjhqgsbnyjucdqxl` (same project as online ordering).
   (`published_price ?? price`), rejects `available=false` items, and falls back
   to the static `_shared/prices.ts` map only for keys missing from the table.
 - **NEVER hand-edit inside the GEN marker regions** — the next publish will
-  overwrite those edits. Change the database (via /kadmin or SQL) instead.
+  overwrite those edits. Change the database (via /kadmin or SQL) instead, or
+  change `render-menu.js` if it is the *markup* that needs to change.
+- **Markup changes go in `render-menu.js`, then regenerate.** This already went
+  wrong twice (menu photo alt text in `e0252a7`, intrinsic width/height in
+  `c9fd835`): both edited the generated HTML only, so the next Publish would have
+  silently reverted them. Workflow:
+
+  ```bash
+  node scripts/build-menu-facts.mjs      # photo dimensions + verified-vegetarian pids
+  node scripts/render-index.mjs          # regenerate the GEN regions
+  node scripts/render-index.mjs --check  # guard: fails if index.html is stale
+  ```
+
+  Run `--check` before committing anything that touches the menu. Full background
+  in `docs/WEB_MENU_AUDIT.md`.
 - The mobile app's `create-payment-intent` still uses its own bundled
   `prices.ts` — app prices do NOT follow admin edits (menu shown in the app is
   bundled with the app). Keep them in sync manually when prices change.

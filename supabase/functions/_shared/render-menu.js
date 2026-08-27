@@ -13,7 +13,50 @@
 // Items with available=false are omitted from the rendered menu (and checkout
 // rejects them server-side). Hidden categories: ctr, sys.
 
+import { PHOTO_DIMS, VEGETARIAN_PIDS } from "./menu-facts.js";
+
 const HIDDEN_CATS = new Set(["ctr", "sys"]);
+
+// Categories where a vegetarian mark helps someone choose. Bottled drinks are
+// vegetarian too, but marking a water bottle "VEG" is clutter, not information —
+// and a menu covered in badges stops communicating anything.
+const DIETARY_MARK_CATS_EXCLUDED = new Set(["bev"]);
+
+// True only when the authoritative app data says vegetarian AND the dish's own
+// copy does not contradict it (that second check happens in
+// scripts/build-menu-facts.mjs, which builds VEGETARIAN_PIDS). Anything absent
+// from the set shows NO dietary mark at all — an absent mark is honest, a wrong
+// one is harmful to someone avoiding meat on religious or ethical grounds.
+function isVerifiedVegetarian(r) {
+  if (!r.pid || DIETARY_MARK_CATS_EXCLUDED.has(r.category)) return false;
+  return VEGETARIAN_PIDS.has(String(r.pid));
+}
+
+// Leaf mark + the word VEG. Never colour alone: a colour-only signal is invisible
+// to a colour-blind guest and to a screen reader both.
+const VEG_MARK =
+  '<span class="mveg" role="img" aria-label="Vegetarian">' +
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<path d="M20 4c0 9-5.5 14-12 14-1.2 0-2.3-.2-3.3-.5C6 12 11 8.5 17 7.5 11.6 7.9 6.6 10.6 4 15.2 3.4 13.9 3 12.5 3 11 3 6.6 7 4 12 4h8z"/>' +
+  '</svg>VEG</span>';
+
+// A dish with no photograph gets a branded mark, never a stand-in dish image:
+// showing someone a different dish is worse than showing none. Same box as a
+// real thumbnail so rows stay the same height.
+const PHOTO_PLACEHOLDER =
+  '<span class="mi-thumb mi-thumb-empty" role="img" aria-label="Photo coming soon">' +
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<path d="M12 3.2l1.9 5.1 5.1 1.9-5.1 1.9L12 17.2l-1.9-5.1L5 10.2l5.1-1.9L12 3.2z"/>' +
+  '</svg></span>';
+
+// Real dimensions let the browser reserve the box before the photo decodes.
+// CSS already fixes the displayed size, so these only supply aspect ratio.
+function renderThumb(src, alt) {
+  if (!src) return PHOTO_PLACEHOLDER;
+  const d = PHOTO_DIMS[src];
+  const dims = d ? ` width="${d[0]}" height="${d[1]}"` : "";
+  return `<img class="mi-thumb" src="${escAttr(src)}"${dims} alt="${escAttr(alt)}" loading="lazy" decoding="async">`;
+}
 
 function escAttr(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -186,37 +229,54 @@ export function trayDataName(r) {
   return `${r.display || r.name} (Catering)`;
 }
 
-function renderTrayLine(g) {
+function renderTrayLine(g, catLabel) {
   const r = g.lead;
   const dn = escAttr(trayDataName(r));
+  const label = String(r.display || r.name).trim();
   const sizes = {};
   for (const s of g.sizes) sizes[s.label] = fmt2(s.price);
   const from = fmt2(Math.min(...g.sizes.map((s) => s.price)));
-  let min = escText(r.display || r.name);
+  let min = escText(label);
   if (r.note) min += ` <span class="mnote">${escText(r.note)}</span>`;
   const sizesAttr = ` data-sizes='${JSON.stringify(sizes).replace(/'/g, "&#39;")}'`;
   const imageAttr = r.image_url ? ` data-image="${escAttr(r.image_url)}"` : "";
-  const thumb = r.image_url
-    ? `<img class="mi-thumb" src="${escAttr(r.image_url)}" alt="" loading="lazy">`
-    : "";
-  return `    <div class="mi" data-name="${dn}" data-price="${escAttr(from)}" ` +
-    `data-desc=""${sizesAttr}${imageAttr} onclick="openItemModal(this)">` +
-    thumb +
+  // Catering trays carry pids of their own (cat-*) that the app's menu has no
+  // row for, so no dietary claim can be verified for them — and none is made.
+  const spoken = [label, r.note, "from " + from, "choose Half or Full Tray"]
+    .filter(Boolean).join(", ");
+  return `    <div class="mi" role="button" tabindex="0" aria-label="${escAttr(spoken)}" ` +
+    `data-name="${dn}" data-label="${escAttr(label)}" data-price="${escAttr(from)}" ` +
+    `data-cat="${escAttr(catLabel || "")}" ` +
+    `data-desc=""${sizesAttr}${imageAttr} onclick="openItemModal(this)" ` +
+    `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}">` +
+    renderThumb(r.image_url, label) +
     `<div class="mib"><div class="min">${min}</div>` +
-    `<button class="mi-add" onclick="event.stopPropagation();openItemModal(this.closest('.mi'))">+</button>` +
+    `<span class="mi-add" aria-hidden="true">+</span>` +
     `</div><div class="mprice">${escText(from)}</div></div>`;
 }
 
-function renderItemLine(r, offersSides) {
+// data-name is IDENTITY — it keys PID_MAP, the cart and the kitchen ticket, and
+// web_menu_items.name is unique so some rows carry a badge word inside it
+// ("Zafrani Mutton Signature"). data-label is what a guest should ever READ, so
+// the modal, the cart line and the order sent to the kitchen say "Zafrani
+// Mutton" while the lookup key stays untouched.
+function itemLabel(r) {
+  return String(r.display || r.name).trim();
+}
+
+function renderItemLine(r, offersSides, catLabel, group) {
   const dn = escAttr(r.name);
+  const label = itemLabel(r);
   const price = fmt2(r.price);
   const desc = r.description || "";
-  let min = escText(r.display || r.name);
+  const veg = isVerifiedVegetarian(r);
+  let min = escText(label);
   if (r.note) min += ` <span class="mnote">${escText(r.note)}</span>`;
   if (r.badge) {
     const cls = r.badge === "Check Avail." ? "mbadge av" : "mbadge";
     min += ` <span class="${cls}">${escText(r.badge)}</span>`;
   }
+  if (veg) min += ` ${VEG_MARK}`;
   const schedLabel = scheduleLabel(r.schedule);
   if (schedLabel) min += ` <span class="mnote">${escText(schedLabel)}</span>`;
   const schedAttr = r.schedule
@@ -226,16 +286,25 @@ function renderItemLine(r, offersSides) {
     ? ` data-sizes='${JSON.stringify({ Naan: price, Rice: price })}'`
     : "";
   const imageAttr = r.image_url ? ` data-image="${escAttr(r.image_url)}"` : "";
-  const thumb = r.image_url
-    ? `<img class="mi-thumb" src="${escAttr(r.image_url)}" alt="" loading="lazy">`
-    : "";
   const mdesc = desc ? `<div class="mdesc">${escText(desc)}</div>` : "";
-  return `    <div class="mi" data-name="${dn}" data-price="${escAttr(price)}" ` +
-    `data-desc="${escAttr(desc)}"${schedAttr}${sizesAttr}${imageAttr} onclick="openItemModal(this)">` +
-    thumb +
+  // Rows under a subhead are labelled by portion alone — "Regular", "Family
+  // Pack" — and mean nothing without the dish above them. Carry the subhead so
+  // search can match "goat biryani" and a screen reader says which biryani.
+  const grp = (group || "").trim();
+  // The whole row is the control. Spoken once, with everything that decides an
+  // order: what it is, what it costs, and whether it is vegetarian.
+  const spoken = [grp, label, r.note, price, veg ? "Vegetarian" : "", r.badge]
+    .filter(Boolean).join(", ");
+  return `    <div class="mi" role="button" tabindex="0" aria-label="${escAttr(spoken)}" ` +
+    `data-name="${dn}" data-label="${escAttr(label)}" data-price="${escAttr(price)}" ` +
+    `data-cat="${escAttr(catLabel || "")}"${grp ? ` data-group="${escAttr(grp)}"` : ""}` +
+    `${veg ? ' data-veg="1"' : ""} ` +
+    `data-desc="${escAttr(desc)}"${schedAttr}${sizesAttr}${imageAttr} onclick="openItemModal(this)" ` +
+    `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}">` +
+    renderThumb(r.image_url, label) +
     `<div class="mib"><div class="min">${min}</div>` +
     mdesc +
-    `<button class="mi-add" onclick="event.stopPropagation();openItemModal(this.closest('.mi'))">+</button>` +
+    `<span class="mi-add" aria-hidden="true">+</span>` +
     `</div><div class="mprice">${escText(price)}</div></div>`;
 }
 
@@ -243,13 +312,20 @@ export function renderMenuSection(data) {
   const cats = visibleCategories(data);
   const subheadMap = buildSubheadMap(data);
   const out = [];
-  out.push(`  <div class="menu-tabs rv" id="mtabs">`);
+  // A tablist, so "which category am I in" reaches a screen reader instead of
+  // living only in the gold underline. aria-selected is kept in step by the tab
+  // click handler in index.html.
+  out.push(`  <div class="menu-tabs rv" id="mtabs" role="tablist" aria-label="Menu categories">`);
   cats.forEach((c, i) => {
-    out.push(`    <button class="mtab${i === 0 ? " active" : ""}" data-t="${escAttr(c.code)}">${escText(c.label)}</button>`);
+    const sel = i === 0;
+    out.push(`    <button class="mtab${sel ? " active" : ""}" role="tab" id="mtab-${escAttr(c.code)}" ` +
+      `aria-selected="${sel}" aria-controls="p-${escAttr(c.code)}" tabindex="${sel ? "0" : "-1"}" ` +
+      `data-t="${escAttr(c.code)}">${escText(c.label)}</button>`);
   });
   out.push(`  </div>`);
   cats.forEach((c, ci) => {
-    out.push(`  <div class="mpane${ci === 0 ? " active" : ""}" id="p-${escAttr(c.code)}"><div class="mlist">`);
+    out.push(`  <div class="mpane${ci === 0 ? " active" : ""}" id="p-${escAttr(c.code)}" ` +
+      `role="tabpanel" aria-labelledby="mtab-${escAttr(c.code)}"><div class="mlist">`);
     if (c.note) out.push(`    <div class="msecnote">${escText(c.note)}</div>`);
     let first = true;
     const isTray = c.code === TRAY_CAT;
@@ -258,7 +334,7 @@ export function renderMenuSection(data) {
     let pending = [];
     const flush = () => {
       if (!pending.length) return;
-      for (const g of trayGroups(pending)) out.push(renderTrayLine(g));
+      for (const g of trayGroups(pending)) out.push(renderTrayLine(g, c.label));
       pending = [];
     };
     for (const r of paneRows(data, c.code)) {
@@ -275,7 +351,7 @@ export function renderMenuSection(data) {
       } else if (isTray) {
         pending.push(r);
       } else {
-        out.push(renderItemLine(r, offersSideChoice(r, subheadMap)));
+        out.push(renderItemLine(r, offersSideChoice(r, subheadMap), c.label, subheadMap.get(r)));
       }
       first = false;
     }
