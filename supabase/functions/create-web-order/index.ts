@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     > = {};
     const { data: menuRows, error: menuErr } = await supabase
       .from("web_menu_items")
-      .select("pid, price, published_price, available, schedule")
+      .select("pid, price, published_price, available, schedule, inactive")
       .not("pid", "is", null);
     if (!menuErr && menuRows) {
       for (const r of menuRows) {
@@ -142,7 +142,11 @@ Deno.serve(async (req) => {
         if (r.pid != null && p != null) {
           dbPrices[r.pid] = {
             price: Number(p),
-            available: !!r.available,
+            // A permanently removed dish is not orderable, whatever the
+            // sold-out toggle happens to say. It is off every menu, so a
+            // request for one can only come from a stale page or a crafted
+            // call — pricing, tax and idempotency are untouched by this.
+            available: !!r.available && r.inactive !== true,
             schedule: r.schedule ?? null,
           };
         }

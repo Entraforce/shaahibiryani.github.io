@@ -94,7 +94,10 @@ footer .inner .st{flex:1;font-size:13px;color:#6b5d4a;}
   <p class="note"><b>How it works:</b> price and wording changes are saved here first —
   customers keep seeing (and paying) the old menu until you press <b>Publish</b>.
   The <b>Available</b> switch is the exception: turning it off blocks new orders of
-  that dish <i>immediately</i> (publish to also hide it from the menu).</p>
+  that dish <i>immediately</i>. The dish stays on the menu marked <b>SOLD OUT</b> and
+  greyed, so customers can see you normally serve it — switch it back on when it
+  returns. To stop serving something altogether, open it and tick
+  <b>Take this dish off the menu for good</b>; that hides it everywhere.</p>
   <div id="cats"></div>
 
   <div class="cat" id="cardsBox">
@@ -220,7 +223,7 @@ function rowHtml(r) {
   const sched = schedLabel(r.schedule);
   return `<div class="row" data-id="${r.id}">
     <label class="sw"><input type="checkbox" data-avail="${r.id}" ${r.available ? "checked" : ""}><span></span></label>
-    <div class="nm"><div class="t">${esc(r.display || r.name)} ${r.note ? `<span class="badge">${esc(r.note)}</span>` : ""} ${r.badge ? `<span class="badge">${esc(r.badge)}</span>` : ""} ${sched ? `<span class="sched-note">${esc(sched)}</span>` : ""}</div>
+    <div class="nm"><div class="t">${esc(r.display || r.name)} ${r.note ? `<span class="badge">${esc(r.note)}</span>` : ""} ${r.badge ? `<span class="badge">${esc(r.badge)}</span>` : ""} ${r.inactive ? `<span class="badge">Off the menu</span>` : (!r.available ? `<span class="badge">Sold out</span>` : "")} ${sched ? `<span class="sched-note">${esc(sched)}</span>` : ""}</div>
       <div class="d">${esc(r.description || "")}</div></div>
     <div class="pr">${money(r.price)}${staged ? `<span class="staged">live: ${money(r.published_price)}</span>` : ""}</div>
     <button class="btn btn-plain btn-sm" data-edit="${r.id}">Edit</button></div>`;
@@ -274,7 +277,11 @@ function schedLabel(s) {
 }
 
 // ── item editor ──────────────────────────────────────────────────
-const BADGES = ["", "Signature", "Popular", "Bestseller", "Check Avail."];
+// "Signature" is deliberately NOT here. The Signature dishes are one fixed list
+// shared by the app and the website; when this dropdown could also set it, the
+// two answers drifted until only one dish out of five appeared on both. Ask for
+// a change to the Signature list and it is changed in one place for both.
+const BADGES = ["", "Popular", "Bestseller", "Check Avail."];
 function openItem(id, addToCat) {
   const r = id ? DATA.items.find((x) => String(x.id) === String(id)) : null;
   const isSub = r?.kind === "subhead";
@@ -303,6 +310,12 @@ function openItem(id, addToCat) {
       <div class="f"><label>Badge</label><select id="f_badge">${BADGES.map((b) => `<option value="${b}" ${r?.badge === b || (!r?.badge && !b) ? "selected" : ""}>${b || "None"}</option>`).join("")}</select></div>
     </div>
     <div class="f"><label>Description</label><textarea id="f_desc">${esc(r?.description || "")}</textarea></div>
+    <div class="f"><label><input type="checkbox" id="f_inactive" ${r?.inactive ? "checked" : ""}>
+      Take this dish off the menu for good</label>
+      <div class="d">Use this only when you have stopped serving it. It disappears from
+      the website, the app and Ask Shaahi. For a dish that is just out today, leave this
+      unticked and switch <b>Available</b> off instead — that keeps it on the menu marked
+      SOLD OUT, so customers can see you normally carry it.</div></div>
     <div class="f"><label>Only available on certain days/times? (leave blank = always)</label>
       <div class="days">${DAYS.map((d, i) => `<label><input type="checkbox" data-day="${i}" ${r?.schedule?.days?.includes(i) ? "checked" : ""}>${d}</label>`).join("")}</div>
       <div class="mrow" style="margin-top:8px;">
@@ -351,9 +364,13 @@ function openItem(id, addToCat) {
       display, price, schedule,
       note: $("f_note").value.trim() || null,
       badge: $("f_badge").value || null,
+      inactive: $("f_inactive").checked,
       description: $("f_desc").value.trim() || null,
       name: $("f_name").value.trim() || derived(),
     };
+    // Removing a dish for good also blocks orders of it immediately, the same
+    // way the Available switch does — publishing only catches up the page.
+    if (row.inactive) row.available = false;
     let error;
     if (r) ({ error } = await sb.from("web_menu_items").update(row).eq("id", r.id));
     else {

@@ -10,12 +10,42 @@
 //   5. bestseller cards               price/desc/size attrs patched per data-name
 //
 // data = { categories: [{code,label,sort}], items: [...], cards: [...] }
-// Items with available=false are omitted from the rendered menu (and checkout
-// rejects them server-side). Hidden categories: ctr, sys.
+//
+// Availability has two distinct meanings and they are rendered differently:
+//   inactive = true    permanently removed -> not rendered anywhere
+//   available = false  temporarily sold out -> rendered, marked SOLD OUT,
+//                      subdued, with no add affordance (checkout also rejects
+//                      it server-side). A guest should be able to see that we
+//                      normally carry a dish; making it vanish just looks like
+//                      we never had it.
+// Hidden categories: ctr, sys.
 
-import { PHOTO_DIMS, VEGETARIAN_PIDS } from "./menu-facts.js";
+import { PHOTO_DIMS, SIGNATURE_ITEM_IDS, VEGETARIAN_PIDS } from "./menu-facts.js";
 
 const HIDDEN_CATS = new Set(["ctr", "sys"]);
+
+// Permanently removed by the owner. Column added 2026-08-27; rows predating it
+// simply have no value, which reads as "still on the menu" — the safe default.
+function isInactive(r) {
+  return r.inactive === true;
+}
+// Temporarily out of stock. Only ever true for a row that is still on the menu.
+function isSoldOut(r) {
+  return !isInactive(r) && !r.available;
+}
+// The owner's Signature dishes, keyed on the item half of the pid so every pack
+// size of one dish counts as the same dish. Taken ONLY from the generated
+// canonical set — never from web_menu_items.badge, which is free text in the
+// menu manager and is how the app and the website came to disagree.
+function isSignature(r) {
+  return SIGNATURE_ITEM_IDS.has(String(r.pid || "").split("|")[0]);
+}
+const SIGNATURE_BADGE =
+  '<span class="mbadge">&#10022; Signature</span>';
+// Never colour alone, and never an icon alone: the words SOLD OUT are the
+// signal, the muting is only reinforcement.
+const SOLD_OUT_BADGE =
+  '<span class="mbadge out">Sold out</span>';
 
 // Categories where a vegetarian mark helps someone choose. Bottled drinks are
 // vegetarian too, but marking a water bottle "VEG" is clutter, not information —
@@ -79,16 +109,33 @@ function schemaPrice(p) {
 
 function visibleItems(data) {
   return data.items.filter((r) =>
-    r.kind === "item" && r.available && !HIDDEN_CATS.has(r.category));
+    r.kind === "item" && !isInactive(r) && !HIDDEN_CATS.has(r.category));
 }
+// Rows in display order. Sold-out dishes sink to the bottom of their own
+// subhead block rather than the bottom of the category: a row that reads
+// "Family Pack" means nothing once it has drifted away from the "Goat Biryani"
+// heading above it. Within a block the owner's sort order is preserved.
 function paneRows(data, code) {
-  return data.items
+  const rows = data.items
     .filter((r) => r.category === code &&
-      (r.kind === "subhead" || (r.kind === "item" && r.available)))
+      (r.kind === "subhead" || (r.kind === "item" && !isInactive(r))))
     .sort((a, b) => a.sort - b.sort);
+  const out = [];
+  let block = [];
+  const flushBlock = () => {
+    out.push(...block.filter((r) => !isSoldOut(r)), ...block.filter(isSoldOut));
+    block = [];
+  };
+  for (const r of rows) {
+    if (r.kind === "subhead") { flushBlock(); out.push(r); }
+    else block.push(r);
+  }
+  flushBlock();
+  return out;
 }
-// Categories with no available items (e.g. Specials with nothing running)
-// disappear from the menu entirely.
+// Categories with nothing left on them at all (e.g. Specials with every item
+// permanently removed) disappear from the menu entirely. A category whose items
+// are merely sold out still shows — with each row marked.
 function visibleCategories(data) {
   return data.categories
     .filter((c) => !HIDDEN_CATS.has(c.code))
@@ -212,7 +259,8 @@ function trayGroups(rows) {
       byDish.set(dish, g);
       groups.push(g);
     }
-    g.sizes.push({ label: TRAY_LABELS[portion], pid: r.pid, price: r.price });
+    g.sizes.push({ label: TRAY_LABELS[portion], pid: r.pid, price: r.price,
+      soldOut: isSoldOut(r) });
   }
   // Half before Full regardless of row order.
   const order = ["Half Tray", "Full Tray"];
@@ -236,22 +284,27 @@ function renderTrayLine(g, catLabel) {
   const sizes = {};
   for (const s of g.sizes) sizes[s.label] = fmt2(s.price);
   const from = fmt2(Math.min(...g.sizes.map((s) => s.price)));
+  // A tray line is sold out only when every pan size is: one size being out
+  // leaves the dish orderable in the other.
+  const soldOut = g.sizes.every((s) => s.soldOut);
   let min = escText(label);
   if (r.note) min += ` <span class="mnote">${escText(r.note)}</span>`;
+  if (soldOut) min += ` ${SOLD_OUT_BADGE}`;
   const sizesAttr = ` data-sizes='${JSON.stringify(sizes).replace(/'/g, "&#39;")}'`;
   const imageAttr = r.image_url ? ` data-image="${escAttr(r.image_url)}"` : "";
   // Catering trays carry pids of their own (cat-*) that the app's menu has no
   // row for, so no dietary claim can be verified for them — and none is made.
-  const spoken = [label, r.note, "from " + from, "choose Half or Full Tray"]
-    .filter(Boolean).join(", ");
-  return `    <div class="mi" role="button" tabindex="0" aria-label="${escAttr(spoken)}" ` +
+  const spoken = [label, r.note, soldOut ? "Sold out" : "", "from " + from,
+    "choose Half or Full Tray"].filter(Boolean).join(", ");
+  return `    <div class="mi${soldOut ? " soldout" : ""}" role="button" tabindex="0" ` +
+    `aria-label="${escAttr(spoken)}" ` +
     `data-name="${dn}" data-label="${escAttr(label)}" data-price="${escAttr(from)}" ` +
-    `data-cat="${escAttr(catLabel || "")}" ` +
+    `data-cat="${escAttr(catLabel || "")}"${soldOut ? ' data-soldout="1"' : ""} ` +
     `data-desc=""${sizesAttr}${imageAttr} onclick="openItemModal(this)" ` +
     `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}">` +
     renderThumb(r.image_url, label) +
     `<div class="mib"><div class="min">${min}</div>` +
-    `<span class="mi-add" aria-hidden="true">+</span>` +
+    (soldOut ? "" : `<span class="mi-add" aria-hidden="true">+</span>`) +
     `</div><div class="mprice">${escText(from)}</div></div>`;
 }
 
@@ -264,18 +317,28 @@ function itemLabel(r) {
   return String(r.display || r.name).trim();
 }
 
-function renderItemLine(r, offersSides, catLabel, group) {
+function renderItemLine(r, offersSides, catLabel, group, opts = {}) {
   const dn = escAttr(r.name);
   const label = itemLabel(r);
   const price = fmt2(r.price);
   const desc = r.description || "";
   const veg = isVerifiedVegetarian(r);
+  const soldOut = isSoldOut(r);
+  // Marked on the row only when the dish is one line. A dish sold in three pack
+  // sizes carries the mark on its subhead instead (see renderMenuSection), so
+  // the same dish is not badged three times over.
+  const signature = isSignature(r) && !opts.signatureOnSubhead;
   let min = escText(label);
   if (r.note) min += ` <span class="mnote">${escText(r.note)}</span>`;
-  if (r.badge) {
+  if (signature) min += ` ${SIGNATURE_BADGE}`;
+  // The menu manager's badge is free text and used to carry the site's own
+  // (disagreeing) Signature answer. Signature now comes from one canonical
+  // list; any other badge the owner sets still shows.
+  if (r.badge && r.badge !== "Signature") {
     const cls = r.badge === "Check Avail." ? "mbadge av" : "mbadge";
     min += ` <span class="${cls}">${escText(r.badge)}</span>`;
   }
+  if (soldOut) min += ` ${SOLD_OUT_BADGE}`;
   if (veg) min += ` ${VEG_MARK}`;
   const schedLabel = scheduleLabel(r.schedule);
   if (schedLabel) min += ` <span class="mnote">${escText(schedLabel)}</span>`;
@@ -292,25 +355,55 @@ function renderItemLine(r, offersSides, catLabel, group) {
   // search can match "goat biryani" and a screen reader says which biryani.
   const grp = (group || "").trim();
   // The whole row is the control. Spoken once, with everything that decides an
-  // order: what it is, what it costs, and whether it is vegetarian.
-  const spoken = [grp, label, r.note, price, veg ? "Vegetarian" : "", r.badge]
-    .filter(Boolean).join(", ");
-  return `    <div class="mi" role="button" tabindex="0" aria-label="${escAttr(spoken)}" ` +
+  // order: what it is, what it costs, whether it is vegetarian — and, first,
+  // whether it can be ordered at all, because that decides the rest.
+  const spoken = [grp, label, r.note, soldOut ? "Sold out" : "", price,
+    veg ? "Vegetarian" : "", signature ? "Signature dish" : "",
+    r.badge === "Signature" ? "" : r.badge].filter(Boolean).join(", ");
+  // Still a control when sold out: the row opens the dish so a guest can read
+  // it and see the photo. The Add button inside is what is disabled — matching
+  // the app, and better than a dead row that swallows a tap with no explanation.
+  return `    <div class="mi${soldOut ? " soldout" : ""}" role="button" tabindex="0" ` +
+    `aria-label="${escAttr(spoken)}" ` +
     `data-name="${dn}" data-label="${escAttr(label)}" data-price="${escAttr(price)}" ` +
     `data-cat="${escAttr(catLabel || "")}"${grp ? ` data-group="${escAttr(grp)}"` : ""}` +
-    `${veg ? ' data-veg="1"' : ""} ` +
+    `${veg ? ' data-veg="1"' : ""}${soldOut ? ' data-soldout="1"' : ""} ` +
     `data-desc="${escAttr(desc)}"${schedAttr}${sizesAttr}${imageAttr} onclick="openItemModal(this)" ` +
     `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}">` +
     renderThumb(r.image_url, label) +
     `<div class="mib"><div class="min">${min}</div>` +
     mdesc +
-    `<span class="mi-add" aria-hidden="true">+</span>` +
+    // No "+" on a sold-out row: an add affordance that cannot add is a lie.
+    (soldOut ? "" : `<span class="mi-add" aria-hidden="true">+</span>`) +
     `</div><div class="mprice">${escText(price)}</div></div>`;
+}
+
+// A dish sold in several pack sizes occupies one subhead ("Goat Biryani") and
+// three rows ("Regular", "Family Pack", "Jumbo Pack"). The Signature mark belongs
+// to the dish, so it goes on the subhead — but only when every row beneath that
+// subhead is the same canonical dish, so a mixed block can never be mislabelled.
+function signatureSubheads(data) {
+  const marked = new Set();
+  for (const c of data.categories) {
+    let cur = null, rows = [];
+    const decide = () => {
+      if (!cur || rows.length < 2) return;
+      const ids = new Set(rows.map((r) => String(r.pid || "").split("|")[0]));
+      if (ids.size === 1 && SIGNATURE_ITEM_IDS.has([...ids][0])) marked.add(cur);
+    };
+    for (const r of paneRows(data, c.code)) {
+      if (r.kind === "subhead") { decide(); cur = r; rows = []; }
+      else if (cur) rows.push(r);
+    }
+    decide();
+  }
+  return marked;
 }
 
 export function renderMenuSection(data) {
   const cats = visibleCategories(data);
   const subheadMap = buildSubheadMap(data);
+  const sigSubheads = signatureSubheads(data);
   const out = [];
   // A tablist, so "which category am I in" reaches a screen reader instead of
   // living only in the gold underline. aria-selected is kept in step by the tab
@@ -337,12 +430,15 @@ export function renderMenuSection(data) {
       for (const g of trayGroups(pending)) out.push(renderTrayLine(g, c.label));
       pending = [];
     };
+    let subheadRow = null;
     for (const r of paneRows(data, c.code)) {
       if (r.kind === "subhead") {
         flush();
+        subheadRow = r;
         // `display` wins: catering subheads carry a suffixed `name` purely to
         // satisfy the UNIQUE constraint on web_menu_items.name.
-        const sh = escText(r.display || r.name);
+        const sh = escText(r.display || r.name) +
+          (sigSubheads.has(r) ? ` ${SIGNATURE_BADGE}` : "");
         let line = first
           ? `    <div class="msubhead">${sh}</div>`
           : `    <div class="msubhead" style="margin-top:24px;">${sh}</div>`;
@@ -351,7 +447,8 @@ export function renderMenuSection(data) {
       } else if (isTray) {
         pending.push(r);
       } else {
-        out.push(renderItemLine(r, offersSideChoice(r, subheadMap), c.label, subheadMap.get(r)));
+        out.push(renderItemLine(r, offersSideChoice(r, subheadMap), c.label,
+          subheadMap.get(r), { signatureOnSubhead: sigSubheads.has(subheadRow) }));
       }
       first = false;
     }
@@ -367,9 +464,12 @@ function priceByPid(data) {
   for (const r of data.items) if (r.pid && r.price != null) m[r.pid] = Number(r.price);
   return m;
 }
+// Used by the bestseller cards and the splash price list — both of which are
+// promotion, not the menu. Neither should push a dish that cannot be bought,
+// so sold-out and removed are treated the same there.
 function availByPid(data) {
   const m = {};
-  for (const r of data.items) if (r.pid) m[r.pid] = !!r.available;
+  for (const r of data.items) if (r.pid) m[r.pid] = !!r.available && !isInactive(r);
   return m;
 }
 export function cardPricing(card, data) {
@@ -428,6 +528,10 @@ export function renderPidMap(data) {
   }
   for (const r of data.items) {
     if (r.kind !== "item" || !r.pid || HIDDEN_CATS.has(r.category)) continue;
+    // Sold-out dishes keep their entry: the row is still on the page (opening
+    // the dish must resolve its pid) and create-web-order is the authority that
+    // refuses the sale. Permanently removed dishes have no row and no entry.
+    if (isInactive(r)) continue;
     // Trays were paired above; their raw per-size rows must not also land in
     // the map under "<Dish> Half Tray", which no rendered line can produce.
     if (r.category === TRAY_CAT) continue;
@@ -448,6 +552,9 @@ export function renderSchemaMenu(data) {
     if (!items.length) continue;
     // Schema names: display name + portion note, but no badge words
     // ("Popular", "Signature") — those are site UI, not the dish name.
+    // A temporarily sold-out dish stays in the schema: this describes what the
+    // restaurant serves, not what is in the kitchen this afternoon. Permanently
+    // removed dishes are already gone, filtered out by paneRows.
     const mi = items.map((r) => [
       `        {`,
       `          "@type": "MenuItem",`,
@@ -546,10 +653,15 @@ export async function fetchMenuData(supabaseUrl, apiKey) {
     if (!res.ok) throw new Error(`fetch ${path}: ${res.status} ${await res.text()}`);
     return res.json();
   }
+  // Ordered by sort, then id. Four dishes currently share a sort value, and with
+  // sort alone Postgres is free to return tied rows in any order — which it does
+  // change, after any UPDATE rewrites a row. That produced a page that differed
+  // from its own regeneration in key order alone, and would have failed the
+  // "is index.html up to date" check at random after any menu edit.
   const [categories, items, cards] = await Promise.all([
-    get("web_menu_categories?select=*&order=sort"),
-    get("web_menu_items?select=*&order=sort"),
-    get("web_menu_cards?select=*&order=sort"),
+    get("web_menu_categories?select=*&order=sort,code"),
+    get("web_menu_items?select=*&order=sort,id"),
+    get("web_menu_cards?select=*&order=sort,id"),
   ]);
   for (const r of items) if (r.price != null) r.price = Number(r.price);
   return { categories, items, cards };

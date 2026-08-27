@@ -379,3 +379,15 @@ export const VEGETARIAN_PIDS = new Set([
  "vegetarian-khorma|vegetarian-khorma-standard",
  "water-bottle|water-bottle-standard"
 ]);
+
+// The owner's Signature dishes, keyed by the ITEM half of the pid so every pack
+// size of one dish counts as the same dish. This is the whole answer: the menu
+// manager's free-text "Signature" badge is ignored by the renderer, because two
+// editable lists is how they came to disagree in the first place.
+export const SIGNATURE_ITEM_IDS = new Set([
+ "chicken-tikka-masala",
+ "goat-dum-biryani",
+ "golden-shaahi-platter",
+ "mixed-grill-platter",
+ "sitaphal-rabdi"
+]);
