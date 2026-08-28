@@ -2591,6 +2591,14 @@ html.ask-first-visit #chat-bubble::after{
 #chat-bubble .ask-role{
   font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-l);margin-top:2px;
 }
+/* Which descriptor shows is decided HERE, in one place, for both widths. It was
+   previously split between a stylesheet rule and an inline style:none on the
+   short label — and an inline style outranks a stylesheet rule, so below 380px
+   the long label was hidden and the short one never appeared. The launcher read
+   "ASK SHAAHI" with no mention of AI on the narrowest phones, which is the one
+   thing this control must never do. */
+#chat-bubble .ask-role .ask-role-short{display:none;}
+#chat-bubble .ask-role .ask-role-long{display:inline;}
 /* NO UNLABELLED CIRCLE. This used to collapse below 560px to a 52px disc
    holding only the sparkle — which is precisely the state in which nobody can
    tell it is an AI concierge rather than a chat plugin, on the widest class of
@@ -2603,6 +2611,7 @@ html.ask-first-visit #chat-bubble::after{
   #chat-bubble .ask-mark-wrap{width:27px;height:27px;}
 }
 /* Very narrow phones: drop to the short descriptor rather than to nothing. */
+/* Very narrow phones: shorten the descriptor, never drop it. */
 @media (max-width:380px){
   #chat-bubble .ask-role .ask-role-long{display:none;}
   #chat-bubble .ask-role .ask-role-short{display:inline;}
@@ -5499,7 +5508,7 @@ document.addEventListener('DOMContentLoaded',function(){
   </span>
   <span class="ask-copy">
     <span class="ask-name">Ask Shaahi</span>
-    <span class="ask-role"><span class="ask-role-long">AI Dining Concierge</span><span class="ask-role-short" style="display:none;">AI Concierge</span></span>
+    <span class="ask-role"><span class="ask-role-long">AI Dining Concierge</span><span class="ask-role-short">AI Concierge</span></span>
   </span>
 </div>
 <!-- Shown once, to a first-time mobile visitor only. Sells the capability in
