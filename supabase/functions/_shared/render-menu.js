@@ -354,10 +354,15 @@ function renderItemLine(r, offersSides, catLabel, group, opts = {}) {
   // Pack" — and mean nothing without the dish above them. Carry the subhead so
   // search can match "goat biryani" and a screen reader says which biryani.
   const grp = (group || "").trim();
+  // Once a row's own label spells the dish out ("Regular Chicken Biryani"),
+  // announcing the subhead in front of it makes a screen reader say "Chicken
+  // Biryani, Regular Chicken Biryani". Speak the subhead only while the label
+  // still needs it — data-group is unaffected, so search keeps matching.
+  const grpSpoken = grp && !label.toLowerCase().includes(grp.toLowerCase()) ? grp : "";
   // The whole row is the control. Spoken once, with everything that decides an
   // order: what it is, what it costs, whether it is vegetarian — and, first,
   // whether it can be ordered at all, because that decides the rest.
-  const spoken = [grp, label, r.note, soldOut ? "Sold out" : "", price,
+  const spoken = [grpSpoken, label, r.note, soldOut ? "Sold out" : "", price,
     veg ? "Vegetarian" : "", signature ? "Signature dish" : "",
     r.badge === "Signature" ? "" : r.badge].filter(Boolean).join(", ");
   // Still a control when sold out: the row opens the dish so a guest can read
