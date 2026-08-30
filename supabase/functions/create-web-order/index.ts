@@ -214,6 +214,10 @@ Deno.serve(async (req) => {
       itemRows.push({
         item_id: null,
         variant_id: null,
+        // `key` is the pid this line was PRICED from, so recording it keeps the
+        // order line and the price provably about the same menu row. Clover
+        // firing joins on it rather than re-deriving identity from a name.
+        pid: key,
         item_name: clean(line.itemName, 120) ?? String(line.menuItemId),
         variant_name: clean(line.variantName, 80),
         unit_price: price,
