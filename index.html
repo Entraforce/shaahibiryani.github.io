@@ -14,22 +14,24 @@
     }
   } catch (e) {}
 </script>
-<!-- Google tag (gtag.js) — BASIC consent mode.
-     The tag is NOT loaded until the visitor accepts. Google documents two
-     options: "basic" blocks the tag until the visitor interacts with a consent
-     banner and sends nothing at all beforehand — "No data is sent before a user
-     consents, not even the default consent status" — while "advanced" loads the
-     tag immediately with denied defaults and still sends cookieless pings. We
-     take basic: a restaurant does not need pre-consent modelling, and nothing
-     leaving the browser before someone has chosen is the easier promise to keep
-     and to write down honestly in the privacy policy.
+<!-- Google tag (gtag.js) — ADVANCED consent mode (switched from Basic 2026-09-10).
+     The tag now loads immediately for EVERY visitor, but honors the 'denied'
+     defaults below until someone accepts: no cookies, no ad personalization,
+     no stored identifiers. What it CAN still send pre-consent is an anonymous,
+     cookieless ping Google uses for aggregate/modelled conversion counting —
+     that's what Advanced buys over Basic. We switched because Basic (tag not
+     added to the page at all until Accept) was silently dropping the Purchase
+     and Catering-Quote-Submitted conversions for every visitor who ignored or
+     declined the banner — Google Ads had zero real signal for either goal for
+     over a month.
      Ref: developers.google.com/tag-platform/security/concepts/consent-mode
-     Loaded by loadGoogleTags() in the consent script near the end of the page. -->
+     Consent is granted/revoked by the cookie-bar script near the end of the
+     page; this block only sets the pre-choice defaults and loads the base tag. -->
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
-  // Declared before any tag exists, so the very first thing Google would see is
-  // a denial. Four consent types per the current spec (ad_user_data and
+  // Declared before the tag loads, so the very first thing Google sees is a
+  // denial. Four consent types per the current spec (ad_user_data and
   // ad_personalization were added in Nov 2023).
   gtag('consent', 'default', {
     'ad_storage': 'denied',
@@ -37,6 +39,12 @@
     'ad_personalization': 'denied',
     'analytics_storage': 'denied'
   });
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3NJRL7V5NB"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', 'G-3NJRL7V5NB');
+  gtag('config', 'AW-17075652554');
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -5847,39 +5855,30 @@ document.addEventListener('click', function(e){
   </div>
 </div>
 <script>
-/* Cookie consent — BASIC consent mode.
-   Google's tag is not on the page at all until someone accepts, so before a
-   choice nothing is sent: no cookies, no cookieless ping, not even the default
-   consent status. Declining leaves it that way permanently.
+/* Cookie consent — ADVANCED consent mode (switched from Basic 2026-09-10).
+   The Google tag itself now loads for everyone via the <head> block above;
+   this script only grants or withholds ad_storage/ad_user_data/
+   ad_personalization/analytics_storage. Declining leaves those denied
+   permanently — the tag still sends an anonymous, cookieless conversion ping
+   either way, which is what makes real conversions visible to Google Ads
+   again even from visitors who never accept.
    The choice lives in localStorage — no account, no cookie, no PII — and the
    footer's "Cookie Settings" reopens this bar so it is never a one-way door. */
 (function(){
   var KEY = 'shaahi_cookie_consent';   // 'granted' | 'denied'
   var bar = document.getElementById('cookie-bar');
   var pending = false;                 // wanted on screen, but the cart is up
-  var GA = 'G-3NJRL7V5NB', ADS = 'AW-17075652554';
-  var loaded = false;
 
   function read(){ try { return localStorage.getItem(KEY); } catch(e){ return null; } }
   function write(v){ try { localStorage.setItem(KEY, v); } catch(e){} }
 
-  function loadGoogleTags(){
-    if (loaded) return; loaded = true;
+  function grantConsent(){
     gtag('consent', 'update', {
       'ad_storage': 'granted',
       'ad_user_data': 'granted',
       'ad_personalization': 'granted',
       'analytics_storage': 'granted'
     });
-    var el = document.createElement('script');
-    el.async = true;
-    el.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA;
-    el.onload = function(){
-      gtag('js', new Date());
-      gtag('config', GA);
-      gtag('config', ADS);
-    };
-    document.head.appendChild(el);
   }
 
   // The cart drawer and the checkout own the bottom of the screen when they are
@@ -5914,9 +5913,10 @@ document.addEventListener('click', function(e){
   function decide(choice){
     write(choice);
     hide();
-    if (choice === 'granted') loadGoogleTags();
-    // Declining needs no "update" call: the tag was never loaded, and the
-    // defaults declared in <head> are already all denied.
+    if (choice === 'granted') grantConsent();
+    // Declining needs no "update" call: the defaults declared in <head> are
+    // already all denied, and the tag (loaded for everyone under Advanced
+    // consent mode) already honors that.
   }
 
   document.getElementById('cookie-accept').addEventListener('click', function(){ decide('granted'); });
@@ -5945,7 +5945,7 @@ document.addEventListener('click', function(e){
   }
 
   var existing = read();
-  if (existing === 'granted') loadGoogleTags();
+  if (existing === 'granted') grantConsent();
   else if (existing !== 'denied') show();   // no choice yet
 })();
 </script>
