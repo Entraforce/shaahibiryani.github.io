@@ -81,11 +81,22 @@ Deno.serve(async (req) => {
 
     const { data: order } = await supabase
       .from("orders")
-      .select("id, payment_status")
+      .select("id, payment_status, source")
       .eq("stripe_payment_intent", pi.id)
       .maybeSingle();
 
     if (order) {
+      // `account` above records which HANDLER claimed the event, which stops
+      // meaning "which channel" the moment one Stripe account serves both the
+      // site and the app: either endpoint then receives every event and either
+      // may win the claim. The channel is only knowable here, once the order is
+      // in hand. Best-effort — an audit label must never stand between a real
+      // payment and the order being marked paid.
+      await supabase
+        .from("stripe_events")
+        .update({ order_source: order.source ?? null })
+        .eq("event_id", event.id);
+
       if (order.payment_status !== "paid") {
         await supabase
           .from("orders")
