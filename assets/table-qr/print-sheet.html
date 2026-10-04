@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Table QR codes · Shaahi Biryani</title>
+<style>
+  @page { size: letter; margin: 12mm; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; color: #111; }
+  h1 { font-size: 18pt; margin: 0 0 4pt; }
+  .note { font-size: 9.5pt; color: #555; margin: 0 0 14pt; max-width: 155mm; line-height: 1.5; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10mm; }
+  .cell { border: 1px dashed #bbb; border-radius: 3mm; padding: 6mm 4mm; text-align: center; break-inside: avoid; }
+  .cell img { width: 42mm; height: 42mm; display: block; margin: 0 auto 3mm; }
+  .t { font-size: 15pt; font-weight: 800; letter-spacing: .02em; }
+  .s { font-size: 8pt; color: #666; margin-top: 1mm; }
+  @media print { .note { display: none; } }
+</style>
+</head>
+<body>
+  <h1>Scan to order · Table codes</h1>
+  <p class="note">
+    Print, cut along the dashed lines and put each code on its own table &mdash; the number on
+    the card must match the table it sits on, or orders reach the wrong table. Codes work only
+    inside the restaurant: the app checks the guest&rsquo;s location before letting them order
+    to a table. Regenerate with <code>node scripts/build-table-qr.mjs</code>.
+  </p>
+  <div class="grid">
+    <div class="cell">
+      <img src="table-1.svg" alt="QR code for table 1" />
+      <div class="t">Table 1</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-2.svg" alt="QR code for table 2" />
+      <div class="t">Table 2</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-3.svg" alt="QR code for table 3" />
+      <div class="t">Table 3</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-4.svg" alt="QR code for table 4" />
+      <div class="t">Table 4</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-5.svg" alt="QR code for table 5" />
+      <div class="t">Table 5</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-6.svg" alt="QR code for table 6" />
+      <div class="t">Table 6</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-7.svg" alt="QR code for table 7" />
+      <div class="t">Table 7</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-8.svg" alt="QR code for table 8" />
+      <div class="t">Table 8</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-9.svg" alt="QR code for table 9" />
+      <div class="t">Table 9</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-10.svg" alt="QR code for table 10" />
+      <div class="t">Table 10</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-11.svg" alt="QR code for table 11" />
+      <div class="t">Table 11</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-12.svg" alt="QR code for table 12" />
+      <div class="t">Table 12</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+    <div class="cell">
+      <img src="table-13.svg" alt="QR code for table 13" />
+      <div class="t">Table 13</div>
+      <div class="s">Scan to order from your seat</div>
+    </div>
+  </div>
+</body>
+</html>
