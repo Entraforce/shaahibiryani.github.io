@@ -62,9 +62,9 @@
 
 <script>
 (function () {
-  // Tables 1-13 are the floor plan. Anything else is a mistyped or mischievous
+  // Tables 1-14 are the floor plan. Anything else is a mistyped or mischievous
   // link, and is told so plainly rather than sent into the app to fail there.
-  var MIN = 1, MAX = 13;
+  var MIN = 1, MAX = 14;
   var raw = new URLSearchParams(location.search).get('t') || '';
   var ok = /^\d{1,2}$/.test(raw.trim());
   var n = ok ? Number(raw.trim()) : NaN;

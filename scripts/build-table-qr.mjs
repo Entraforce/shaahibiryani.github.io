@@ -8,7 +8,7 @@
 // the device's location to confirm they really are in the restaurant before
 // letting them order to it. See lib/dine-in-access.ts in shaahi-biryani-app.
 //
-// WHY A SCRIPT AND NOT THIRTEEN IMAGES SOMEONE MADE ONCE. The website's other
+// WHY A SCRIPT AND NOT FOURTEEN IMAGES SOMEONE MADE ONCE. The website's other
 // QR (assets/menu-qr.png) was produced by hand in some web tool and left no
 // way to remake it — so if the URL behind it ever changes, nobody can tell
 // what it points at without scanning it, and regenerating means redoing the
@@ -27,9 +27,9 @@ import { execFileSync } from 'node:child_process';
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolve(repo, 'assets/table-qr');
 
-// Tables 1-13 are the floor plan (dining_tables migration).
+// All fourteen tables on the floor plan (dining_tables migration).
 const MIN_TABLE = 1;
-const MAX_TABLE = 13;
+const MAX_TABLE = 14;
 
 /**
  * Points at the website, NOT at shaahibiryaniapp:// directly.
