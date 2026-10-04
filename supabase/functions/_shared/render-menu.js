@@ -24,6 +24,11 @@ import { PHOTO_DIMS, SIGNATURE_ITEM_IDS, VEGETARIAN_PIDS } from "./menu-facts.js
 
 const HIDDEN_CATS = new Set(["ctr", "sys"]);
 
+// Shown under every category heading. Kept identical to the app's wording
+// (lib/offers.ts in shaahi-biryani-app) so the two surfaces say one thing.
+const PHOTO_DISCLAIMER =
+  "Disclaimer: food shown in photos may differ from what comes in the container.";
+
 // Permanently removed by the owner. Column added 2026-08-27; rows predating it
 // simply have no value, which reads as "still on the menu" — the safe default.
 function isInactive(r) {
@@ -327,7 +332,18 @@ function renderItemLine(r, offersSides, catLabel, group, opts = {}) {
   // Marked on the row only when the dish is one line. A dish sold in three pack
   // sizes carries the mark on its subhead instead (see renderMenuSection), so
   // the same dish is not badged three times over.
-  const signature = isSignature(r) && !opts.signatureOnSubhead;
+  // ONE MARK PER DISH, WHEREVER ITS ROWS FALL.
+  //
+  // The subhead rule below covers a dish whose pack sizes sit together under
+  // one heading. It does NOT cover a dish listed twice in the same category
+  // as two separate rows — which is what the under-$10 16oz boxes are: the
+  // full Chicken Tikka Masala and its box are one Signature dish on two
+  // lines, and badging both says the restaurant has six signature dishes
+  // when it has five.
+  const dishId = String(r.pid || "").split("|")[0];
+  const alreadyBadged = opts.badged?.has(dishId) ?? false;
+  const signature = isSignature(r) && !opts.signatureOnSubhead && !alreadyBadged;
+  if (signature) opts.badged?.add(dishId);
   let min = escText(label);
   if (r.note) min += ` <span class="mnote">${escText(r.note)}</span>`;
   if (signature) min += ` ${SIGNATURE_BADGE}`;
@@ -409,6 +425,8 @@ export function renderMenuSection(data) {
   const cats = visibleCategories(data);
   const subheadMap = buildSubheadMap(data);
   const sigSubheads = signatureSubheads(data);
+  // Signature dishes already marked on this page; see renderItemLine.
+  const badged = new Set();
   const out = [];
   // A tablist, so "which category am I in" reaches a screen reader instead of
   // living only in the gold underline. aria-selected is kept in step by the tab
@@ -425,6 +443,14 @@ export function renderMenuSection(data) {
     out.push(`  <div class="mpane${ci === 0 ? " active" : ""}" id="p-${escAttr(c.code)}" ` +
       `role="tabpanel" aria-labelledby="mtab-${escAttr(c.code)}"><div class="mlist">`);
     if (c.note) out.push(`    <div class="msecnote">${escText(c.note)}</div>`);
+    // THE PHOTO DISCLAIMER, ON EVERY CATEGORY.
+    //
+    // It belongs next to the dishes it is about. One copy at the foot of the
+    // menu is past where most people scroll, which is the same as not saying
+    // it — the app had exactly that problem and was fixed the same way.
+    // Emitted here rather than typed into index.html so a Publish keeps it.
+    // Owner's call, 2026-10-04.
+    out.push(`    <div class="mdisc">${escText(PHOTO_DISCLAIMER)}</div>`);
     let first = true;
     const isTray = c.code === TRAY_CAT;
     // Trays are emitted one line per dish, so buffer each subhead's item rows
@@ -442,8 +468,9 @@ export function renderMenuSection(data) {
         subheadRow = r;
         // `display` wins: catering subheads carry a suffixed `name` purely to
         // satisfy the UNIQUE constraint on web_menu_items.name.
-        const sh = escText(r.display || r.name) +
-          (sigSubheads.has(r) ? ` ${SIGNATURE_BADGE}` : "");
+        const onSubhead = sigSubheads.has(r);
+        if (onSubhead) badged.add(String(r.pid || "").split("|")[0]);
+        const sh = escText(r.display || r.name) + (onSubhead ? ` ${SIGNATURE_BADGE}` : "");
         let line = first
           ? `    <div class="msubhead">${sh}</div>`
           : `    <div class="msubhead" style="margin-top:24px;">${sh}</div>`;
@@ -453,7 +480,7 @@ export function renderMenuSection(data) {
         pending.push(r);
       } else {
         out.push(renderItemLine(r, offersSideChoice(r, subheadMap), c.label,
-          subheadMap.get(r), { signatureOnSubhead: sigSubheads.has(subheadRow) }));
+          subheadMap.get(r), { signatureOnSubhead: sigSubheads.has(subheadRow), badged }));
       }
       first = false;
     }
