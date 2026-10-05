@@ -54,8 +54,8 @@
 <meta name="author" content="Shaahi Biryani">
 <meta name="geo.region" content="US-TX">
 <meta name="geo.placename" content="Plano">
-<meta name="geo.position" content="33.0762;-96.6845">
-<meta name="ICBM" content="33.0762, -96.6845">
+<meta name="geo.position" content="32.998142;-96.667692">
+<meta name="ICBM" content="32.998142, -96.667692">
 <meta name="theme-color" content="#5C0A14">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
@@ -125,8 +125,8 @@
   },
   "geo": {
     "@type": "GeoCoordinates",
-    "latitude": 33.0762,
-    "longitude": -96.6845
+    "latitude": 32.998142,
+    "longitude": -96.667692
   },
   "openingHoursSpecification": [
     {"@type":"OpeningHoursSpecification","dayOfWeek":["Sunday","Tuesday","Wednesday","Thursday"],"opens":"11:30","closes":"22:00"},
@@ -179,6 +179,13 @@
       "@type": "MenuSection",
       "name": "Appetizers",
       "hasMenuItem": [
+        {
+          "@type": "MenuItem",
+          "name": "Vegetable Samosa 2pc",
+          "description": "Crispy pastry stuffed with spiced seasonal vegetables.",
+          "suitableForDiet": "https://schema.org/HalalDiet",
+          "offers": {"@type":"Offer","price":"4","priceCurrency":"USD"}
+        },
         {
           "@type": "MenuItem",
           "name": "Lukhmi 2pc",
@@ -255,13 +262,6 @@
           "description": "Fresh mixed salad.",
           "suitableForDiet": "https://schema.org/HalalDiet",
           "offers": {"@type":"Offer","price":"3","priceCurrency":"USD"}
-        },
-        {
-          "@type": "MenuItem",
-          "name": "Vegetable Samosa 2pc",
-          "description": "Crispy pastry stuffed with spiced seasonal vegetables.",
-          "suitableForDiet": "https://schema.org/HalalDiet",
-          "offers": {"@type":"Offer","price":"4","priceCurrency":"USD"}
         },
         {
           "@type": "MenuItem",
@@ -403,6 +403,13 @@
         },
         {
           "@type": "MenuItem",
+          "name": "Goat Marag",
+          "description": "Hyderabadi goat broth simmered with whole spices, mint and ginger.",
+          "suitableForDiet": "https://schema.org/HalalDiet",
+          "offers": {"@type":"Offer","price":"24","priceCurrency":"USD"}
+        },
+        {
+          "@type": "MenuItem",
           "name": "Zafrani Mutton",
           "description": "Marinated meat with Kashmiri zafran, almond, cashew, asli ghee and Indian spices.",
           "suitableForDiet": "https://schema.org/HalalDiet",
@@ -421,13 +428,6 @@
           "description": "",
           "suitableForDiet": "https://schema.org/HalalDiet",
           "offers": {"@type":"Offer","price":"9.99","priceCurrency":"USD"}
-        },
-        {
-          "@type": "MenuItem",
-          "name": "Goat Marag",
-          "description": "Hyderabadi goat broth simmered with whole spices, mint and ginger.",
-          "suitableForDiet": "https://schema.org/HalalDiet",
-          "offers": {"@type":"Offer","price":"24","priceCurrency":"USD"}
         }
       ]
     },
@@ -3427,6 +3427,7 @@ p.s-intro {
   </div>
   <div class="mpane active" id="p-app" role="tabpanel" aria-labelledby="mtab-app"><div class="mlist">
     <div class="mdisc">Disclaimer: food shown in photos may differ from what comes in the container.</div>
+    <div class="mi" role="button" tabindex="0" aria-label="Vegetable Samosa, 2pc, $4.00, Vegetarian" data-name="Vegetable Samosa 2pc" data-label="Vegetable Samosa" data-price="$4.00" data-cat="Appetizers" data-veg="1" data-desc="Crispy pastry stuffed with spiced seasonal vegetables." data-image="assets/menu-photos/vegetable-samosa.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/vegetable-samosa.jpg" width="899" height="1200" alt="Vegetable Samosa" loading="lazy" decoding="async"><div class="mib"><div class="min">Vegetable Samosa <span class="mnote">2pc</span> <span class="mveg" role="img" aria-label="Vegetarian"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 4c0 9-5.5 14-12 14-1.2 0-2.3-.2-3.3-.5C6 12 11 8.5 17 7.5 11.6 7.9 6.6 10.6 4 15.2 3.4 13.9 3 12.5 3 11 3 6.6 7 4 12 4h8z"/></svg>VEG</span></div><div class="mdesc">Crispy pastry stuffed with spiced seasonal vegetables.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$4.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Lukhmi, 2pc, $5.00, Check Avail." data-name="Lukhmi 2pc Check Avail." data-label="Lukhmi" data-price="$5.00" data-cat="Appetizers" data-desc="Hyderabadi crisp pastry filled with savory minced meat." data-image="assets/menu-photos/lukhmi.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/lukhmi.jpg" width="1153" height="1200" alt="Lukhmi" loading="lazy" decoding="async"><div class="mib"><div class="min">Lukhmi <span class="mnote">2pc</span> <span class="mbadge av">Check Avail.</span></div><div class="mdesc">Hyderabadi crisp pastry filled with savory minced meat.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$5.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Chicken Pakora, $18.00" data-name="Chicken Pakora" data-label="Chicken Pakora" data-price="$18.00" data-cat="Appetizers" data-desc="Battered chicken bites fried crisp with chickpea flour and Indian spices." data-image="assets/menu-photos/chicken-pakora.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/chicken-pakora.jpg" width="1200" height="899" alt="Chicken Pakora" loading="lazy" decoding="async"><div class="mib"><div class="min">Chicken Pakora</div><div class="mdesc">Battered chicken bites fried crisp with chickpea flour and Indian spices.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$18.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Chicken Pakora — 16oz Box, Take-out only, $8.99" data-name="Chicken Pakora — 16oz Box" data-label="Chicken Pakora — 16oz Box" data-price="$8.99" data-cat="Appetizers" data-desc="" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><span class="mi-thumb mi-thumb-empty" role="img" aria-label="Photo coming soon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.2l1.9 5.1 5.1 1.9-5.1 1.9L12 17.2l-1.9-5.1L5 10.2l5.1-1.9L12 3.2z"/></svg></span><div class="mib"><div class="min">Chicken Pakora — 16oz Box <span class="mnote">Take-out only</span></div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$8.99</div></div>
@@ -3438,7 +3439,6 @@ p.s-intro {
     <div class="mi" role="button" tabindex="0" aria-label="Apollo Fish — 16oz Box, Take-out only, $8.99" data-name="Apollo Fish — 16oz Box" data-label="Apollo Fish — 16oz Box" data-price="$8.99" data-cat="Appetizers" data-desc="" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><span class="mi-thumb mi-thumb-empty" role="img" aria-label="Photo coming soon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.2l1.9 5.1 5.1 1.9-5.1 1.9L12 17.2l-1.9-5.1L5 10.2l5.1-1.9L12 3.2z"/></svg></span><div class="mib"><div class="min">Apollo Fish — 16oz Box <span class="mnote">Take-out only</span></div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$8.99</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Fries, $6.00, Vegetarian" data-name="Fries" data-label="Fries" data-price="$6.00" data-cat="Appetizers" data-veg="1" data-desc="Crispy seasoned fries." data-image="assets/menu-photos/fries.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/fries.jpg" width="899" height="1200" alt="Fries" loading="lazy" decoding="async"><div class="mib"><div class="min">Fries <span class="mveg" role="img" aria-label="Vegetarian"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 4c0 9-5.5 14-12 14-1.2 0-2.3-.2-3.3-.5C6 12 11 8.5 17 7.5 11.6 7.9 6.6 10.6 4 15.2 3.4 13.9 3 12.5 3 11 3 6.6 7 4 12 4h8z"/></svg>VEG</span></div><div class="mdesc">Crispy seasoned fries.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$6.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Salad, 12oz, $3.00, Vegetarian" data-name="Salad" data-label="Salad" data-price="$3.00" data-cat="Appetizers" data-veg="1" data-desc="Fresh mixed salad." data-image="assets/menu-photos/salad.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/salad.jpg" width="1200" height="882" alt="Salad" loading="lazy" decoding="async"><div class="mib"><div class="min">Salad <span class="mnote">12oz</span> <span class="mveg" role="img" aria-label="Vegetarian"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 4c0 9-5.5 14-12 14-1.2 0-2.3-.2-3.3-.5C6 12 11 8.5 17 7.5 11.6 7.9 6.6 10.6 4 15.2 3.4 13.9 3 12.5 3 11 3 6.6 7 4 12 4h8z"/></svg>VEG</span></div><div class="mdesc">Fresh mixed salad.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$3.00</div></div>
-    <div class="mi soldout" role="button" tabindex="0" aria-label="Vegetable Samosa, 2pc, Sold out, $4.00, Vegetarian" data-name="Vegetable Samosa 2pc" data-label="Vegetable Samosa" data-price="$4.00" data-cat="Appetizers" data-veg="1" data-soldout="1" data-desc="Crispy pastry stuffed with spiced seasonal vegetables." data-image="assets/menu-photos/vegetable-samosa.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/vegetable-samosa.jpg" width="899" height="1200" alt="Vegetable Samosa" loading="lazy" decoding="async"><div class="mib"><div class="min">Vegetable Samosa <span class="mnote">2pc</span> <span class="mbadge out">Sold out</span> <span class="mveg" role="img" aria-label="Vegetarian"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 4c0 9-5.5 14-12 14-1.2 0-2.3-.2-3.3-.5C6 12 11 8.5 17 7.5 11.6 7.9 6.6 10.6 4 15.2 3.4 13.9 3 12.5 3 11 3 6.6 7 4 12 4h8z"/></svg>VEG</span></div><div class="mdesc">Crispy pastry stuffed with spiced seasonal vegetables.</div></div><div class="mprice">$4.00</div></div>
     <div class="mi soldout" role="button" tabindex="0" aria-label="Beef Samosa, Sold out, $5.00" data-name="Beef Samosa" data-label="Beef Samosa" data-price="$5.00" data-cat="Appetizers" data-soldout="1" data-desc="Crispy pastry filled with spiced minced beef, onions and herbs." data-image="assets/menu-photos/samosa.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/samosa.jpg" width="861" height="1200" alt="Beef Samosa" loading="lazy" decoding="async"><div class="mib"><div class="min">Beef Samosa <span class="mbadge out">Sold out</span></div><div class="mdesc">Crispy pastry filled with spiced minced beef, onions and herbs.</div></div><div class="mprice">$5.00</div></div>
     <div class="mi soldout" role="button" tabindex="0" aria-label="Chicken Samosa, Sold out, $5.00" data-name="Chicken Samosa" data-label="Chicken Samosa" data-price="$5.00" data-cat="Appetizers" data-soldout="1" data-desc="Crispy pastry filled with spiced minced chicken, onions and herbs." data-image="assets/menu-photos/samosa.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/samosa.jpg" width="861" height="1200" alt="Chicken Samosa" loading="lazy" decoding="async"><div class="mib"><div class="min">Chicken Samosa <span class="mbadge out">Sold out</span></div><div class="mdesc">Crispy pastry filled with spiced minced chicken, onions and herbs.</div></div><div class="mprice">$5.00</div></div>
     <div class="mi soldout" role="button" tabindex="0" aria-label="Chicken Spring Roll, 5pc, Sold out, $5.00" data-name="Chicken Spring Roll 5pc" data-label="Chicken Spring Roll" data-price="$5.00" data-cat="Appetizers" data-soldout="1" data-desc="Crisp rolls stuffed with spiced shredded chicken and vegetables." onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><span class="mi-thumb mi-thumb-empty" role="img" aria-label="Photo coming soon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.2l1.9 5.1 5.1 1.9-5.1 1.9L12 17.2l-1.9-5.1L5 10.2l5.1-1.9L12 3.2z"/></svg></span><div class="mib"><div class="min">Chicken Spring Roll <span class="mnote">5pc</span> <span class="mbadge out">Sold out</span></div><div class="mdesc">Crisp rolls stuffed with spiced shredded chicken and vegetables.</div></div><div class="mprice">$5.00</div></div>
@@ -3465,10 +3465,10 @@ p.s-intro {
     <div class="mi" role="button" tabindex="0" aria-label="Goat Khorma, $22.00" data-name="Goat Khorma" data-label="Goat Khorma" data-price="$22.00" data-cat="Goat" data-desc="Goat in a rich yogurt-and-cashew gravy, gently spiced with cardamom and clove." data-sizes='{"Naan":"$22.00","Rice":"$22.00"}' data-image="assets/menu-photos/goat-khorma.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/goat-khorma.jpg" width="899" height="1200" alt="Goat Khorma" loading="lazy" decoding="async"><div class="mib"><div class="min">Goat Khorma</div><div class="mdesc">Goat in a rich yogurt-and-cashew gravy, gently spiced with cardamom and clove.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$22.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Karahi Gosht, $22.00" data-name="Karahi Gosht" data-label="Karahi Gosht" data-price="$22.00" data-cat="Goat" data-desc="Goat cooked wok-style with tomato, green chili, ginger and fresh cilantro." data-sizes='{"Naan":"$22.00","Rice":"$22.00"}' data-image="assets/menu-photos/karahi-gosht.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/karahi-gosht.jpg" width="1200" height="899" alt="Karahi Gosht" loading="lazy" decoding="async"><div class="mib"><div class="min">Karahi Gosht</div><div class="mdesc">Goat cooked wok-style with tomato, green chili, ginger and fresh cilantro.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$22.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Dum Ka Gosht, $22.00" data-name="Dum Ka Gosht" data-label="Dum Ka Gosht" data-price="$22.00" data-cat="Goat" data-desc="Slow-cooked Hyderabadi goat sealed with yogurt, fried onions and warm spices." data-sizes='{"Naan":"$22.00","Rice":"$22.00"}' data-image="assets/menu-photos/dum-ka-gosht.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/dum-ka-gosht.jpg" width="1200" height="899" alt="Dum Ka Gosht" loading="lazy" decoding="async"><div class="mib"><div class="min">Dum Ka Gosht</div><div class="mdesc">Slow-cooked Hyderabadi goat sealed with yogurt, fried onions and warm spices.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$22.00</div></div>
+    <div class="mi" role="button" tabindex="0" aria-label="Goat Marag, $24.00, Check Avail." data-name="Goat Marag Check Avail." data-label="Goat Marag" data-price="$24.00" data-cat="Goat" data-desc="Hyderabadi goat broth simmered with whole spices, mint and ginger." data-sizes='{"Naan":"$24.00","Rice":"$24.00"}' data-image="assets/menu-photos/marag.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/marag.jpg" width="899" height="1200" alt="Goat Marag" loading="lazy" decoding="async"><div class="mib"><div class="min">Goat Marag <span class="mbadge av">Check Avail.</span></div><div class="mdesc">Hyderabadi goat broth simmered with whole spices, mint and ginger.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$24.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Zafrani Mutton, $24.00" data-name="Zafrani Mutton Signature" data-label="Zafrani Mutton" data-price="$24.00" data-cat="Goat" data-desc="Marinated meat with Kashmiri zafran, almond, cashew, asli ghee and Indian spices." data-sizes='{"Naan":"$24.00","Rice":"$24.00"}' data-image="assets/menu-photos/zafrani-mutton.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/zafrani-mutton.jpg" width="1200" height="899" alt="Zafrani Mutton" loading="lazy" decoding="async"><div class="mib"><div class="min">Zafrani Mutton</div><div class="mdesc">Marinated meat with Kashmiri zafran, almond, cashew, asli ghee and Indian spices.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$24.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Goat Haleem, $22.00" data-name="Goat Haleem Signature" data-label="Goat Haleem" data-price="$22.00" data-cat="Goat" data-desc="Wheat, barley, minced meat and spices slow-cooked 3–4 hours." data-image="assets/menu-photos/haleem.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/haleem.jpg" width="1183" height="1200" alt="Goat Haleem" loading="lazy" decoding="async"><div class="mib"><div class="min">Goat Haleem</div><div class="mdesc">Wheat, barley, minced meat and spices slow-cooked 3–4 hours.</div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$22.00</div></div>
     <div class="mi" role="button" tabindex="0" aria-label="Goat Haleem — 12 Ounce, Take-out only, $9.99" data-name="Goat Haleem — 12 Ounce" data-label="Goat Haleem — 12 Ounce" data-price="$9.99" data-cat="Goat" data-desc="" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><span class="mi-thumb mi-thumb-empty" role="img" aria-label="Photo coming soon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.2l1.9 5.1 5.1 1.9-5.1 1.9L12 17.2l-1.9-5.1L5 10.2l5.1-1.9L12 3.2z"/></svg></span><div class="mib"><div class="min">Goat Haleem — 12 Ounce <span class="mnote">Take-out only</span></div><span class="mi-add" aria-hidden="true">+</span></div><div class="mprice">$9.99</div></div>
-    <div class="mi soldout" role="button" tabindex="0" aria-label="Goat Marag, Sold out, $24.00, Check Avail." data-name="Goat Marag Check Avail." data-label="Goat Marag" data-price="$24.00" data-cat="Goat" data-soldout="1" data-desc="Hyderabadi goat broth simmered with whole spices, mint and ginger." data-sizes='{"Naan":"$24.00","Rice":"$24.00"}' data-image="assets/menu-photos/marag.jpg" onclick="openItemModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}"><img class="mi-thumb" src="assets/menu-photos/marag.jpg" width="899" height="1200" alt="Goat Marag" loading="lazy" decoding="async"><div class="mib"><div class="min">Goat Marag <span class="mbadge av">Check Avail.</span> <span class="mbadge out">Sold out</span></div><div class="mdesc">Hyderabadi goat broth simmered with whole spices, mint and ginger.</div></div><div class="mprice">$24.00</div></div>
   </div></div>
   <div class="mpane" id="p-grl" role="tabpanel" aria-labelledby="mtab-grl"><div class="mlist">
     <div class="mdisc">Disclaimer: food shown in photos may differ from what comes in the container.</div>
