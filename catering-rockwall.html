@@ -192,6 +192,12 @@ textarea.finp{resize:vertical;min-height:100px;}
 footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding:36px 24px;text-align:center;}
 .footer-copy{font-size:.72rem;font-style:italic;color:rgba(224,201,160,.5);line-height:1.8;}
 .footer-copy a{color:var(--gold-l);text-decoration:none;}
+#quote{scroll-margin-top:90px;}
+.hero-cta{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;margin:28px auto 0;max-width:620px;}
+.btn-ghost{font-family:"Cinzel",serif;font-size:.64rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-l);background:transparent;border:1px solid var(--gold);padding:14px 30px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .4s;}
+.btn-ghost:hover{background:var(--gold);color:var(--black);}
+.hero-cta-note{flex-basis:100%;text-align:center;font-size:.8rem;color:var(--text-muted);font-style:italic;}
+@media(max-width:560px){.hero-cta .btn-gold,.hero-cta .btn-ghost{width:100%;justify-content:center;}}
 </style>
 </head>
 <body>
@@ -205,13 +211,18 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
     <li><a href="hall">Book a Hall</a></li>
     <li><a href="venues">Venues</a></li>
   </ul>
-  <a href="tel:4699603300" class="nav-cta">☎ Order Now</a>
+  <a href="#quote" class="nav-cta">Get a Quote</a>
 </nav>
 
 <div class="page-hero">
   <div class="s-label">Catering in Rockwall, TX</div>
   <h1 class="page-title">Zabihah Halal Hyderabadi Catering in Rockwall</h1>
   <p class="page-sub">From Lake Ray Hubbard weddings to corporate dinners near Chandlers Landing — we bring royal biryani, kababs and Hyderabadi spreads straight from our Plano kitchen to your Rockwall event.</p>
+  <div class="hero-cta">
+    <a href="#quote" class="btn-gold">Get a Catering Quote</a>
+    <a href="tel:4699603300" class="btn-ghost">&#9742; (469) 960-3300</a>
+    <span class="hero-cta-note">Custom menu and pricing back within 24 hours</span>
+  </div>
 </div>
 
 <section>
@@ -251,7 +262,7 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
 
 <section>
   <div class="wrap">
-    <h2 class="s-title">Request a Catering Quote</h2>
+    <h2 class="s-title" id="quote">Request a Catering Quote</h2>
     <div class="cater-form">
       <div id="caterThanks" style="display:none;text-align:center;padding:30px 10px;">
         <h3 style="margin-bottom:14px;">Thank You — Quote Request Received</h3>
