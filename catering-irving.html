@@ -10,6 +10,35 @@
   gtag('js', new Date());
   gtag('config', 'G-3NJRL7V5NB');
 </script>
+<!-- CATERATTRIB:START -->
+<script>
+/* WHERE THIS CUSTOMER CAME FROM — remembered until they actually order.
+   Copied verbatim from index.html (see that file for the full rationale) so
+   a visitor whose first landing is THIS page is still attributed. */
+(function(){
+  var KEY='shaahi_attrib', WINDOW_DAYS=90;
+  function allowed(){ try{ return localStorage.getItem('shaahi_cookie_consent')==='granted'; }catch(e){ return false; } }
+  function read(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
+  try{
+    var q=new URLSearchParams(location.search);
+    var click=q.get('gclid')||q.get('gbraid')||q.get('wbraid')||'';
+    var src=q.get('utm_source')||'', med=q.get('utm_medium')||'', camp=q.get('utm_campaign')||'';
+    var term=q.get('utm_term')||'';
+    if(!click&&!src&&!med){ src=document.referrer?'referral':'direct'; med=document.referrer?'referral':'none'; }
+    if(!allowed()) return;
+    var now=Date.now(), prev=read();
+    if(prev&&prev.first&&(now-prev.first.at)>WINDOW_DAYS*864e5) prev=null;  // expired
+    var touch={click:click,source:src,medium:med,campaign:camp,term:term,
+               referrer:(document.referrer||'').slice(0,200),landing:location.pathname,at:now};
+    var next={first:(prev&&prev.first)?prev.first:touch, last:touch};
+    if(!next.last.click&&prev&&prev.last&&prev.last.click) next.last.click=prev.last.click;
+    localStorage.setItem(KEY,JSON.stringify(next));
+  }catch(e){/* attribution is never worth breaking a page over */}
+  window.shaahiAttribution=function(){ try{ return allowed()?read():null; }catch(e){ return null; } };
+})();
+</script>
+<!-- CATERATTRIB:END -->
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="100% Zabihah Halal Hyderabadi catering in Irving, TX — biryani, kababs and wedding menus. Serving Irving weddings and corporate events.">
@@ -361,5 +390,48 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
   }
 })();
 </script>
+<!-- CALLTRACK:START -->
+<script>
+(function(){
+  document.addEventListener('click', function(e){
+    var a = e.target && e.target.closest && e.target.closest('a[href^="tel:"]');
+    if (!a || typeof gtag !== 'function') return;
+    gtag('event','conversion',{'send_to':'AW-17075652554/REPLACE_WITH_CALL_CLICK_LABEL'});
+  });
+})();
+</script>
+<!-- CALLTRACK:END -->
+<!-- CATERLEAD:START -->
+<script>
+(function(){
+  var form = document.getElementById('caterForm');
+  if (!form) return;
+  form.addEventListener('submit', function(){
+    try{
+      var fd = new FormData(form);
+      var body = {
+        city: fd.get('City / Area') || '',
+        name: fd.get('Name') || '',
+        phone: fd.get('Phone') || '',
+        email: fd.get('email') || '',
+        eventDate: fd.get('Event Date') || '',
+        guestCount: fd.get('Number of Guests') || '',
+        eventType: fd.get('Event Type') || '',
+        details: fd.get('Additional Details') || '',
+        attribution: (typeof window.shaahiAttribution === 'function' ? window.shaahiAttribution() : null)
+      };
+      // Fire-and-forget: never blocks or interferes with the real submit to
+      // formsubmit.co. keepalive so it survives the page navigating away.
+      fetch('https://wtdthjhqgsbnyjucdqxl.supabase.co/functions/v1/create-catering-lead', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZHRoamhxZ3NibnlqdWNkcXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcxMzcsImV4cCI6MjA5MjQ0MzEzN30.1WYVcbrulkg0l7QB-scj4KcJCnMwFKSLHXucEdEZV3Q','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZHRoamhxZ3NibnlqdWNkcXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcxMzcsImV4cCI6MjA5MjQ0MzEzN30.1WYVcbrulkg0l7QB-scj4KcJCnMwFKSLHXucEdEZV3Q'},
+        body: JSON.stringify(body),
+        keepalive: true
+      }).catch(function(){});
+    }catch(e){/* never let lead tracking interfere with the real quote request */}
+  });
+})();
+</script>
+<!-- CATERLEAD:END -->
 </body>
 </html>
