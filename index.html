@@ -4126,6 +4126,15 @@ p.s-intro {
         <label style="font-family:'Cinzel',serif;font-size:.48rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.5);display:block;margin-bottom:4px;">Phone Number *</label>
         <input id="custPhone" type="tel" placeholder="(469) 555-0100" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
       </div>
+      <!-- Permission to text them later. Starts unticked and must stay that
+           way: under the TCPA consent has to be an affirmative act, and a
+           pre-ticked box is consent that cannot be defended. The exact
+           sentence below is stored alongside the consent record, so rewording
+           it here means rewording CONSENT_WORDING_V1 in create-web-order too. -->
+      <label style="display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(201,168,76,.18);cursor:pointer;">
+        <input id="custOptIn" type="checkbox" style="margin:3px 0 0 0;width:15px;height:15px;accent-color:var(--gold);flex:none;cursor:pointer;" />
+        <span style="font-family:'Cormorant Garamond',serif;font-size:.8rem;line-height:1.45;color:rgba(245,240,230,.6);">Text me offers and updates from Shaahi Biryani at this number. Not required to place an order. Message and data rates may apply. Reply STOP to opt out.</span>
+      </label>
       <p id="custError" style="display:none;font-size:.72rem;color:#f87171;font-style:italic;margin-top:8px;">Please fill in all required fields.</p>
     </div>
 
@@ -4401,7 +4410,7 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,marketingOptIn:!!((gi('custOptIn')||{}).checked)})
     });
     var data=await res.json();
     if(!res.ok) throw new Error(data.error||'Could not start the order.');

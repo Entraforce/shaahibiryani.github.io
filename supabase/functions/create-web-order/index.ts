@@ -122,6 +122,10 @@ Deno.serve(async (req) => {
     if (!guestName || !guestPhone) {
       return json({ error: "Name and phone are required." }, 400);
     }
+    // Only an explicit true counts. Anything else — absent, "false", a
+    // truthy-looking string — is "they did not tick it", which is not the same
+    // as "they said no" and is never recorded as a refusal.
+    const marketingOptIn = body?.marketingOptIn === true;
 
     // ── Price every line from the owner-editable menu table ──
     // One read serves the whole order; the static PRICES map only fills in
@@ -311,6 +315,10 @@ Deno.serve(async (req) => {
         guest_email: guestEmail || "",
         item_count: String(count),
         checkout_key: ckey,
+        // Carried into Stripe as well as our own table so the permission is
+        // visible wherever the customer is being looked at. Our table is the
+        // record of evidence; this is a convenience copy.
+        marketing_opt_in: marketingOptIn ? "yes" : "no",
       },
     }, { idempotencyKey: ckey });
 
@@ -354,6 +362,35 @@ Deno.serve(async (req) => {
     if (itemsErr) {
       await supabase.from("orders").delete().eq("id", order.id).then(() => {}, () => {});
       return json({ error: itemsErr.message }, 500);
+    }
+
+    // ── Permission to market to this guest ──
+    //
+    // The sentence below must stay character-identical to the checkbox label
+    // in index.html. What is defensible under the TCPA is not that somebody
+    // ticked a box but what the box SAID, and this is the copy that gets
+    // quoted back. Recorded against the order so there is a transaction to
+    // point at, and on BOTH channels because the website asks for an email
+    // too — the checkbox text says "text me", so SMS is the explicit grant and
+    // email rides along under CAN-SPAM, which does not require prior consent.
+    //
+    // Never allowed to fail the order: the guest is mid-checkout with a
+    // PaymentIntent already created, and losing a marketing permission is not
+    // a reason to lose a dinner.
+    if (marketingOptIn) {
+      const CONSENT_WORDING_V1 =
+        "Text me offers and updates from Shaahi Biryani at this number. " +
+        "Not required to place an order. Message and data rates may apply. " +
+        "Reply STOP to opt out.";
+      await supabase.rpc("record_marketing_consent", {
+        p_phone: guestPhone,
+        p_email: guestEmail || null,
+        p_granted: true,
+        p_channel: guestEmail ? "both" : "sms",
+        p_source: "web_checkout",
+        p_wording: CONSENT_WORDING_V1,
+        p_order_id: order.id,
+      }).then(() => {}, () => {});
     }
 
     await supabase.rpc("complete_checkout_attempt", {
