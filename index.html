@@ -4312,6 +4312,12 @@ function loadStripeLibrary(){
   return _stripeLoading;
 }
 var _wpElements=null,_wpSecret=null,_wpOrder=null;
+/* The basket and the contact details, carried from startWebPayment() to
+   payWeb(). They are two separate functions, so the email, phone and line
+   items that were read at checkout are NOT in scope when the charge
+   succeeds — which is where the conversion reporting happens. Stashed here
+   rather than re-read from the DOM, because by then the form is hidden. */
+var _wpCustomer=null;
 // True from the moment a charge is submitted until it resolves. The
 // checkout modal refuses to close while this is set: closing it used to
 // leave confirmPayment() running against a hidden modal, so the customer
@@ -4458,6 +4464,7 @@ async function startWebPayment(){
     var noteEl=gi('webPayNote');
     if(noteEl) noteEl.innerHTML = '&#128274; Secure payment by Stripe · your card never touches our servers · '+(fulfillment==='delivery'?'delivered to your door':'pickup at our Plano kitchen');
     _wpSecret=data.paymentIntent; _wpOrder=data; _wpCartKey=_cartKey;
+    _wpCustomer={email:email,phone:phone,items:r.items};
     gi('custDetailsBlock').style.display='none';
     if(gi('waOrderSummary')) gi('waOrderSummary').style.display='none';
     gi('waActionBtns').style.display='none';
@@ -4475,6 +4482,49 @@ async function startWebPayment(){
       : (e&&e.message)||'Something went wrong preparing payment. Please try again.';
     if(err){err.style.display='block';err.textContent=msg;}
   }finally{ btn.disabled=false; btn.innerHTML=bl; }
+}
+
+/* ENHANCED CONVERSIONS — matching a sale to the ad click that caused it,
+   without ever sending Google an email address.
+
+   WHY IT IS WORTH DOING. Safari and Firefox block the cookies Google used to
+   rely on to connect a click to a purchase, so a share of real sales are
+   simply never credited to the ad that produced them. Bidding then optimises
+   against an undercount. Enhanced conversions close that gap by sending a
+   one-way hash of the customer's email alongside the conversion: Google can
+   match it to a signed-in Google account it already knows clicked the ad, but
+   cannot reverse it back into an address.
+
+   The hashing happens HERE, in the browser, with the Web Crypto API. The raw
+   email never leaves the device and never reaches Google or us in the clear.
+
+   Normalisation follows Google's spec exactly, because a hash of
+   " Osman@Gmail.com " and a hash of "osman@gmail.com" are completely
+   different strings and the match would silently fail: trim, lowercase, and
+   phone numbers in E.164 (+1XXXXXXXXXX).
+
+   Consent-gated, like the attribution capture. A guest who declined
+   non-essential cookies has nothing hashed and nothing sent. */
+async function _sha256Hex(s){
+  const bytes=new TextEncoder().encode(s);
+  const hash=await crypto.subtle.digest('SHA-256',bytes);
+  return Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+async function _enhancedUserData(email,phone){
+  var out={};
+  try{
+    if(localStorage.getItem('shaahi_cookie_consent')!=='granted') return out;
+  }catch(e){ return out; }
+  // crypto.subtle only exists in a secure context; on http:// it is undefined.
+  if(!(window.crypto&&crypto.subtle)) return out;
+  try{
+    var e=String(email||'').trim().toLowerCase();
+    if(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) out.sha256_email_address=await _sha256Hex(e);
+    var d=String(phone||'').replace(/\D/g,'');
+    if(d.length===10) d='1'+d;                       // US number, add country code
+    if(d.length===11&&d.charAt(0)==='1') out.sha256_phone_number=await _sha256Hex('+'+d);
+  }catch(e2){/* a failed hash must never block the receipt */}
+  return out;
 }
 
 async function payWeb(){
@@ -4504,6 +4554,13 @@ async function payWeb(){
     }catch(e){/* payment already went through; order will reconcile */}
     if(typeof gtag==='function'&&_wpOrder){
       var _wpAmt=(_wpOrder.breakdown&&_wpOrder.breakdown.totalCents)?(_wpOrder.breakdown.totalCents/100):0;
+      // Identify the buyer by hash BEFORE the conversion fires — gtag attaches
+      // whatever user_data is set at the moment the event is sent, so the order
+      // of these two calls is the whole mechanism.
+      try{
+        var _ud=await _enhancedUserData(_wpCustomer&&_wpCustomer.email,_wpCustomer&&_wpCustomer.phone);
+        if(Object.keys(_ud).length) gtag('set','user_data',_ud);
+      }catch(e){/* unmatched is merely less accurate, never broken */}
       // Google Ads conversion — answers "did an AD produce this sale?"
       // Label copied verbatim from the conversion action's own event snippet in
       // Google Ads. It is CASE-SENSITIVE: this read "UTt2..." for two months
@@ -4524,7 +4581,7 @@ async function payWeb(){
           currency:'USD',
           tax:(_wpOrder.breakdown&&_wpOrder.breakdown.taxCents)?(_wpOrder.breakdown.taxCents/100):0,
           shipping:(_wpOrder.breakdown&&_wpOrder.breakdown.deliveryFeeCents)?(_wpOrder.breakdown.deliveryFeeCents/100):0,
-          items:(r&&r.items?r.items:[]).map(function(it,i){
+          items:((_wpCustomer&&_wpCustomer.items)?_wpCustomer.items:[]).map(function(it,i){
             return {item_id:it.pid||it.id||('item_'+i),item_name:it.name||'',price:_p(it.price),quantity:it.qty||1};
           })
         });
