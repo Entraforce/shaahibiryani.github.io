@@ -33,6 +33,10 @@
   .updated{text-align:center;color:var(--text-muted);font-family:"Cinzel",serif;letter-spacing:.12em;font-size:12px;text-transform:uppercase;margin-bottom:8px}
   .divider{width:200px;height:1px;margin:18px auto 28px;background:linear-gradient(to right,transparent,var(--gold),transparent);opacity:.6}
   h2{font-family:"Cinzel",serif;color:var(--gold-l);letter-spacing:.08em;font-size:19px;text-transform:uppercase;margin:32px 0 10px;border-bottom:1px solid rgba(201,168,76,.18);padding-bottom:6px}
+  /* Subsection inside an h2 block — same family, quieter: no rule, no caps,
+     smaller. Without this an h3 falls back to the browser default and lands
+     on the page as oversized black sans-serif. */
+  h3{font-family:"Cinzel",serif;color:var(--gold-l);letter-spacing:.05em;font-size:15px;margin:22px 0 8px;opacity:.92}
   p,li{color:var(--text-warm)}
   strong{color:var(--cream)}
   a{color:var(--gold-l)}
@@ -49,7 +53,7 @@
   <header class="top">
     <img src="/assets/apple-touch-icon.png" alt="Shaahi Biryani">
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: August 27, 2026</div>
+    <div class="updated">Last updated: October 5, 2026</div>
   </header>
   <div class="divider"></div>
 
@@ -109,6 +113,26 @@
   change your mind at any time using the <strong>Cookie Settings</strong> link in the site footer.</p>
   <p>Ask Shaahi, the menu, your cart, reservations and ordering all work normally whether you accept
   or decline — your choice here only affects analytics and advertising.</p>
+
+  <h3>Measuring which adverts lead to orders</h3>
+  <p>When you complete an order on this site, and <strong>only if you accepted analytics and
+  advertising cookies</strong>, we send Google a <strong>one-way encrypted (hashed) version of the
+  email address and phone number you entered at checkout</strong>, together with the order total.
+  Google calls this <em>enhanced conversions</em>. It lets Google tell us that an advert led to a
+  sale, which browsers increasingly block it from working out on its own.</p>
+  <p>The encryption happens <strong>inside your own browser, before anything is sent</strong>. We use
+  SHA-256, which is one-way: the result cannot be turned back into your email address or phone
+  number by Google, by us, or by anyone else. Your actual email address and phone number are
+  <strong>never</strong> sent to Google — they are used only by us, to prepare and deliver your
+  order and to contact you about it.</p>
+  <p>Google uses the hash solely to match the order against an advert click it already recorded, and
+  reports the result to us as a total — never as a list of who bought what. If you decline
+  non-essential cookies, none of this happens: nothing is hashed and nothing is sent. We also store
+  the advert or search that brought you to the site, for up to 90 days, for the same purpose and
+  under the same choice.</p>
+  <p>We also send Google the order total so we can see which adverts produce real revenue rather
+  than just clicks. This is ordinary advertising measurement; we do not sell your personal
+  information, and we never send Google the contents of your order in a form tied to you by name.</p>
   <p><strong>In our mobile app</strong> we do not use advertising cookies or Google advertising
   tags. The app uses PostHog for product analytics — which screens are opened and which features
   are used — to help us improve it. The text of your Ask Shaahi messages is never sent to our
