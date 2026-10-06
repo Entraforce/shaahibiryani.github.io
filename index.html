@@ -4505,7 +4505,12 @@ async function payWeb(){
     if(typeof gtag==='function'&&_wpOrder){
       var _wpAmt=(_wpOrder.breakdown&&_wpOrder.breakdown.totalCents)?(_wpOrder.breakdown.totalCents/100):0;
       // Google Ads conversion — answers "did an AD produce this sale?"
-      gtag('event','conversion',{'send_to':'AW-17075652554/UTt2CMiQq98cEMqPp84_','value':_wpAmt,'currency':'USD','transaction_id':_wpOrder.orderId||''});
+      // Label copied verbatim from the conversion action's own event snippet in
+      // Google Ads. It is CASE-SENSITIVE: this read "UTt2..." for two months
+      // against Google's "Utt2...", and that single capital T meant the Purchase
+      // action reported "Conversion has never received data" while 121 real
+      // orders went through. Never retype this by eye — copy it.
+      gtag('event','conversion',{'send_to':'AW-17075652554/Utt2CMiQq98cEMqPp84_','value':_wpAmt,'currency':'USD','transaction_id':_wpOrder.orderId||''});
       // GA4 ecommerce purchase — answers "did SEO, or AI search, or anything
       // else produce this sale?" A Google Ads conversion only ever appears when
       // Google can trace the order back to a click on one of its own ads, so on
