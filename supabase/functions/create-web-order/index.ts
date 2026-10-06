@@ -127,6 +127,19 @@ Deno.serve(async (req) => {
     // as "they said no" and is never recorded as a refusal.
     const marketingOptIn = body?.marketingOptIn === true;
 
+    // Where this guest came from, captured by the page and passed straight
+    // through. Size-capped and shape-checked rather than trusted: it arrives
+    // from the browser, so it is input, not fact. Null when they declined
+    // advertising cookies, which is a legitimate answer and not an error.
+    let attribution: unknown = null;
+    try {
+      const a = body?.attribution;
+      if (a && typeof a === "object" && !Array.isArray(a)) {
+        const s = JSON.stringify(a);
+        if (s.length <= 2000) attribution = JSON.parse(s);
+      }
+    } catch { /* unparseable attribution is simply absent */ }
+
     // ── Price every line from the owner-editable menu table ──
     // One read serves the whole order; the static PRICES map only fills in
     // keys the table doesn't have (e.g. cached pages ordering a removed item).
@@ -343,6 +356,7 @@ Deno.serve(async (req) => {
         points_earned: 0,
         stripe_payment_intent: paymentIntent.id,
         payment_status: "pending",
+        attribution,
       })
       .select("id")
       .single();

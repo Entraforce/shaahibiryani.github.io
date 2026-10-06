@@ -46,6 +46,47 @@
   gtag('config', 'G-3NJRL7V5NB');
   gtag('config', 'AW-17075652554');
 </script>
+<script>
+/* WHERE THIS CUSTOMER CAME FROM — remembered until they actually order.
+   A Google Ads conversion only fires when the sale happens in the browser
+   session Google can still see. That covers online checkout and nothing else:
+   a guest who searches, taps the ad, then PHONES the order in, or fills in the
+   catering form and pays three weeks later, is invisible to it. Both are real
+   revenue caused by the ad.
+   So the click id is captured here and travels with the order. Once it is
+   stored next to a real amount, that amount can be uploaded back to Google as
+   an offline conversion, and phone and catering revenue stops being guesswork.
+   gclid is the ordinary click id; gbraid/wbraid are its iOS equivalents.
+   FIRST touch and LAST touch are both kept — the first is what introduced them,
+   the last is what closed them, and the two are often different channels.
+   Consent-gated on purpose: this is advertising attribution, so if somebody
+   declines non-essential cookies nothing is written. Ninety days to match
+   Google's own attribution window. */
+(function(){
+  var KEY='shaahi_attrib', WINDOW_DAYS=90;
+  function allowed(){ try{ return localStorage.getItem('shaahi_cookie_consent')==='granted'; }catch(e){ return false; } }
+  function read(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
+  try{
+    var q=new URLSearchParams(location.search);
+    var click=q.get('gclid')||q.get('gbraid')||q.get('wbraid')||'';
+    var src=q.get('utm_source')||'', med=q.get('utm_medium')||'', camp=q.get('utm_campaign')||'';
+    var term=q.get('utm_term')||'';
+    // A visit with no markers at all is organic, direct or an AI assistant —
+    // worth recording as last touch, but it must not overwrite a real click id.
+    if(!click&&!src&&!med){ src=document.referrer?'referral':'direct'; med=document.referrer?'referral':'none'; }
+    if(!allowed()) return;
+    var now=Date.now(), prev=read();
+    if(prev&&prev.first&&(now-prev.first.at)>WINDOW_DAYS*864e5) prev=null;  // expired
+    var touch={click:click,source:src,medium:med,campaign:camp,term:term,
+               referrer:(document.referrer||'').slice(0,200),landing:location.pathname,at:now};
+    var next={first:(prev&&prev.first)?prev.first:touch, last:touch};
+    // Never let a later untagged visit erase the click id that paid for them.
+    if(!next.last.click&&prev&&prev.last&&prev.last.click) next.last.click=prev.last.click;
+    localStorage.setItem(KEY,JSON.stringify(next));
+  }catch(e){/* attribution is never worth breaking a page over */}
+  window.shaahiAttribution=function(){ try{ return allowed()?read():null; }catch(e){ return null; } };
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="KqJfmfsxyrVIfH5xYes02xxtFvqSktilIPA4ZWVcvR8">
@@ -4410,7 +4451,7 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,marketingOptIn:!!((gi('custOptIn')||{}).checked)})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
     });
     var data=await res.json();
     if(!res.ok) throw new Error(data.error||'Could not start the order.');
@@ -4463,7 +4504,26 @@ async function payWeb(){
     }catch(e){/* payment already went through; order will reconcile */}
     if(typeof gtag==='function'&&_wpOrder){
       var _wpAmt=(_wpOrder.breakdown&&_wpOrder.breakdown.totalCents)?(_wpOrder.breakdown.totalCents/100):0;
+      // Google Ads conversion — answers "did an AD produce this sale?"
       gtag('event','conversion',{'send_to':'AW-17075652554/UTt2CMiQq98cEMqPp84_','value':_wpAmt,'currency':'USD','transaction_id':_wpOrder.orderId||''});
+      // GA4 ecommerce purchase — answers "did SEO, or AI search, or anything
+      // else produce this sale?" A Google Ads conversion only ever appears when
+      // Google can trace the order back to a click on one of its own ads, so on
+      // its own it can never show what organic search is worth. This event is
+      // what puts revenue next to every channel in GA4's reports.
+      // transaction_id is the order id on both, so the two never double-count.
+      try{
+        gtag('event','purchase',{
+          transaction_id:_wpOrder.orderId||'',
+          value:_wpAmt,
+          currency:'USD',
+          tax:(_wpOrder.breakdown&&_wpOrder.breakdown.taxCents)?(_wpOrder.breakdown.taxCents/100):0,
+          shipping:(_wpOrder.breakdown&&_wpOrder.breakdown.deliveryFeeCents)?(_wpOrder.breakdown.deliveryFeeCents/100):0,
+          items:(r&&r.items?r.items:[]).map(function(it,i){
+            return {item_id:it.pid||it.id||('item_'+i),item_name:it.name||'',price:_p(it.price),quantity:it.qty||1};
+          })
+        });
+      }catch(e){/* reporting must never break a paid order */}
     }
     // The charge went through, so the receipt must be seen — re-open the
     // modal if it was dismissed while the payment was resolving.
