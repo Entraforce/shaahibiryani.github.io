@@ -34,11 +34,20 @@ if (!url || !key) throw new Error('index.html: could not find SB_URL / SB_ANON')
 const data = await fetchMenuData(url, key);
 const out = renderAll(html, data);
 
+// This checkout may use CRLF line endings (Windows git core.autocrlf) while
+// renderAll always builds its output with plain '\n' — compare normalized to
+// LF so a line-ending difference alone never reads as "stale" menu content.
+const crlf = html.includes('\r\n');
+const htmlLF = html.replace(/\r\n/g, '\n');
+const outLF = out.replace(/\r\n/g, '\n');
+const matches = htmlLF === outLF;
+const outToWrite = crlf ? outLF.replace(/\n/g, '\r\n') : out;
+
 if (check) {
-  if (out === html) {
+  if (matches) {
     console.log('index.html is up to date with the renderer and the live menu data.');
   } else {
-    const a = html.split('\n'), b = out.split('\n');
+    const a = htmlLF.split('\n'), b = outLF.split('\n');
     const diffs = [];
     for (let i = 0; i < Math.max(a.length, b.length); i++) if (a[i] !== b[i]) diffs.push(i + 1);
     console.error(`index.html is STALE — ${diffs.length} line(s) differ from what the renderer produces.`);
@@ -46,9 +55,9 @@ if (check) {
     console.error('Run: node scripts/render-index.mjs');
     process.exit(1);
   }
-} else if (out === html) {
+} else if (matches) {
   console.log('index.html already up to date — nothing written.');
 } else {
-  writeFileSync(INDEX, out);
+  writeFileSync(INDEX, outToWrite);
   console.log(`index.html regenerated — ${data.items.length} menu rows, ${data.categories.length} categories.`);
 }
