@@ -6939,6 +6939,10 @@ document.addEventListener('DOMContentLoaded',function(){
     var frag=document.createDocumentFragment();
     picked.forEach(function(r){ frag.appendChild(card(r,'fx-u10-card')); });
     feat.textContent=''; feat.appendChild(frag);
+    // The promo card (PROMO POPUPS, end of page) reads these same rows and goes
+    // to this band; it never keeps a list of its own.
+    window.shaahiUnder10={rows:marked,featured:picked,lo:lo,hi:hi,photoOf:photoOf,thumb:thumbImg,
+      go:function(){ scrollToEl(sec,-((document.getElementById('mtabs')||{}).offsetHeight||0)+4); }};
 
     // One gentle entrance the first time the band comes into view.
     if(!reduce && 'IntersectionObserver' in window){
@@ -7444,5 +7448,259 @@ document.addEventListener('click', function(e){
 })();
 </script>
 <!-- CALLTRACK:END -->
+<!-- ── PROMO POPUPS ─────────────────────────────────────────────────────────
+     Two campaign dialogs, never both at once:
+     - BOGO weekend (Oct 17–18 2026, America/Chicago): the owner's approved
+       flyer, once per browser session, switched off automatically from
+       12:00 AM Central on Oct 19. Redeemed in store: nothing here touches the
+       cart or checkout, and nothing says it applies online.
+     - Under $10: once per Central Time calendar day per browser, built from the
+       same rows as the #under10 band (window.shaahiUnder10), so it can never
+       disagree with the menu. "Explore all" goes to that band.
+     Nothing loads until the hero photo has painted. Sits above the Ask Shaahi
+     launcher (800) and the cookie bar (1200), below the order drawer (9001),
+     and waits while any other dialog, the cart or the concierge is open. -->
+<style>
+.pm-ov{position:fixed;inset:0;z-index:1250;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(28,18,10,.56);opacity:0;transition:opacity .24s ease;overscroll-behavior:contain;}
+.pm-ov[hidden]{display:none;}
+.pm-ov.pm-in{opacity:1;}
+.pm-box{position:relative;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;background:#FFFCF8;border-radius:20px;box-shadow:0 24px 60px rgba(40,18,6,.32),0 4px 14px rgba(40,18,6,.14);transform:translateY(10px) scale(.985);transition:transform .26s cubic-bezier(.22,1,.36,1);font-family:var(--f-font,"Manrope",system-ui,sans-serif);color:#1C1C1C;}
+.pm-ov.pm-in .pm-box{transform:none;}
+.pm-x{position:absolute;top:8px;right:8px;z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#1C1C1C;font-size:1.1rem;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;}
+.pm-x:hover{background:#F5F5F7;}
+.pm-x:focus-visible,.pm-act:focus-visible,.pm-cta:focus-visible{outline:3px solid #D6953A;outline-offset:3px;}
+/* BOGO: the flyer itself, as large as fits; width also capped by the screen's height */
+.pm-bogo .pm-box{width:min(92vw,520px,calc((100vh - 140px) / 1.2944));width:min(92vw,520px,calc((100dvh - 140px) / 1.2944));padding:0 0 12px;text-align:center;}
+.pm-flyer{display:block;width:100%;height:auto;aspect-ratio:2550/3300;border-radius:20px 20px 0 0;background:#FBF1E4;}
+.pm-act{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:10px 14px 0;padding:0 18px;border-radius:999px;border:1.5px solid #B8322A;background:#fff;color:#B8322A;font:inherit;font-size:.92rem;font-weight:800;letter-spacing:.03em;cursor:pointer;width:calc(100% - 28px);}
+.pm-act:hover{background:#B8322A;color:#fff;}
+/* Under $10: compact card in the band's own language */
+.pm-u10 .pm-box{width:min(92vw,440px);padding:26px 22px 22px;text-align:center;background:linear-gradient(180deg,#FFF7EE 0%,#FBEEDD 100%);border:1px solid #F1E2C9;}
+.pm-new{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #D6953A;color:#7A4E0E;border-radius:999px;padding:5px 12px;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+.pm-new::before{content:"";width:6px;height:6px;border-radius:50%;background:#D6953A;}
+.pm-h{margin:12px 0 6px;font-size:clamp(1.9rem,8vw,2.5rem);font-weight:800;line-height:1.04;letter-spacing:-.015em;color:#B8322A;}
+.pm-sub{margin:0;font-size:1.02rem;font-weight:700;color:#1C1C1C;}
+.pm-range{display:inline-block;margin-top:8px;background:#B8322A;color:#fff;font-weight:800;font-size:1.05rem;padding:7px 14px;border-radius:999px;}
+.pm-pics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 18px;}
+.pm-pic{margin:0;}
+.pm-pic>span{position:relative;display:block;}
+.pm-pic b{position:absolute;left:6px;bottom:6px;background:#B8322A;color:#fff;font-size:.78rem;font-weight:800;line-height:1;padding:5px 8px;border-radius:999px;box-shadow:0 3px 8px rgba(120,20,14,.3);}
+.pm-pic img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:#F3E6D3;box-shadow:0 6px 16px rgba(122,78,14,.14);}
+.pm-pic figcaption{margin-top:6px;font-size:.74rem;font-weight:700;line-height:1.25;color:#4F4F4F;}
+.pm-cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border:0;border-radius:999px;background:#B8322A;color:#fff;font:inherit;font-size:1rem;font-weight:800;letter-spacing:.05em;cursor:pointer;box-shadow:0 8px 20px rgba(150,40,33,.28);}
+.pm-cta:hover{background:#962821;}
+.pm-note{margin:8px 12px 0;font-size:.78rem;font-weight:600;color:#6B6B6B;}
+@media (max-width:360px){.pm-u10 .pm-box{padding:22px 16px 18px;}.pm-pics{gap:6px;}.pm-pic figcaption{font-size:.7rem;}}
+@media (prefers-reduced-motion:reduce){.pm-ov,.pm-box{transition:none;}.pm-box{transform:none;}}
+</style>
+<!-- Inert until needed: neither dialog is in the page (or its source of
+     headings) until the script shows it. -->
+<template id="pmTpl">
+<div class="pm-ov pm-bogo" id="pmBogo" hidden>
+  <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmBogoT">
+    <button type="button" class="pm-x" data-pm-close aria-label="Close weekend special">&#10005;</button>
+    <h2 class="sr-only" id="pmBogoT">Weekend special: Buy one, get one free Hyderabadi Chicken Dum Biryani</h2>
+    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Weekend Special. Buy one, get one free: Hyderabadi Chicken Dum Biryani. Buy one for $13.99, get one free. Saturday and Sunday, October 17 to 18. Available in-store: dine-in (regular plate) or takeout (28 oz), while supplies last. Get your BOGO at Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300.">
+    <button type="button" class="pm-act" data-pm-go="contact">View location &amp; hours <span aria-hidden="true">&rarr;</span></button>
+    <p class="pm-note">In-store offer &middot; not applied to online orders</p>
+  </div>
+</div>
+<div class="pm-ov pm-u10" id="pmU10" hidden>
+  <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmU10T" aria-describedby="pmU10D">
+    <button type="button" class="pm-x" data-pm-close aria-label="Close Under $10 offer">&#10005;</button>
+    <span class="pm-new">New at Shaahi</span>
+    <h2 class="pm-h" id="pmU10T">Big Flavor.<br>Under $10.</h2>
+    <p class="pm-sub" id="pmU10D"><span data-pm-count></span> Shaahi Favorites<br><span class="pm-range" data-pm-range></span></p>
+    <div class="pm-pics" data-pm-pics></div>
+    <button type="button" class="pm-cta" data-pm-go="under10">EXPLORE ALL <span data-pm-count></span> <span aria-hidden="true">&rarr;</span></button>
+    <p class="pm-note">Pickup / take-out</p>
+  </div>
+</div>
+</template>
+<script>
+(function(){
+  'use strict';
+  var K_BOGO='shaahiPromoBogoShown', K_U10='shaahiPromoUnder10LastShownDate';
+  var FLYER='assets/promo/bogo-chicken-dum-biryani-oct17-18-';
+
+  /* promo-logic:start — pure rules, run as-is by scripts/verify-promo-logic.mjs */
+  var TZ='America/Chicago', BOGO_FROM='2026-10-17', BOGO_TO='2026-10-18';
+  // Calendar date in Central Time, YYYY-MM-DD.
+  function centralDate(ms){
+    var p={}; new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'})
+      .formatToParts(new Date(ms)).forEach(function(x){ p[x.type]=x.value; });
+    return p.year+'-'+p.month+'-'+p.day;
+  }
+  function bogoActive(ms){ var d=centralDate(ms); return d>=BOGO_FROM && d<=BOGO_TO; }
+  // Is a box really showing? W and H are the VISIBLE page (documentElement
+  // clientWidth/Height), never the window: with a classic scrollbar the window is
+  // a few px wider, and a closed drawer parked just off-screen sits under that
+  // strip. Counting it as open once left every promo waiting forever.
+  function onScreen(r,W,H){ return Math.min(r.right,W)-Math.max(r.left,0)>8 && Math.min(r.bottom,H)-Math.max(r.top,0)>8; }
+  /* promo-logic:end */
+
+  // The clock is injectable (window.__shaahiPromoNow, ms) so the dates can be
+  // tested without changing it.
+  function now(){ var t=window.__shaahiPromoNow; return typeof t==='number'?t:Date.now(); }
+  function get(store,k){ try{ return window[store].getItem(k); }catch(e){ return null; } }
+  function set(store,k,v){ try{ window[store].setItem(k,v); }catch(e){} }
+  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,onScreen:onScreen,
+    under10Due:function(ms){ return get('localStorage',K_U10)!==centralDate(ms); }};
+
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function track(name){
+    // Only after the guest has accepted cookies; never loads anything itself.
+    if(typeof gtag==='function' && get('localStorage','shaahi_cookie_consent')==='granted') gtag('event',name);
+  }
+
+  // Something else already has the guest's attention: wait for it.
+  function busy(){
+    var a=document.activeElement;
+    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+    if(document.body.style.position==='fixed') return true;
+    return ['itemModalOverlay','cartDrawer','waModalOverlay','chat-window','sb-drawer'].some(function(id){
+      var el=document.getElementById(id); if(!el) return false;
+      var cs=getComputedStyle(el);
+      if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity<.05||cs.pointerEvents==='none') return false;
+      return onScreen(el.getBoundingClientRect(),document.documentElement.clientWidth,document.documentElement.clientHeight);
+    });
+  }
+  function whenFree(fn){ (function go(){ busy()?setTimeout(go,1000):fn(); })(); }
+
+  var open=null, lastFocus=null, inerted=[];
+  function blockScroll(e){ if(!open) return; var box=open.querySelector('.pm-box');
+    if(e.type==='wheel'&&box.scrollHeight>box.clientHeight&&box.contains(e.target)) return; e.preventDefault(); }
+  function focusables(){ return [].slice.call(open.querySelectorAll('button,[href],[tabindex]:not([tabindex="-1"])')).filter(function(el){ return !el.disabled&&el.offsetParent!==null; }); }
+  function onKey(e){
+    if(!open) return;
+    if(e.key==='Escape'){ e.preventDefault(); close(); return; }
+    if(e.key==='Tab'){ var f=focusables(); if(!f.length) return;
+      var i=f.indexOf(document.activeElement);
+      if(e.shiftKey&&(i<=0)){ e.preventDefault(); f[f.length-1].focus(); }
+      else if(!e.shiftKey&&(i===f.length-1||i<0)){ e.preventDefault(); f[0].focus(); } }
+  }
+  function show(ov,onClose){
+    lastFocus=document.activeElement; open=ov; open._onClose=onClose;
+    // Everything behind the dialog leaves the tab order and the accessibility tree.
+    [].forEach.call(document.body.children,function(el){
+      if(el!==ov&&el.tagName!=='SCRIPT'&&el.tagName!=='STYLE'&&!el.inert){ el.inert=true; inerted.push(el); } });
+    ov.hidden=false;
+    ov.addEventListener('wheel',blockScroll,{passive:false}); ov.addEventListener('touchmove',blockScroll,{passive:false});
+    document.addEventListener('keydown',onKey,true);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ ov.classList.add('pm-in'); }); });
+    ov.querySelector('.pm-x').focus({preventScroll:true,focusVisible:false});
+  }
+  function close(then){
+    var ov=open; if(!ov) return; open=null;
+    inerted.splice(0).forEach(function(el){ el.inert=false; });
+    document.removeEventListener('keydown',onKey,true);
+    ov.removeEventListener('wheel',blockScroll); ov.removeEventListener('touchmove',blockScroll);
+    ov.classList.remove('pm-in');
+    setTimeout(function(){ ov.hidden=true; },reduce?0:240);
+    if(typeof then==='function') then();
+    else if(lastFocus&&lastFocus.focus&&document.contains(lastFocus)) lastFocus.focus({preventScroll:true});
+    if(ov._onClose) ov._onClose(then?'action':'close');
+  }
+  function dialog(id){
+    var ov=document.getElementById(id); if(ov) return ov;
+    var tpl=document.getElementById('pmTpl'); if(!tpl||!tpl.content) return null;
+    ov=tpl.content.getElementById(id).cloneNode(true); document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){ if(e.target===ov||e.target.closest('[data-pm-close]')) close(); });
+    return ov;
+  }
+
+  // ── Under $10 ──
+  var u10Scheduled=false;
+  function scheduleU10(delay,minWait){
+    if(u10Scheduled||!window.shaahiUnder10||!window.shaahiPromo.under10Due(now())) return;
+    u10Scheduled=true;
+    var fired=false, start=Date.now(), y0=window.scrollY;
+    function fire(){ if(fired) return; fired=true; cleanup(); whenFree(showU10); }
+    // Meaningful interaction: a real scroll (40% of the screen) or using the menu.
+    function onScroll(){ if(Date.now()-start>=minWait&&Math.abs(window.scrollY-y0)>innerHeight*.4) fire(); }
+    function onClick(e){ if(Date.now()-start>=minWait&&e.target.closest&&e.target.closest('#menu,#mtabs,#fresh-cats,#fxRail')) setTimeout(fire,1500); }
+    function cleanup(){ removeEventListener('scroll',onScroll); document.removeEventListener('click',onClick,true); }
+    addEventListener('scroll',onScroll,{passive:true}); document.addEventListener('click',onClick,true);
+    setTimeout(fire,delay);
+  }
+  function showU10(){
+    var u=window.shaahiUnder10, ms=now();
+    if(open||!u||!u.rows.length||!window.shaahiPromo.under10Due(ms)) return;
+    var ov=dialog('pmU10'); if(!ov) return; var pics=ov.querySelector('[data-pm-pics]');
+    var fmt=function(n){ return '$'+n.toFixed(2); };
+    [].forEach.call(ov.querySelectorAll('[data-pm-count]'),function(s){ s.textContent=u.rows.length; });
+    ov.querySelector('[data-pm-range]').textContent=u.lo===u.hi?fmt(u.lo):fmt(u.lo)+'–'+fmt(u.hi);
+    ov.querySelector('.pm-cta').setAttribute('aria-label','Explore all '+u.rows.length+' Under $10 dishes');
+    if(!pics.children.length){
+      // A biryani, a curry and an appetizer: the first of each, in the
+      // canonical order, that has a real photograph; topped up from the band.
+      var withPhoto=u.rows.filter(u.photoOf), three=[];
+      ['Biryani','Chicken','Appetizers'].forEach(function(cat){
+        var r=withPhoto.filter(function(x){ return x.dataset.cat===cat; })[0]; if(r) three.push(r); });
+      u.featured.concat(withPhoto).forEach(function(r){ if(three.length<3&&three.indexOf(r)<0&&u.photoOf(r)) three.push(r); });
+      three.slice(0,3).forEach(function(r){
+        var f=document.createElement('figure'); f.className='pm-pic';
+        var name=(r.dataset.label||'').split(' — ')[0];
+        var wrap=document.createElement('span');
+        var img=u.thumb(u.photoOf(r),640,'',[240,240]); img.loading='eager'; img.sizes='(max-width:480px) 30vw, 130px';
+        var b=document.createElement('b'); b.textContent=r.dataset.price||'';
+        var c=document.createElement('figcaption'); c.textContent=name;
+        f.setAttribute('aria-label',name+', '+(r.dataset.price||''));
+        wrap.appendChild(img); wrap.appendChild(b); f.appendChild(wrap); f.appendChild(c); pics.appendChild(f);
+      });
+    }
+    set('localStorage',K_U10,centralDate(ms));   // recorded when actually shown
+    track('promo_under10_view');
+    show(ov,function(how){ if(how!=='action') track('promo_under10_close'); });
+  }
+  function exploreAll(){
+    track('promo_under10_click');
+    close(function(){
+      var u=window.shaahiUnder10, t=document.getElementById('fx-u10-title');
+      if(u&&u.go) u.go();
+      if(t){ t.setAttribute('tabindex','-1'); t.focus({preventScroll:true}); }
+    });
+  }
+
+  // ── BOGO ──
+  function showBogo(){
+    var ov=dialog('pmBogo'); if(!ov){ afterBogo(false); return; } var img=ov.querySelector('.pm-flyer');
+    img.sizes='(max-width:600px) 92vw, 520px';
+    img.srcset=FLYER+'720.webp 720w, '+FLYER+'1040.webp 1040w';
+    img.src=FLYER+'720.webp';
+    var done=false;
+    function go(){
+      if(done) return; done=true;
+      if(!bogoActive(now())||get('sessionStorage',K_BOGO)){ afterBogo(false); return; }
+      whenFree(function(){
+        set('sessionStorage',K_BOGO,'1'); track('promo_bogo_view');
+        show(ov,function(){ track('promo_bogo_close'); afterBogo(true); });
+      });
+    }
+    // Only open once the flyer is ready, so the guest never sees an empty frame.
+    (img.decode?img.decode():Promise.reject()).then(go,function(){ img.complete&&img.naturalWidth?go():(img.onload=go, img.onerror=function(){ done=true; afterBogo(false); }); });
+  }
+  // Breathing room after the weekend special before Under $10 may appear.
+  function afterBogo(closedNow){ closedNow?scheduleU10(10000,3000):scheduleU10(5000,1500); }
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('[data-pm-go]'); if(!b) return;
+    if(b.dataset.pmGo==='under10') exploreAll();
+    else close(function(){ var c=document.getElementById('contact'); if(c){
+      var nav=document.querySelector('nav'), off=nav?nav.offsetHeight:0;
+      window.scrollTo({top:c.getBoundingClientRect().top+window.scrollY-off-8,behavior:reduce?'auto':'smooth'});
+      var h=c.querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } } });
+  });
+
+  // Start only after the hero photo has painted (or 4s, whichever first).
+  function begin(){
+    var since=(window.performance&&performance.now)?performance.now():0;
+    if(bogoActive(now())&&!get('sessionStorage',K_BOGO)) setTimeout(showBogo,Math.max(1800-since,600));
+    else scheduleU10(5000,1500);
+  }
+  var started=false; function once(){ if(!started){ started=true; begin(); } }
+  if(window.__heroReady) once(); else { document.addEventListener('hero:ready',once,{once:true}); setTimeout(once,4000); }
+})();
+</script>
 </body>
 </html>
