@@ -20,7 +20,7 @@
 //                      we never had it.
 // Hidden categories: ctr, sys.
 
-import { PHOTO_DIMS, SIGNATURE_ITEM_IDS, VEGETARIAN_PIDS } from "./menu-facts.js";
+import { PHOTO_DIMS, SIGNATURE_ITEM_IDS, UNDER_10_PIDS, VEGETARIAN_PIDS } from "./menu-facts.js";
 
 const HIDDEN_CATS = new Set(["ctr", "sys"]);
 
@@ -44,6 +44,18 @@ function isSoldOut(r) {
 // menu manager and is how the app and the website came to disagree.
 function isSignature(r) {
   return SIGNATURE_ITEM_IDS.has(String(r.pid || "").split("|")[0]);
+}
+// The app's Under $10 program (UNDER_10 in its lib/offers.ts, via menu-facts),
+// position = the app's order. A row is marked data-under10 only when it is on
+// that list AND on sale AND priced under $10 here — the same "never contradict
+// the title" rule as the app's Under $10 page. Price alone never qualifies a
+// row; membership is the list. The mark is for discovery only: what a guest is
+// charged is decided by create-web-order from web_menu_items, as for any row.
+const UNDER_10_ORDER = new Map(UNDER_10_PIDS.map((pid, i) => [pid, i + 1]));
+function under10Rank(r, soldOut) {
+  const rank = UNDER_10_ORDER.get(String(r.pid || ""));
+  if (!rank || soldOut || isInactive(r)) return 0;
+  return Number(r.price) < 10 ? rank : 0;
 }
 const SIGNATURE_BADGE =
   '<span class="mbadge">&#10022; Signature</span>';
@@ -329,6 +341,7 @@ function renderItemLine(r, offersSides, catLabel, group, opts = {}) {
   const desc = r.description || "";
   const veg = isVerifiedVegetarian(r);
   const soldOut = isSoldOut(r);
+  const u10 = under10Rank(r, soldOut);
   // Marked on the row only when the dish is one line. A dish sold in three pack
   // sizes carries the mark on its subhead instead (see renderMenuSection), so
   // the same dish is not badged three times over.
@@ -388,7 +401,8 @@ function renderItemLine(r, offersSides, catLabel, group, opts = {}) {
     `aria-label="${escAttr(spoken)}" ` +
     `data-name="${dn}" data-label="${escAttr(label)}" data-price="${escAttr(price)}" ` +
     `data-cat="${escAttr(catLabel || "")}"${grp ? ` data-group="${escAttr(grp)}"` : ""}` +
-    `${veg ? ' data-veg="1"' : ""}${soldOut ? ' data-soldout="1"' : ""} ` +
+    `${veg ? ' data-veg="1"' : ""}${soldOut ? ' data-soldout="1"' : ""}` +
+    `${u10 ? ` data-under10="${u10}"` : ""} ` +
     `data-desc="${escAttr(desc)}"${schedAttr}${sizesAttr}${imageAttr} onclick="openItemModal(this)" ` +
     `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItemModal(this);}">` +
     renderThumb(r.image_url, label) +
