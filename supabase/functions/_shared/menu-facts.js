@@ -396,3 +396,31 @@ export const SIGNATURE_ITEM_IDS = new Set([
  "mixed-grill-platter",
  "sitaphal-rabdi"
 ]);
+
+// The app's Under $10 program: exact sizes ("dish|size" pids), in the app's own
+// order, from UNDER_10 in lib/offers.ts. Membership is this list and nothing
+// else; the renderer additionally requires the website row to exist, be on
+// sale and be priced under $10 before it marks it.
+export const UNDER_10_PIDS = [
+ "chicken-pakora|chicken-pakora-single",
+ "beef-fry|beef-fry-single",
+ "chicken-65|chicken-65-single",
+ "apollo-fish|apollo-fish-single",
+ "fish-pakora|fish-pakora-single",
+ "chicken-65-roll|chicken-65-roll-standard",
+ "chicken-sheekh-kabab-roll|chicken-sheekh-kabab-roll-standard",
+ "chicken-boti-roll|chicken-boti-roll-standard",
+ "goat-dum-biryani|goat-dum-biryani-single",
+ "chicken-dum-biryani|chicken-dum-biryani-single",
+ "veg-dum-biryani|veg-dum-biryani-single",
+ "dum-ka-chicken|dum-ka-chicken-single",
+ "butter-chicken|butter-chicken-single",
+ "karahi-chicken|karahi-chicken-single",
+ "chicken-tikka-masala|chicken-tikka-masala-single",
+ "dal-tadka|dal-tadka-16oz",
+ "palak-paneer|palak-paneer-16oz",
+ "chana-masala|chana-masala-16oz",
+ "mixed-vegetables|mixed-vegetables-16oz",
+ "goat-haleem|goat-haleem-12oz",
+ "frontier-beef-rice|frontier-beef-rice-16oz"
+];

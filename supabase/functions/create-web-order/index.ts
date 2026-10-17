@@ -25,6 +25,8 @@ import { PRICES } from "../_shared/prices.ts";
 // deno-lint-ignore-file
 // @ts-ignore — shared plain-JS module (also used by publish-menu and locally)
 import { inScheduleWindow, scheduleLabel } from "../_shared/render-menu.js";
+// @ts-ignore — shared plain-JS module (also run by scripts/verify-order-rules.mjs)
+import { addOnOnlyError } from "../_shared/order-rules.js";
 
 // The website uses its OWN Stripe key (STRIPE_SECRET_KEY_WEB = the live, real
 // account) so it is fully independent of the app's create-payment-intent, which
@@ -115,6 +117,10 @@ Deno.serve(async (req) => {
     if (!Array.isArray(items) || items.length === 0) {
       return json({ error: "No items." }, 400);
     }
+    // An order of add-on naans alone is refused before anything is priced,
+    // written or sent to Stripe — the same rule as the app's checkout.
+    const addOnErr = addOnOnlyError(items);
+    if (addOnErr) return json({ error: addOnErr }, 400);
 
     const guestName = clean(body?.guestName, 80);
     const guestPhone = clean(body?.guestPhone, 40);
