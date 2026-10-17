@@ -3565,24 +3565,67 @@ html.fresh .fx-add{display:inline-flex;align-items:center;justify-content:center
 html.fresh .fx-card.soldout{opacity:.6;}
 html.fresh .fx-card.soldout img{filter:grayscale(1);}
 html.fresh .fx-card.soldout .fx-add{border-color:var(--f-line-2);background:var(--f-soft);color:var(--f-muted);}
-/* Under $10 — a scrolling row of the Signature card, everywhere. */
-html.fresh .fx-u10-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;}
-html.fresh .fx-eyebrow{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--f-red);margin:0 0 2px;}
-html.fresh .fx-u10-nav{display:flex;gap:8px;margin-bottom:16px;}
-html.fresh .fx-u10-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--f-line-2);background:#fff;color:var(--f-text);font-size:1.1rem;cursor:pointer;}
-html.fresh .fx-u10-btn:hover{border-color:var(--f-red);color:var(--f-red);}
-html.fresh .fx-u10-btn:disabled{opacity:.35;cursor:default;}
-html.fresh .fx-u10{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;padding:2px 2px 12px;min-height:260px;}
-html.fresh .fx-u10::-webkit-scrollbar{display:none;}
-html.fresh .fx-u10 .fx-card{flex:0 0 220px;scroll-snap-align:start;}
-html.fresh .fx-u10 .fx-card-n{font-size:.95rem;}
+/* Under $10 — the featured campaign band. Warm cream surface, masala-red
+   headline, gold used once (the "New" pill), big red price badges on real
+   food photography. Value, not coupon: no strike-throughs, no percentages,
+   no motion beyond a single entrance. */
 html.fresh .fx-tag{font-size:.75rem;font-weight:700;color:var(--f-muted);}
-html.fresh .fx-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--f-saffron-soft);color:var(--f-saffron);font-size:.8rem;font-weight:700;}
-html.fresh .fx-u10-note{font-size:.78rem;color:var(--f-muted);margin:6px 0 0;}
+html.fresh .fx-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--f-saffron-soft);color:#8A5A12;font-size:.8rem;font-weight:700;}
+html.fresh #under10.fx-u10-band{background:linear-gradient(180deg,#FFF7EE 0%,#FBEEDD 100%);border-top:1px solid #F1E2C9;border-bottom:1px solid #F1E2C9;padding:48px 0 40px;margin:12px 0 8px;}
+html.fresh .fx-u10-band .fx-wrap{display:grid;grid-template-columns:1fr auto;column-gap:20px;}
+html.fresh .fx-u10-head{grid-column:1;grid-row:1;margin-bottom:24px;}
+html.fresh .fx-u10-band .fx-u10-all{grid-column:2;grid-row:1;align-self:end;margin-bottom:24px;}
+html.fresh .fx-u10-feat,html.fresh .fx-u10-grid,html.fresh .fx-u10-note{grid-column:1 / -1;}
+html.fresh .fx-u10-new{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--f-saffron);color:#7A4E0E;border-radius:999px;padding:5px 12px;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;}
+html.fresh .fx-u10-new::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--f-saffron);}
+html.fresh .fx-u10-h{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:800;line-height:1.04;letter-spacing:-.015em;color:var(--f-red);margin:0 0 10px;}
+html.fresh .fx-u10-sub{font-size:1.05rem;font-weight:600;color:var(--f-text);margin:0;}
+html.fresh .fx-u10-all{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;border:1.5px solid var(--f-red);background:#fff;color:var(--f-red);font-size:.95rem;font-weight:800;cursor:pointer;transition:background .2s,color .2s;}
+html.fresh .fx-u10-all:hover,html.fresh .fx-u10-all[aria-expanded="true"]{background:var(--f-red);color:#fff;}
+html.fresh .fx-u10-all:focus-visible{outline:3px solid var(--f-saffron);outline-offset:3px;}
+/* featured cards: 3 x 2 on desktop and tablet */
+html.fresh .fx-u10-feat{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+html.fresh .fx-u10-card{border-color:#F1E2C9;box-shadow:0 10px 26px rgba(122,78,14,.10);}
+html.fresh .fx-u10-card .fx-card-img{aspect-ratio:16/10;}
+html.fresh .fx-u10-card .fx-card-b{padding:14px 16px 16px;gap:2px;}
+html.fresh .fx-u10-card .fx-card-n,html.fresh .fx-u10-mini .fx-card-n{font-size:1.08rem;min-height:0;}
+html.fresh .fx-u10-size{font-size:.85rem;font-weight:600;color:var(--f-muted);min-height:1.2em;}
+html.fresh .fx-u10-card .fx-card-row{padding-top:12px;}
+html.fresh .fx-u10-card .fx-add{min-width:84px;min-height:40px;}
+html.fresh .fx-price{position:absolute;left:12px;bottom:12px;background:var(--f-red);color:#fff;font-weight:800;font-size:1.1rem;line-height:1;padding:8px 13px;border-radius:999px;box-shadow:0 6px 16px rgba(120,20,14,.32);letter-spacing:-.01em;}
+/* full list (all items), opened by "See all" */
+html.fresh .fx-u10-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:22px;}
+html.fresh .fx-u10-grid .fx-card-img{aspect-ratio:4/3;}
+html.fresh .fx-u10-grid .fx-price{font-size:.95rem;padding:6px 10px;left:10px;bottom:10px;}
+html.fresh .fx-u10-grid .fx-card-n{font-size:.95rem;}
+html.fresh .fx-u10-mini .fx-tag{font-size:.7rem;}
+html.fresh .fx-u10-mini .fx-add{min-width:60px;min-height:36px;padding:0 10px;}
+@media(min-width:1000px){html.fresh .fx-u10-card .fx-card-img{aspect-ratio:16/9;}}
+html.fresh .fx-u10-note{font-size:.78rem;color:#6B5A44;margin:18px 0 0;}
+/* one-time entrance (script adds .fx-pre, then .fx-in once in view) */
+html.fresh .fx-u10-feat.fx-pre .fx-u10-card{opacity:0;transform:translateY(12px);}
+html.fresh .fx-u10-feat.fx-pre .fx-price{transform:scale(.85);}
+html.fresh .fx-u10-feat.fx-in .fx-u10-card{opacity:1;transform:none;transition:opacity .45s ease,transform .45s ease;}
+html.fresh .fx-u10-feat.fx-in .fx-price{transform:none;transition:transform .35s ease .25s;}
+@media(prefers-reduced-motion:reduce){html.fresh .fx-u10-feat.fx-pre .fx-u10-card,html.fresh .fx-u10-feat.fx-pre .fx-price{opacity:1;transform:none;}html.fresh .fx-u10-all{transition:none;}}
+/* NEW badge on the rail's Under $10 circle only */
+html.fresh .fx-cat.fx-cat-new{position:relative;}
+html.fresh .fx-cat.fx-cat-new .fx-cat-img{box-shadow:0 0 0 2px var(--f-red);}
+html.fresh .fx-cat.fx-cat-new::after{content:"NEW";position:absolute;top:-2px;right:2px;background:var(--f-red);color:#fff;font-size:.62rem;font-weight:800;letter-spacing:.04em;padding:3px 7px;border-radius:999px;box-shadow:0 2px 6px rgba(120,20,14,.25);}
+@media(max-width:999px){html.fresh .fx-u10-feat{gap:14px;}html.fresh .fx-u10-card .fx-card-n{font-size:1rem;}}
 @media(max-width:700px){
-  html.fresh .fx-u10-nav{display:none;}
-  html.fresh .fx-u10{margin:0 -16px;padding:2px 16px 12px;gap:12px;min-height:236px;}
-  html.fresh .fx-u10 .fx-card{flex:0 0 172px;}
+  html.fresh #under10.fx-u10-band{padding:32px 0 28px;}
+  /* phones: headline, then the swipeable cards, then "See all" — markup order */
+  html.fresh .fx-u10-band .fx-wrap{display:flex;flex-direction:column;}
+  html.fresh .fx-u10-head{margin-bottom:16px;}
+  html.fresh .fx-u10-band .fx-u10-all{align-self:flex-start;margin:8px 0 0;}
+  html.fresh .fx-u10-h{font-size:2rem;}
+  html.fresh .fx-u10-sub{font-size:.95rem;}
+  /* swipeable row: the first card is fully visible, the next one peeks */
+  html.fresh .fx-u10-feat{display:flex;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 14px;gap:12px;}
+  html.fresh .fx-u10-feat::-webkit-scrollbar{display:none;}
+  html.fresh .fx-u10-feat .fx-u10-card{flex:0 0 min(78vw,300px);scroll-snap-align:start;}
+  html.fresh .fx-u10-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
 }
 @media(max-width:1000px){html.fresh .fx-sig{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:700px){
@@ -3974,7 +4017,7 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
   <script>/* Reveal slide 1 the moment its photo arrives, without waiting for the
      rest of the page (the carousel script below does the same as a fallback). */
   (function(){var el=document.currentScript.previousElementSibling,i=new Image();
-   i.onload=i.onerror=function(){if(!el.classList.contains('s-wait'))return;el.style.transition='opacity .35s ease';el.classList.remove('s-wait');setTimeout(function(){el.style.transition='';},400);};
+   i.onload=i.onerror=function(){window.__heroReady=true;try{document.dispatchEvent(new Event('hero:ready'));}catch(e){}if(!el.classList.contains('s-wait'))return;el.style.transition='opacity .35s ease';el.classList.remove('s-wait');setTimeout(function(){el.style.transition='';},400);};
    i.src='assets/hero-01.webp';})();</script>
   <div class="slide" data-bg="assets/hero-02.webp"></div>
   <div class="slide" data-bg="assets/hero-03.webp"></div>
@@ -4014,6 +4057,29 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
       <a class="fx-act" href="hall"><span class="fx-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M10 21v-6h4v6"/></svg></span><span class="fx-t"><b>Book the hall</b><span>Private events up to 132 guests</span></span></a>
       <a class="fx-act" href="#catering"><span class="fx-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17h18M5 17a7 7 0 0 1 14 0M12 8V6"/><path d="M2 20h20"/></svg></span><span class="fx-t"><b>Catering</b><span>50 to 3,000+ guests</span></span></a>
     </div>
+  </div>
+</section>
+<!-- FRESH: Under $10 — featured campaign band, straight after the hero's actions.
+     Built ONLY from menu rows that render-menu.js marks data-under10: the app's
+     canonical UNDER_10 list (lib/offers.ts, via menu-facts.js), on sale and priced
+     under $10 here. Nothing here names a dish, a count or a price — the script
+     fills the headline numbers, picks the featured cards and builds the full list
+     from those rows. Every dish keeps its place in its own category too.
+     Discovery only: ADD opens the row's own dialog, and what is charged is decided
+     by create-web-order from web_menu_items. -->
+<section id="under10" class="fx-sec fx-u10-band" aria-labelledby="fx-u10-title">
+  <div class="fx-wrap">
+    <div class="fx-u10-head">
+      <span class="fx-u10-new">New at Shaahi</span>
+      <h2 class="fx-u10-h" id="fx-u10-title">Big Flavor. Under $10.</h2>
+      <p class="fx-u10-sub"><span id="fxU10Lead">Shaahi favorites under $10</span> &middot; Pickup / take-out</p>
+    </div>
+    <!-- Six same-size placeholders hold the space until the script swaps in the
+         featured cards, so nothing below moves (CLS). -->
+    <div class="fx-u10-feat" id="fxU10"><div class="fx-card fx-u10-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-u10-size">&nbsp;</span><span class="fx-card-row"><span class="fx-tag">&nbsp;</span></span></span></div><div class="fx-card fx-u10-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-u10-size">&nbsp;</span><span class="fx-card-row"><span class="fx-tag">&nbsp;</span></span></span></div><div class="fx-card fx-u10-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-u10-size">&nbsp;</span><span class="fx-card-row"><span class="fx-tag">&nbsp;</span></span></span></div><div class="fx-card fx-u10-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-u10-size">&nbsp;</span><span class="fx-card-row"><span class="fx-tag">&nbsp;</span></span></span></div><div class="fx-card fx-u10-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-u10-size">&nbsp;</span><span class="fx-card-row"><span class="fx-tag">&nbsp;</span></span></span></div><div class="fx-card fx-u10-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-u10-size">&nbsp;</span><span class="fx-card-row"><span class="fx-tag">&nbsp;</span></span></span></div></div>
+    <button type="button" class="fx-u10-all" id="fxU10All" aria-expanded="false" aria-controls="fxU10Grid">See all Under $10 <span aria-hidden="true">&rarr;</span></button>
+    <div class="fx-u10-grid" id="fxU10Grid" hidden></div>
+    <p class="fx-u10-note">Disclaimer: food shown in photos may differ from what comes in the container.</p>
   </div>
 </section>
 <section id="fresh-cats" class="fx-sec" aria-labelledby="fx-cats-title">
@@ -4065,30 +4131,6 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
   </div>
 </section>
 
-<!-- FRESH: Under $10 — the app's "Budget Bites" program on the website.
-     Built ONLY from menu rows that render-menu.js marks data-under10: rows on
-     the app's canonical UNDER_10 list (lib/offers.ts, via menu-facts.js) that
-     are on sale and priced under $10 here. Nothing in this section names a
-     dish or a price, and a dish keeps its place in its own category too.
-     Discovery only: ADD opens the row's own dialog, and what is charged is
-     decided by create-web-order from web_menu_items. -->
-<section id="under10" class="fx-sec" aria-labelledby="fx-u10-title">
-  <div class="fx-wrap">
-    <div class="fx-u10-top">
-      <div>
-        <div class="fx-eyebrow">Budget Bites</div>
-        <h2 class="fx-h" id="fx-u10-title">Under $10</h2>
-        <p class="fx-sub">Single-serving take-out boxes and rolls. Take-out only &mdash; order online for pickup at our Plano restaurant.</p>
-      </div>
-      <div class="fx-u10-nav" aria-hidden="true">
-        <button type="button" class="fx-u10-btn" data-dir="-1" tabindex="-1" aria-label="Scroll back">&larr;</button>
-        <button type="button" class="fx-u10-btn" data-dir="1" tabindex="-1" aria-label="Scroll forward">&rarr;</button>
-      </div>
-    </div>
-    <div class="fx-u10" id="fxU10"><div class="fx-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-card-row"><span class="fx-card-p">&nbsp;</span></span></span></div><div class="fx-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-card-row"><span class="fx-card-p">&nbsp;</span></span></span></div><div class="fx-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-card-row"><span class="fx-card-p">&nbsp;</span></span></span></div><div class="fx-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-card-row"><span class="fx-card-p">&nbsp;</span></span></span></div><div class="fx-card fx-skel" aria-hidden="true"><span class="fx-card-img"></span><span class="fx-card-b"><span class="fx-card-n">&nbsp;</span><span class="fx-card-row"><span class="fx-card-p">&nbsp;</span></span></span></div></div>
-    <p class="fx-u10-note">Disclaimer: food shown in photos may differ from what comes in the container.</p>
-  </div>
-</section>
 
 <!-- BESTSELLERS -->
 <section id="bestsellers">
@@ -6350,6 +6392,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var first=new Image();
     // Reveal slide 1 once its photo is here (see .s-wait in the CSS).
     function reveal0(){
+      if(!window.__heroReady){ window.__heroReady=true; try{document.dispatchEvent(new Event('hero:ready'));}catch(e){} }
       var s0=slides[0];
       if(!s0||!s0.classList.contains('s-wait')) return;
       s0.style.transition='opacity .35s ease'; s0.classList.remove('s-wait');
@@ -6824,18 +6867,21 @@ document.addEventListener('DOMContentLoaded',function(){
 
   // ── Under $10 ──────────────────────────────────────────────────────────
   // Built only from rows render-menu.js marked data-under10 (canonical app list
-  // + on sale + under $10 here), in the app's order. Each dish shows its own
-  // menu photograph — the 16oz boxes have none of their own, so they borrow the
-  // photo of the same dish elsewhere on the menu; a dish with no photo at all
-  // gets a plain "Photo coming soon" tile, never a stand-in. ADD opens the
-  // row's own dialog, so sizes, availability and the server's price are the
-  // existing ones.
+  // + on sale + under $10 here), in the app's order. Nothing below names a dish,
+  // a price or a count: the headline numbers, the featured six and the full list
+  // all come from those rows. Each card shows the dish's own menu photograph —
+  // a 16oz box borrows the photo of the same dish elsewhere on the menu; a dish
+  // with no photo at all gets "Photo coming soon", never a stand-in. ADD opens
+  // the row's own dialog, so sizes, sides, availability and the server's price
+  // are the existing ones.
   (function(){
-    var row=document.getElementById('fxU10'), sec=document.getElementById('under10');
-    if(!row||!sec) return;
+    var feat=document.getElementById('fxU10'), grid=document.getElementById('fxU10Grid'),
+        sec=document.getElementById('under10'), allBtn=document.getElementById('fxU10All');
+    if(!feat||!sec) return;
+    function priceOf(r){ return parseFloat(String(r.dataset.price).replace(/[^0-9.]/g,'')); }
     var marked=[].slice.call(document.querySelectorAll('#menu .mi[data-under10]'))
       .filter(function(r){ return !r.dataset.soldout && !r.classList.contains('soldout'); })
-      .filter(function(r){ var n=parseFloat(String(r.dataset.price).replace(/[^0-9.]/g,'')); return n>0&&n<10; })
+      .filter(function(r){ var n=priceOf(r); return n>0&&n<10; })
       .sort(function(a,b){ return (+a.dataset.under10)-(+b.dataset.under10); });
     if(!marked.length){ sec.hidden=true; return; }
     function dishOf(r){
@@ -6847,45 +6893,82 @@ document.addEventListener('DOMContentLoaded',function(){
     [].forEach.call(document.querySelectorAll('#menu .mi img.mi-thumb'),function(img){
       var d=dishOf(img.closest('.mi')); if(d&&!photoByDish[d]) photoByDish[d]=img.getAttribute('src');
     });
-    var frag=document.createDocumentFragment(), firstPhoto=null;
-    marked.forEach(function(r){
-      var own=r.querySelector('img.mi-thumb'), src=own?own.getAttribute('src'):photoByDish[dishOf(r)];
-      var name=r.dataset.label||'', price=r.dataset.price||'';
-      var card=document.createElement('button');
-      card.type='button'; card.className='fx-card';
-      card.setAttribute('aria-label',[name,price,'take-out only, pickup'].join(', '));
+    function photoOf(r){ var own=r.querySelector('img.mi-thumb'); return own?own.getAttribute('src'):(photoByDish[dishOf(r)]||null); }
+    function fmt(n){ return '$'+n.toFixed(2); }
+
+    // Headline numbers, from the rows themselves.
+    var ps=marked.map(priceOf), lo=Math.min.apply(null,ps), hi=Math.max.apply(null,ps);
+    var lead=document.getElementById('fxU10Lead');
+    if(lead) lead.textContent=marked.length+' Shaahi favorites '+(lo===hi?'at '+fmt(lo):'from '+fmt(lo)+'\u2013'+fmt(hi));
+
+    // Card photos wait for the hero's first photo, so this band (now high on the
+    // page) never competes with the page's largest paint.
+    var pending=[], heroDone=!!window.__heroReady;
+    function flush(){ heroDone=true; pending.splice(0).forEach(function(f){ f(); }); }
+    if(!heroDone){ document.addEventListener('hero:ready',flush,{once:true}); setTimeout(flush,4000); }
+    function later(f){ heroDone?f():pending.push(f); }
+
+    function card(r,cls,w){
+      var label=r.dataset.label||'', price=r.dataset.price||'', parts=label.split(' \u2014 ');
+      var name=parts[0], size=parts.slice(1).join(' \u2014 ');
+      var c=document.createElement('button'); c.type='button'; c.className='fx-card '+cls;
+      c.setAttribute('aria-label',[label,price,'take-out only, pickup'].join(', '));
       var top=document.createElement('span'); top.className='fx-card-img';
-      if(src){ top.appendChild(thumbImg(src,640,'',[320,240])); if(!firstPhoto) firstPhoto=src; }
+      var src=photoOf(r);
+      if(src){ later(function(){ top.insertBefore(thumbImg(src,640,'',[320,200]),top.firstChild); }); }
       else { var ph=document.createElement('span'); ph.className='fx-ph'; ph.textContent='Photo coming soon'; top.appendChild(ph); }
+      var pb=document.createElement('span'); pb.className='fx-price'; pb.setAttribute('aria-hidden','true'); pb.textContent=price; top.appendChild(pb);
       var body=document.createElement('span'); body.className='fx-card-b'; body.setAttribute('aria-hidden','true');
       var nm=document.createElement('span'); nm.className='fx-card-n'; nm.textContent=name;
-      var tg=document.createElement('span'); tg.className='fx-tag'; tg.textContent='Take-out only';
+      var sz=document.createElement('span'); sz.className='fx-u10-size'; sz.textContent=size;
       var rw=document.createElement('span'); rw.className='fx-card-row';
-      var pr=document.createElement('span'); pr.className='fx-card-p'; pr.textContent=price;
+      var tg=document.createElement('span'); tg.className='fx-tag'; tg.textContent='Take-out only';
       var ad=document.createElement('span'); ad.className='fx-add'; ad.textContent='ADD';
-      rw.appendChild(pr); rw.appendChild(ad); body.appendChild(nm); body.appendChild(tg); body.appendChild(rw);
-      card.appendChild(top); card.appendChild(body);
-      card.addEventListener('click',function(){ openItemModal(r); });
-      frag.appendChild(card);
-    });
-    row.textContent=''; row.appendChild(frag);
-    // Desktop arrows: scroll by most of a view; disabled at either end.
-    var btns=sec.querySelectorAll('.fx-u10-btn');
-    function sync(){
-      if(btns.length<2) return;
-      btns[0].disabled=row.scrollLeft<=2;
-      btns[1].disabled=row.scrollLeft+row.clientWidth>=row.scrollWidth-2;
+      rw.appendChild(tg); rw.appendChild(ad); body.appendChild(nm); body.appendChild(sz); body.appendChild(rw);
+      c.appendChild(top); c.appendChild(body);
+      c.addEventListener('click',function(){ openItemModal(r); });
+      return c;
     }
-    [].forEach.call(btns,function(b){ b.addEventListener('click',function(){
-      row.scrollBy({left:(+b.dataset.dir)*row.clientWidth*0.85,behavior:reduce?'auto':'smooth'});
-    }); });
-    row.addEventListener('scroll',sync,{passive:true}); sync();
-    // First stop in "What's on your mind?", as in the app.
-    var rail=document.getElementById('fxRail'), cats=document.getElementById('fresh-cats');
+
+    // Featured: up to six with a real photograph, one per menu category first
+    // (variety), in the app's order; topped up in the same order if needed.
+    var withPhoto=marked.filter(photoOf), picked=[], cats={};
+    withPhoto.forEach(function(r){ var c=r.dataset.cat||''; if(picked.length<6&&!cats[c]){ cats[c]=1; picked.push(r); } });
+    withPhoto.forEach(function(r){ if(picked.length<6&&picked.indexOf(r)<0) picked.push(r); });
+    if(picked.length<4) marked.forEach(function(r){ if(picked.length<4&&picked.indexOf(r)<0) picked.push(r); });
+    var frag=document.createDocumentFragment();
+    picked.forEach(function(r){ frag.appendChild(card(r,'fx-u10-card')); });
+    feat.textContent=''; feat.appendChild(frag);
+
+    // One gentle entrance the first time the band comes into view.
+    if(!reduce && 'IntersectionObserver' in window){
+      feat.classList.add('fx-pre');
+      [].forEach.call(feat.children,function(c,i){ c.style.transitionDelay=(i*60)+'ms'; });
+      var shown=false;
+      var show=function(){ if(shown) return; shown=true; feat.classList.add('fx-in'); feat.classList.remove('fx-pre'); };
+      var io=new IntersectionObserver(function(es){ if(es.some(function(e){return e.isIntersecting;})){ io.disconnect(); show(); } },{threshold:.12});
+      io.observe(feat); setTimeout(show,6000);
+    }
+
+    // "See all": the full list, built (and its photos fetched) only when opened.
+    if(allBtn&&grid){
+      allBtn.firstChild.nodeValue='See all '+marked.length+' Under $10 ';
+      var built=false;
+      allBtn.addEventListener('click',function(){
+        var open=allBtn.getAttribute('aria-expanded')!=='true';
+        if(open&&!built){ built=true; var f=document.createDocumentFragment(); marked.forEach(function(r){ f.appendChild(card(r,'fx-u10-mini')); }); grid.appendChild(f); }
+        grid.hidden=!open; allBtn.setAttribute('aria-expanded',open?'true':'false');
+        allBtn.firstChild.nodeValue=open?'Show featured only ':'See all '+marked.length+' Under $10 ';
+      });
+    }
+
+    // First stop in "What's on your mind?", as in the app, marked NEW.
+    var rail=document.getElementById('fxRail'), cats2=document.getElementById('fresh-cats');
+    var firstPhoto=picked.map(photoOf).filter(Boolean)[0];
     if(rail){
       var b=document.createElement('button');
-      b.type='button'; b.className='fx-cat';
-      b.setAttribute('aria-label','Browse Under $10 dishes');
+      b.type='button'; b.className='fx-cat fx-cat-new';
+      b.setAttribute('aria-label','New: browse Under $10 dishes');
       var circ=document.createElement('span'); circ.className='fx-cat-img';
       if(firstPhoto) circ.appendChild(thumbImg(firstPhoto,240,'',[76,76]));
       var t=document.createElement('span'); t.textContent='Under $10'; t.setAttribute('aria-hidden','true');
@@ -6893,7 +6976,7 @@ document.addEventListener('DOMContentLoaded',function(){
       b.addEventListener('click',function(){ scrollToEl(sec,-((document.getElementById('mtabs')||{}).offsetHeight||0)+4); });
       rail.insertBefore(b,rail.firstChild);
       rail.scrollLeft=0;   // the browser would otherwise keep Appetizers in view and hide this
-      if(cats) cats.hidden=false;
+      if(cats2) cats2.hidden=false;
     }
   })();
 
