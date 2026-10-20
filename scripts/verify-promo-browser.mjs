@@ -343,8 +343,9 @@ if (want('tue')) {
   ok('TUE A: flyer requested only after the hero photo finished; BOGO flyer never requested', hero && fly && fly[1] >= hero[2] && !res.some((r) => /bogo-chicken/.test(r[0])), JSON.stringify(res));
   const flyer = await p.evaluate(() => { const i = document.querySelector('#pmTue .pm-flyer'); const ov = document.getElementById('pmTue');
     return { cur: (i.currentSrc || '').split('/').pop(), alt: i.alt, note: ov.querySelector('.pm-note').textContent, act: ov.querySelector('.pm-act').textContent.replace(/\s+/g, ' ').trim(), html: ov.outerHTML }; });
-  ok('TUE A: the 1-roll Version A flyer is the one shown', /^tuesday-roll-deal-oct20-(720|1040)\.webp$/.test(flyer.cur), flyer.cur);
-  ok('TUE A: copy says 1 Chicken Boti Roll, small fries, 1 drink, $9.99, takeout only, Oct 20 2026, ask for the deal, IG handle', ['1 Chicken Boti Roll', 'small fries', 'choose 1 drink', '$9.99', 'Takeout only', 'October 20, 2026', 'Ask for the Tuesday Roll Deal', '@shaahibiryani_planotx', 'naan or paratha', 'soda, chai or water'].every((w) => flyer.alt.includes(w)));
+  ok('TUE A: the $5.99 Version A flyer is the one shown', /^tuesday-roll-deal-599-oct20-(720|1040)\.webp$/.test(flyer.cur), flyer.cur);
+  ok('TUE A: copy says 1 Chicken Boti Roll, $5.99, naan or paratha, takeout only, Oct 20 2026, ask for the deal, IG handle', ['1 Chicken Boti Roll', '$5.99', 'naan or paratha', 'Takeout only', 'October 20, 2026', 'Ask for the Tuesday Roll Deal', '@shaahibiryani_planotx'].every((w) => flyer.alt.includes(w)));
+  ok('TUE A: no withdrawn $9.99 combo wording (fries, drink, $9.99, combo)', !/9\.99|fries|drink|soda|combo|2\.99/i.test(flyer.alt + ' ' + flyer.html.replace(/<img[^>]*>/, '')), flyer.alt);
   ok('TUE A: no Entraforce, no 2-roll wording, no order-online / add-to-cart action', !/entraforce/i.test(flyer.html) && !/2 chicken|two chicken|boti rolls/i.test(flyer.html) && !/order online|add to cart|buy now|claim|get deal/i.test(flyer.html) && !/data-pm-go="(under10|menu|order)"/.test(flyer.html), flyer.act + ' | ' + flyer.note);
   await sleep(450); await shot(p, 'tue-1-390');
   const L = await layout(p, 'pmTue'); console.log('  layout', JSON.stringify(L));

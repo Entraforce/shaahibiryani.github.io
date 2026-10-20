@@ -7454,10 +7454,11 @@ document.addEventListener('click', function(e){
        session and switched off automatically at 12:00 AM Central after its
        last day; outside its dates a flyer is never built or downloaded:
          · BOGO weekend, Oct 17–18 2026 (ended).
-         · Tuesday Roll Deal, Tue Oct 20 2026: 1 Chicken Boti Roll + small
-           fries + 1 drink, $9.99, takeout only, "ask for the Tuesday Roll
-           Deal". Advertised only: it is not a menu price and checkout never
-           applies it, so the popup offers no order/cart action.
+         · Tuesday Roll Deal, Tue Oct 20 2026: 1 Chicken Boti Roll, $5.99,
+           naan or paratha, takeout only, "ask for the Tuesday Roll Deal".
+           Advertised only: it is not a menu price (the roll is $9.99 online)
+           and checkout never applies it, so the popup offers no order/cart
+           action. The in-store combo upsell is deliberately not shown here.
        Redeemed in store: nothing here touches the cart or checkout, and
        nothing says it applies online.
      - Under $10: once per Central Time calendar day per browser, built from the
@@ -7514,8 +7515,8 @@ document.addEventListener('click', function(e){
 <div class="pm-ov pm-fly" id="pmTue" hidden>
   <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmTueT">
     <button type="button" class="pm-x" data-pm-close aria-label="Close Tuesday Roll Deal">&#10005;</button>
-    <h2 class="sr-only" id="pmTueT">Tuesday Roll Deal: 1 Chicken Boti Roll, small fries and 1 drink for $9.99, takeout only</h2>
-    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Weekly Special: Tuesday Roll Deal, serving the Dallas–Fort Worth area. 1 Chicken Boti Roll plus small fries plus choose 1 drink, only $9.99. Roll choice: naan or paratha. Choose 1 drink: soda, chai or water. Tuesday only, all day, October 20, 2026. Takeout only. While supplies last. Ask for the Tuesday Roll Deal. Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300. Instagram @shaahibiryani_planotx.">
+    <h2 class="sr-only" id="pmTueT">Tuesday Roll Deal: 1 Chicken Boti Roll for $5.99, takeout only</h2>
+    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Weekly Special: Tuesday Roll Deal, serving the Dallas–Fort Worth area. 1 Chicken Boti Roll, only $5.99. Roll choice: naan or paratha. Tuesday only, all day, October 20, 2026. Takeout only. While supplies last. Ask for the Tuesday Roll Deal. Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300. Instagram @shaahibiryani_planotx.">
     <button type="button" class="pm-act" data-pm-go="contact">View location &amp; hours <span aria-hidden="true">&rarr;</span></button>
     <p class="pm-note">Takeout only &middot; ask for the Tuesday Roll Deal &middot; not applied to online orders</p>
   </div>
@@ -7546,8 +7547,7 @@ document.addEventListener('click', function(e){
     return p.year+'-'+p.month+'-'+p.day;
   }
   function bogoActive(ms){ var d=centralDate(ms); return d>=BOGO_FROM && d<=BOGO_TO; }
-  var TUE_ON=false; // paused 2026-10-19: the $9.99 offer was withdrawn; the $5.99 creative needs owner approval first
-  function tuesdayActive(ms){ if(!TUE_ON) return false; var d=centralDate(ms); return d>=TUE_FROM && d<=TUE_TO; }
+  function tuesdayActive(ms){ var d=centralDate(ms); return d>=TUE_FROM && d<=TUE_TO; }
   // Is a box really showing? W and H are the VISIBLE page (documentElement
   // clientWidth/Height), never the window: with a classic scrollbar the window is
   // a few px wider, and a closed drawer parked just off-screen sits under that
@@ -7681,7 +7681,7 @@ document.addEventListener('click', function(e){
   // ── Dated flyers ──
   // In priority order; at most one is shown per page load, and only on its days.
   var FLYERS=[
-    { id:'pmTue', key:K_TUE, active:tuesdayActive, src:'assets/promo/tuesday-roll-deal-oct20-',
+    { id:'pmTue', key:K_TUE, active:tuesdayActive, src:'assets/promo/tuesday-roll-deal-599-oct20-',
       view:'promo_tuesday_roll_shown', closed:'promo_tuesday_roll_closed' },
     { id:'pmBogo', key:K_BOGO, active:bogoActive, src:'assets/promo/bogo-chicken-dum-biryani-oct17-18-',
       view:'promo_bogo_view', closed:'promo_bogo_close' }
