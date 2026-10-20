@@ -1,4 +1,4 @@
-// Browser tests for the promo popups (BOGO weekend + daily Under $10), with an
+// Browser tests for the promo popups (BOGO weekend, Tuesday Roll Deal Oct 20 + daily Under $10), with an
 // injected clock so every date case runs today. Needs puppeteer-core and a local
 // Chrome; run it from a folder where puppeteer-core is installed:
 //   node verify-promo-browser.mjs http://127.0.0.1:8111/ [shotsDir] [only=unit,ae,...]
@@ -14,7 +14,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const CT = { // America/Chicago is CDT (UTC-5) on these dates
   oct17noon: Date.parse('2026-10-17T17:00:00Z'), oct17_2359: Date.parse('2026-10-18T04:59:30Z'),
   oct18_0000: Date.parse('2026-10-18T05:00:30Z'), oct18_2359: Date.parse('2026-10-19T04:59:00Z'),
-  oct19_0000: Date.parse('2026-10-19T05:00:00Z'), oct19noon: Date.parse('2026-10-19T17:00:00Z') };
+  oct19_0000: Date.parse('2026-10-19T05:00:00Z'), oct19noon: Date.parse('2026-10-19T17:00:00Z'),
+  oct19_2359: Date.parse('2026-10-20T04:59:00Z'), oct20_0000: Date.parse('2026-10-20T05:00:10Z'), oct20_morning: Date.parse('2026-10-20T14:30:00Z'),
+  oct20_afternoon: Date.parse('2026-10-20T20:00:00Z'), oct20_2359: Date.parse('2026-10-21T04:59:00Z'), oct21_0000: Date.parse('2026-10-21T05:00:00Z') };
 let browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new' });
 const R = []; const ok = (name, pass, detail = '') => { R.push({ name, pass: !!pass, detail }); console.log((pass ? 'PASS ' : 'FAIL ') + name + (detail ? '  — ' + detail : '')); };
 
@@ -40,10 +42,10 @@ async function tab(c, w, clock, opts = {}) {
 async function setClock(p, t) { await p.removeScriptToEvaluateOnNewDocument(p._clockId); p._clockId = (await p.evaluateOnNewDocument((t) => { window.__shaahiPromoNow = t; }, t)).identifier; }
 const state = (p) => p.evaluate(() => {
   const v = (id) => { const e = document.getElementById(id); return !!e && !e.hidden && e.classList.contains('pm-in'); };
-  return { bogo: v('pmBogo'), u10: v('pmU10'), t: performance.now(), heroAt: window.__heroAt, ls: localStorage.getItem('shaahiPromoUnder10LastShownDate'), ss: sessionStorage.getItem('shaahiPromoBogoShown') };
+  return { bogo: v('pmBogo'), tue: v('pmTue'), u10: v('pmU10'), t: performance.now(), heroAt: window.__heroAt, ls: localStorage.getItem('shaahiPromoUnder10LastShownDate'), ss: sessionStorage.getItem('shaahiPromoBogoShown'), ssTue: sessionStorage.getItem('shaahiPromoTuesdayRollShown') };
 });
-async function waitFor(p, key, ms) { const t0 = Date.now(); let s; while (Date.now() - t0 < ms) { s = await state(p); if (s[key]) return s; if (key !== 'bogo' && s.bogo) return { ...s, conflict: true }; await sleep(100); } return null; }
-async function watch(p, ms) { const t0 = Date.now(); const seen = { bogo: false, u10: false, both: false }; while (Date.now() - t0 < ms) { const s = await state(p); seen.bogo ||= s.bogo; seen.u10 ||= s.u10; seen.both ||= (s.bogo && s.u10); await sleep(150); } return seen; }
+async function waitFor(p, key, ms) { const t0 = Date.now(); let s; while (Date.now() - t0 < ms) { s = await state(p); if (s[key]) return s; if (key === 'u10' && (s.bogo || s.tue)) return { ...s, conflict: true }; if (key === 'tue' && s.bogo) return { ...s, conflict: true }; await sleep(100); } return null; }
+async function watch(p, ms) { const t0 = Date.now(); const seen = { bogo: false, tue: false, u10: false, both: false }; while (Date.now() - t0 < ms) { const s = await state(p); seen.bogo ||= s.bogo; seen.tue ||= s.tue; seen.u10 ||= s.u10; seen.both ||= ((s.bogo || s.tue) && s.u10) || (s.bogo && s.tue); await sleep(150); } return seen; }
 async function closeX(p, id) { await p.click('#' + id + ' .pm-x'); await sleep(400); }
 const shot = (p, n) => shots ? p.screenshot({ path: `${shots}/${n}.png` }) : null;
 
@@ -60,7 +62,7 @@ async function layout(p, id) {
     out.clipped = [...ov.querySelectorAll('h2,p,span,figcaption,button')].filter((e) => e.offsetParent && !e.classList.contains('sr-only') && e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow !== 'visible').length;
     const imgs = [...ov.querySelectorAll('img')].filter((i) => i.offsetParent);
     out.imgs = imgs.map((i) => ({ loaded: i.complete && i.naturalWidth > 0, aspect: +(r(i).width / r(i).height).toFixed(3), natural: +(i.naturalWidth / i.naturalHeight).toFixed(3), w: Math.round(r(i).width), cur: (i.currentSrc || '').split('/').pop() }));
-    if (id === 'pmBogo') out.flyerWidth = Math.round(r(ov.querySelector('.pm-flyer')).width);
+    if (id === 'pmBogo' || id === 'pmTue') out.flyerWidth = Math.round(r(ov.querySelector('.pm-flyer')).width);
     out.textTooSmall = [...ov.querySelectorAll('figcaption,.pm-note')].some((e) => parseFloat(getComputedStyle(e).fontSize) < 11);
     return out;
   }, id);
@@ -319,6 +321,139 @@ if (want('scrollbar')) {
     ok(`classic scrollbar ${w}px: genuinely open cart drawer is classified OPEN`, o);
     await c.close();
   }
+}
+
+// ── TUESDAY ROLL DEAL (Oct 20 2026 only) ─────────────────────────────────
+if (want('tue')) {
+  const u = await (async () => { const c = await ctx(); const p = await tab(c, 1440, CT.oct20_morning); await p.goto(base, { waitUntil: 'domcontentloaded' });
+    const r = await p.evaluate((CT) => { const P = window.shaahiPromo; const o = {}; for (const k of ['oct19_2359', 'oct20_0000', 'oct20_morning', 'oct20_afternoon', 'oct20_2359', 'oct21_0000']) o[k] = [P.centralDate(CT[k]), P.tuesdayActive(CT[k]), P.bogoActive(CT[k])]; return o; }, CT); await c.close(); return r; })();
+  console.log('tuesday date table', JSON.stringify(u));
+  ok('TUE UNIT Oct 19 11:59 PM CT → absent', u.oct19_2359[0] === '2026-10-19' && !u.oct19_2359[1]);
+  ok('TUE UNIT Oct 20 12:00 AM / morning / afternoon / 11:59 PM CT → eligible', ['oct20_0000', 'oct20_morning', 'oct20_afternoon', 'oct20_2359'].every((k) => u[k][0] === '2026-10-20' && u[k][1] && !u[k][2]));
+  ok('TUE UNIT Oct 21 12:00 AM CT → inactive', u.oct21_0000[0] === '2026-10-21' && !u.oct21_0000[1]);
+
+  // Main flow, mobile 390, Oct 20 morning
+  const c = await ctx(); const p = await tab(c, 390, CT.oct20_morning);
+  await p.goto(base, { waitUntil: 'domcontentloaded' });
+  const s = await waitFor(p, 'tue', 8000);
+  ok('TUE A: Tuesday Roll Deal is the first popup on Oct 20', !!s && !s.u10 && !s.bogo, s ? `shown at ${Math.round(s.t)} ms; hero painted at ${Math.round(s.heroAt)} ms` : 'not shown');
+  ok('TUE A: after the hero painted, ~1.5 s+ after load', s && s.heroAt != null && s.heroAt < s.t && s.t >= 1500);
+  const res = await p.evaluate(() => performance.getEntriesByType('resource').filter((e) => /hero-01|tuesday-roll|bogo-chicken/.test(e.name)).map((e) => [e.name.split('/').pop(), Math.round(e.startTime), Math.round(e.responseEnd)]));
+  const hero = res.find((r) => /hero-01/.test(r[0])), fly = res.find((r) => /tuesday-roll/.test(r[0]));
+  ok('TUE A: flyer requested only after the hero photo finished; BOGO flyer never requested', hero && fly && fly[1] >= hero[2] && !res.some((r) => /bogo-chicken/.test(r[0])), JSON.stringify(res));
+  const flyer = await p.evaluate(() => { const i = document.querySelector('#pmTue .pm-flyer'); const ov = document.getElementById('pmTue');
+    return { cur: (i.currentSrc || '').split('/').pop(), alt: i.alt, note: ov.querySelector('.pm-note').textContent, act: ov.querySelector('.pm-act').textContent.replace(/\s+/g, ' ').trim(), html: ov.outerHTML }; });
+  ok('TUE A: the 1-roll Version A flyer is the one shown', /^tuesday-roll-deal-oct20-(720|1040)\.webp$/.test(flyer.cur), flyer.cur);
+  ok('TUE A: copy says 1 Chicken Boti Roll, small fries, 1 drink, $9.99, takeout only, Oct 20 2026, ask for the deal, IG handle', ['1 Chicken Boti Roll', 'small fries', 'choose 1 drink', '$9.99', 'Takeout only', 'October 20, 2026', 'Ask for the Tuesday Roll Deal', '@shaahibiryani_planotx', 'naan or paratha', 'soda, chai or water'].every((w) => flyer.alt.includes(w)));
+  ok('TUE A: no Entraforce, no 2-roll wording, no order-online / add-to-cart action', !/entraforce/i.test(flyer.html) && !/2 chicken|two chicken|boti rolls/i.test(flyer.html) && !/order online|add to cart|buy now|claim|get deal/i.test(flyer.html) && !/data-pm-go="(under10|menu|order)"/.test(flyer.html), flyer.act + ' | ' + flyer.note);
+  await sleep(450); await shot(p, 'tue-1-390');
+  const L = await layout(p, 'pmTue'); console.log('  layout', JSON.stringify(L));
+  const A = await a11y(p, 'pmTue'); console.log('  a11y', JSON.stringify(A));
+  ok('TUE A11y: dialog/aria-modal/label, focus inside, background inert, Maya behind backdrop', A.role && A.label && A.focusIn && A.bgBlocked && A.bgInert && A.mayaBehind !== false);
+  ok('TUE A11y: Tab / Shift+Tab stay inside', await tabCycle(p, 'pmTue'));
+  const lcp = await p.evaluate(() => window.__lcp); ok('TUE A: LCP is not the flyer', !/tuesday-roll/.test(String(lcp)), String(lcp));
+  const y0 = await p.evaluate(() => scrollY);
+  await p.keyboard.press('Escape'); await sleep(400); const tClose = Date.now();
+  const st1 = await state(p);
+  ok('TUE B: Escape closes, session flag set, focus restored outside, scroll kept', !st1.tue && st1.ssTue === '1' && (await p.evaluate(() => !document.getElementById('pmTue').contains(document.activeElement))) && (await p.evaluate(() => scrollY)) === y0);
+  const mr = await mayaRect(p); ok('TUE: Maya back on top after close', mr && mr[5] === 'on-top', JSON.stringify(mr));
+  const early = await watch(p, 6500); ok('TUE B: Under $10 not shown right after Tuesday (first ~7 s), never both', !early.u10 && !early.both);
+  const s2 = await waitFor(p, 'u10', 8000); const dt = (Date.now() - tClose) / 1000;
+  ok('TUE B: Under $10 appears ~8–12 s after Tuesday closes, alone', s2 && !s2.conflict && dt >= 8 && dt <= 12.5, dt.toFixed(1) + ' s');
+  ok('TUE B: Under $10 recorded for Central day 2026-10-20', s2 && s2.ls === '2026-10-20');
+  await p.keyboard.press('Escape'); await sleep(400);
+  const cls = await p.evaluate(() => window.__cls); ok('TUE: no layout shift over the visit (CLS < 0.01)', cls < 0.01, cls.toFixed(4));
+  ok('TUE: no script errors', p._errors.length === 0, p._errors.join(' | '));
+  await p.reload({ waitUntil: 'domcontentloaded' });
+  const w1 = await watch(p, 14000); ok('TUE C: refresh in the same session → Tuesday does not repeat (and Under $10 not again today)', !w1.tue && !w1.u10);
+  await c.close();
+  // New session (new browser context = private window) → shows again
+  const cN = await ctx(); const pN = await tab(cN, 390, CT.oct20_afternoon); await pN.goto(base, { waitUntil: 'domcontentloaded' });
+  ok('TUE D: new session, Oct 20 afternoon → shows again', !!(await waitFor(pN, 'tue', 8000))); await cN.close();
+  // Scroll path after close
+  const cS = await ctx(); const pS = await tab(cS, 390, CT.oct20_2359); await pS.goto(base, { waitUntil: 'domcontentloaded' });
+  ok('TUE: Oct 20 11:59 PM CT → still shows', !!(await waitFor(pS, 'tue', 8000)));
+  await closeX(pS, 'pmTue'); const t0 = Date.now();
+  await sleep(1000); await pS.evaluate(() => window.scrollBy(0, innerHeight * .6)); const ws = await watch(pS, 1500);
+  ok('TUE: scroll 1 s after closing does NOT pop Under $10', !ws.u10);
+  await sleep(1200); await pS.evaluate(() => window.scrollBy(0, innerHeight * .6));
+  const sS = await waitFor(pS, 'u10', 3000); ok('TUE: meaningful scroll ~4 s after closing → Under $10 shows, alone', sS && !sS.conflict, ((Date.now() - t0) / 1000).toFixed(1) + ' s');
+  await cS.close();
+  // Before / after the day: no Tuesday DOM, no flyer request, Under $10 primary
+  for (const [label, t] of [['Oct 19 11:59 PM', CT.oct19_2359], ['Oct 20 12:00 AM', CT.oct20_0000], ['Oct 21 12:00 AM', CT.oct21_0000]]) {
+    const cx = await ctx(); const px = await tab(cx, 390, t); await px.goto(base, { waitUntil: 'domcontentloaded' });
+    if (label === 'Oct 20 12:00 AM') { ok('TUE: Oct 20 12:00 AM CT → shows', !!(await waitFor(px, 'tue', 8000))); await cx.close(); continue; }
+    const su = await waitFor(px, 'u10', 9000); const w = await watch(px, 2000);
+    const dom = await px.evaluate(() => !!document.getElementById('pmTue'));
+    ok(`TUE: ${label} CT → no Tuesday popup, no Tuesday DOM, flyer never requested, Under $10 first`, su && !su.conflict && !w.tue && !dom && !px._reqs.some((r) => /tuesday-roll/.test(r)), su ? Math.round(su.t) + ' ms' : 'u10 not shown');
+    await cx.close();
+  }
+  // Analytics: consent granted vs denied
+  const cg = await ctx(); const pg = await tab(cg, 1440, CT.oct20_morning, { consent: 'granted', dpr: 1 }); await pg.goto(base, { waitUntil: 'domcontentloaded' });
+  await waitFor(pg, 'tue', 8000); await sleep(450); await shot(pg, 'tue-2-1440'); await closeX(pg, 'pmTue');
+  const ev = await pg.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && /^promo_/.test(a[1])).map((a) => a[1]));
+  ok('TUE analytics with consent: promo_tuesday_roll_shown + promo_tuesday_roll_closed', ev.includes('promo_tuesday_roll_shown') && ev.includes('promo_tuesday_roll_closed'), ev.join(','));
+  await cg.close();
+  const cd = await ctx(); const pd = await tab(cd, 1440, CT.oct20_morning, { consent: 'denied', dpr: 1 }); await pd.goto(base, { waitUntil: 'domcontentloaded' });
+  await waitFor(pd, 'tue', 8000); await closeX(pd, 'pmTue');
+  const ev2 = await pd.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && /^promo_/.test(a[1])).map((a) => a[1]));
+  ok('TUE analytics without consent: no promo events', ev2.length === 0, ev2.join(','));
+  await cd.close();
+  const cx = await ctx(); const px = await tab(cx, 1440, CT.oct21_0000, { consent: 'granted', dpr: 1 }); await px.goto(base, { waitUntil: 'domcontentloaded' });
+  await waitFor(px, 'u10', 9000); await sleep(500);
+  const ev3 = await px.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event' && /^promo_tuesday/.test(a[1])).map((a) => a[1]));
+  ok('TUE analytics after expiry: no Tuesday events', ev3.length === 0, ev3.join(','));
+  await cx.close();
+}
+if (want('tuematrix')) {
+  for (const [w, h] of [[320, 568], [320, 640], [390, 844], [430, 932], [768, 1024], [1024, 768], [1024, 1366], [1440, 900], [1920, 1080]]) {
+    const c = await ctx(); const p = await tab(c, w, CT.oct20_morning, { h }); await p.goto(base, { waitUntil: 'domcontentloaded' });
+    const s = await waitFor(p, 'tue', 8000); await sleep(400);
+    const L = s ? await layout(p, 'pmTue') : null; const f = L && L.imgs[0];
+    const pass = L && L.noOverflow && L.boxInView && L.xOk && L.noInnerScroll && L.buttons && !L.clipped && f.loaded && Math.abs(f.aspect / f.natural - 1) < 0.01;
+    ok(`TUE ${w}x${h}`, pass, L ? `flyer ${L.flyerWidth}px wide, box ${L.box.join(',')}, img ${f.cur}` : 'not shown');
+    if ([320, 430, 768].includes(w) && (h === 568 || h === 932 || h === 1024)) await shot(p, `tue-m-${w}x${h}`);
+    if (!pass) console.log('   detail', JSON.stringify(L));
+    await c.close();
+  }
+}
+if (want('tuebusy')) {
+  const c = await ctx(); const p = await tab(c, 390, CT.oct20_morning); await p.goto(base, { waitUntil: 'domcontentloaded' });
+  await sleep(900); await p.evaluate(() => openCartDrawer());
+  const w = await watch(p, 5000); ok('TUE: cart open → waits', !w.tue && !w.u10);
+  await p.evaluate(() => document.getElementById('cartDrawer').classList.remove('open'));
+  ok('TUE: cart closed → Tuesday appears', !!(await waitFor(p, 'tue', 4000)));
+  await c.close();
+  const c1 = await ctx(); const p1 = await tab(c1, 390, CT.oct20_morning); await p1.goto(base, { waitUntil: 'domcontentloaded' });
+  await sleep(900); await p1.evaluate(() => openItemModal(document.querySelector('#menu .mi[data-under10]')));
+  const w1 = await watch(p1, 5000); ok('TUE: dish dialog open → waits', !w1.tue);
+  await p1.evaluate(() => document.getElementById('itemModalClose').click());
+  ok('TUE: dish dialog closed → Tuesday appears', !!(await waitFor(p1, 'tue', 4000)));
+  await c1.close();
+  const c2 = await ctx(); const p2 = await tab(c2, 390, CT.oct20_morning); await p2.goto(base, { waitUntil: 'domcontentloaded' });
+  await sleep(500);
+  await p2.evaluate(() => { const r = [...document.querySelectorAll('#menu .mi')].find((x) => x.dataset.name === 'Regular Goat Biryani'); openItemModal(r); });
+  await sleep(300); await p2.evaluate(() => document.getElementById('modalAddBtn').click()); await sleep(300);
+  await p2.evaluate(() => document.getElementById('cartToggle').click()); await sleep(300);
+  await p2.evaluate(() => document.querySelector('.cart-checkout').click());
+  const open = await p2.evaluate(() => document.getElementById('waModalOverlay').style.opacity === '1');
+  const w2 = await watch(p2, 5000); ok('TUE: checkout open → waits', open && !w2.tue && !w2.u10, open ? '' : 'checkout did not open');
+  await p2.evaluate(() => { closeWaModal(); document.getElementById('cartDrawer').classList.remove('open'); });
+  ok('TUE: checkout closed → Tuesday appears', !!(await waitFor(p2, 'tue', 4000)));
+  ok('TUE: Stripe still not loaded (checkout opened, no payment step)', !p2._reqs.some((u) => /js\.stripe\.com/.test(u)));
+  await c2.close();
+  const c3 = await ctx(); const p3 = await tab(c3, 1440, CT.oct20_morning); await p3.goto(base, { waitUntil: 'domcontentloaded' });
+  await sleep(900); await p3.evaluate(() => toggleChat());
+  const chatOpen = await p3.evaluate(() => document.getElementById('chat-window').classList.contains('open'));
+  const w3 = await watch(p3, 5000); ok('TUE: Maya open → waits', chatOpen && !w3.tue);
+  await p3.evaluate(() => toggleChat()); ok('TUE: Maya closed → Tuesday appears', !!(await waitFor(p3, 'tue', 4000)));
+  await c3.close();
+  // reduced motion: no transitions
+  const c4 = await ctx(); const p4 = await tab(c4, 390, CT.oct20_morning); await p4.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await p4.goto(base, { waitUntil: 'domcontentloaded' }); await waitFor(p4, 'tue', 8000);
+  const rm = await p4.evaluate(() => [getComputedStyle(document.getElementById('pmTue')).transitionDuration, getComputedStyle(document.querySelector('#pmTue .pm-box')).transform]);
+  ok('TUE: reduced motion respected (no transition, no transform)', rm[0] === '0s' && rm[1] === 'none', JSON.stringify(rm));
+  await c4.close();
 }
 await browser.close();
 const f = R.filter((r) => !r.pass); console.log(`\n${R.length - f.length}/${R.length} passed` + (f.length ? '\nFAILED:\n' + f.map((r) => ' - ' + r.name + ' ' + r.detail).join('\n') : ''));

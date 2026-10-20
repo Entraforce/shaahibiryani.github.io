@@ -7449,11 +7449,17 @@ document.addEventListener('click', function(e){
 </script>
 <!-- CALLTRACK:END -->
 <!-- ── PROMO POPUPS ─────────────────────────────────────────────────────────
-     Two campaign dialogs, never both at once:
-     - BOGO weekend (Oct 17–18 2026, America/Chicago): the owner's approved
-       flyer, once per browser session, switched off automatically from
-       12:00 AM Central on Oct 19. Redeemed in store: nothing here touches the
-       cart or checkout, and nothing says it applies online.
+     Campaign dialogs, never two at once:
+     - Dated flyers (America/Chicago calendar days), each once per browser
+       session and switched off automatically at 12:00 AM Central after its
+       last day; outside its dates a flyer is never built or downloaded:
+         · BOGO weekend, Oct 17–18 2026 (ended).
+         · Tuesday Roll Deal, Tue Oct 20 2026: 1 Chicken Boti Roll + small
+           fries + 1 drink, $9.99, takeout only, "ask for the Tuesday Roll
+           Deal". Advertised only: it is not a menu price and checkout never
+           applies it, so the popup offers no order/cart action.
+       Redeemed in store: nothing here touches the cart or checkout, and
+       nothing says it applies online.
      - Under $10: once per Central Time calendar day per browser, built from the
        same rows as the #under10 band (window.shaahiUnder10), so it can never
        disagree with the menu. "Explore all" goes to that band.
@@ -7470,7 +7476,7 @@ document.addEventListener('click', function(e){
 .pm-x:hover{background:#F5F5F7;}
 .pm-x:focus-visible,.pm-act:focus-visible,.pm-cta:focus-visible{outline:3px solid #D6953A;outline-offset:3px;}
 /* BOGO: the flyer itself, as large as fits; width also capped by the screen's height */
-.pm-bogo .pm-box{width:min(92vw,520px,calc((100vh - 140px) / 1.2944));width:min(92vw,520px,calc((100dvh - 140px) / 1.2944));padding:0 0 12px;text-align:center;}
+.pm-bogo .pm-box,.pm-fly .pm-box{width:min(92vw,520px,calc((100vh - 140px) / 1.2944));width:min(92vw,520px,calc((100dvh - 140px) / 1.2944));padding:0 0 12px;text-align:center;}
 .pm-flyer{display:block;width:100%;height:auto;aspect-ratio:2550/3300;border-radius:20px 20px 0 0;background:#FBF1E4;}
 .pm-act{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:10px 14px 0;padding:0 18px;border-radius:999px;border:1.5px solid #B8322A;background:#fff;color:#B8322A;font:inherit;font-size:.92rem;font-weight:800;letter-spacing:.03em;cursor:pointer;width:calc(100% - 28px);}
 .pm-act:hover{background:#B8322A;color:#fff;}
@@ -7505,6 +7511,15 @@ document.addEventListener('click', function(e){
     <p class="pm-note">In-store offer &middot; not applied to online orders</p>
   </div>
 </div>
+<div class="pm-ov pm-fly" id="pmTue" hidden>
+  <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmTueT">
+    <button type="button" class="pm-x" data-pm-close aria-label="Close Tuesday Roll Deal">&#10005;</button>
+    <h2 class="sr-only" id="pmTueT">Tuesday Roll Deal: 1 Chicken Boti Roll, small fries and 1 drink for $9.99, takeout only</h2>
+    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Weekly Special: Tuesday Roll Deal, serving the Dallas–Fort Worth area. 1 Chicken Boti Roll plus small fries plus choose 1 drink, only $9.99. Roll choice: naan or paratha. Choose 1 drink: soda, chai or water. Tuesday only, all day, October 20, 2026. Takeout only. While supplies last. Ask for the Tuesday Roll Deal. Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300. Instagram @shaahibiryani_planotx.">
+    <button type="button" class="pm-act" data-pm-go="contact">View location &amp; hours <span aria-hidden="true">&rarr;</span></button>
+    <p class="pm-note">Takeout only &middot; ask for the Tuesday Roll Deal &middot; not applied to online orders</p>
+  </div>
+</div>
 <div class="pm-ov pm-u10" id="pmU10" hidden>
   <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmU10T" aria-describedby="pmU10D">
     <button type="button" class="pm-x" data-pm-close aria-label="Close Under $10 offer">&#10005;</button>
@@ -7520,11 +7535,10 @@ document.addEventListener('click', function(e){
 <script>
 (function(){
   'use strict';
-  var K_BOGO='shaahiPromoBogoShown', K_U10='shaahiPromoUnder10LastShownDate';
-  var FLYER='assets/promo/bogo-chicken-dum-biryani-oct17-18-';
+  var K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_U10='shaahiPromoUnder10LastShownDate';
 
   /* promo-logic:start — pure rules, run as-is by scripts/verify-promo-logic.mjs */
-  var TZ='America/Chicago', BOGO_FROM='2026-10-17', BOGO_TO='2026-10-18';
+  var TZ='America/Chicago', BOGO_FROM='2026-10-17', BOGO_TO='2026-10-18', TUE_FROM='2026-10-20', TUE_TO='2026-10-20';
   // Calendar date in Central Time, YYYY-MM-DD.
   function centralDate(ms){
     var p={}; new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'})
@@ -7532,6 +7546,7 @@ document.addEventListener('click', function(e){
     return p.year+'-'+p.month+'-'+p.day;
   }
   function bogoActive(ms){ var d=centralDate(ms); return d>=BOGO_FROM && d<=BOGO_TO; }
+  function tuesdayActive(ms){ var d=centralDate(ms); return d>=TUE_FROM && d<=TUE_TO; }
   // Is a box really showing? W and H are the VISIBLE page (documentElement
   // clientWidth/Height), never the window: with a classic scrollbar the window is
   // a few px wider, and a closed drawer parked just off-screen sits under that
@@ -7544,7 +7559,7 @@ document.addEventListener('click', function(e){
   function now(){ var t=window.__shaahiPromoNow; return typeof t==='number'?t:Date.now(); }
   function get(store,k){ try{ return window[store].getItem(k); }catch(e){ return null; } }
   function set(store,k,v){ try{ window[store].setItem(k,v); }catch(e){} }
-  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,onScreen:onScreen,
+  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,tuesdayActive:tuesdayActive,onScreen:onScreen,
     under10Due:function(ms){ return get('localStorage',K_U10)!==centralDate(ms); }};
 
   var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -7662,26 +7677,37 @@ document.addEventListener('click', function(e){
     });
   }
 
-  // ── BOGO ──
-  function showBogo(){
-    var ov=dialog('pmBogo'); if(!ov){ afterBogo(false); return; } var img=ov.querySelector('.pm-flyer');
+  // ── Dated flyers ──
+  // In priority order; at most one is shown per page load, and only on its days.
+  var FLYERS=[
+    { id:'pmTue', key:K_TUE, active:tuesdayActive, src:'assets/promo/tuesday-roll-deal-oct20-',
+      view:'promo_tuesday_roll_shown', closed:'promo_tuesday_roll_closed' },
+    { id:'pmBogo', key:K_BOGO, active:bogoActive, src:'assets/promo/bogo-chicken-dum-biryani-oct17-18-',
+      view:'promo_bogo_view', closed:'promo_bogo_close' }
+  ];
+  function dueFlyer(ms){
+    for(var i=0;i<FLYERS.length;i++){ var f=FLYERS[i]; if(f.active(ms)&&!get('sessionStorage',f.key)) return f; }
+    return null;
+  }
+  function showFlyer(f){
+    var ov=dialog(f.id); if(!ov){ afterFlyer(false); return; } var img=ov.querySelector('.pm-flyer');
     img.sizes='(max-width:600px) 92vw, 520px';
-    img.srcset=FLYER+'720.webp 720w, '+FLYER+'1040.webp 1040w';
-    img.src=FLYER+'720.webp';
+    img.srcset=f.src+'720.webp 720w, '+f.src+'1040.webp 1040w';
+    img.src=f.src+'720.webp';
     var done=false;
     function go(){
       if(done) return; done=true;
-      if(!bogoActive(now())||get('sessionStorage',K_BOGO)){ afterBogo(false); return; }
+      if(!f.active(now())||get('sessionStorage',f.key)){ afterFlyer(false); return; }
       whenFree(function(){
-        set('sessionStorage',K_BOGO,'1'); track('promo_bogo_view');
-        show(ov,function(){ track('promo_bogo_close'); afterBogo(true); });
+        set('sessionStorage',f.key,'1'); track(f.view);
+        show(ov,function(){ track(f.closed); afterFlyer(true); });
       });
     }
     // Only open once the flyer is ready, so the guest never sees an empty frame.
-    (img.decode?img.decode():Promise.reject()).then(go,function(){ img.complete&&img.naturalWidth?go():(img.onload=go, img.onerror=function(){ done=true; afterBogo(false); }); });
+    (img.decode?img.decode():Promise.reject()).then(go,function(){ img.complete&&img.naturalWidth?go():(img.onload=go, img.onerror=function(){ done=true; afterFlyer(false); }); });
   }
-  // Breathing room after the weekend special before Under $10 may appear.
-  function afterBogo(closedNow){ closedNow?scheduleU10(10000,3000):scheduleU10(5000,1500); }
+  // Breathing room after a flyer before Under $10 may appear.
+  function afterFlyer(closedNow){ closedNow?scheduleU10(10000,3000):scheduleU10(5000,1500); }
 
   document.addEventListener('click',function(e){
     var b=e.target.closest&&e.target.closest('[data-pm-go]'); if(!b) return;
@@ -7695,7 +7721,8 @@ document.addEventListener('click', function(e){
   // Start only after the hero photo has painted (or 4s, whichever first).
   function begin(){
     var since=(window.performance&&performance.now)?performance.now():0;
-    if(bogoActive(now())&&!get('sessionStorage',K_BOGO)) setTimeout(showBogo,Math.max(1800-since,600));
+    var f=dueFlyer(now());
+    if(f) setTimeout(function(){ showFlyer(f); },Math.max(1800-since,600));
     else scheduleU10(5000,1500);
   }
   var started=false; function once(){ if(!started){ started=true; begin(); } }
