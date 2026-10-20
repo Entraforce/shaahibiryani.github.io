@@ -7546,7 +7546,8 @@ document.addEventListener('click', function(e){
     return p.year+'-'+p.month+'-'+p.day;
   }
   function bogoActive(ms){ var d=centralDate(ms); return d>=BOGO_FROM && d<=BOGO_TO; }
-  function tuesdayActive(ms){ var d=centralDate(ms); return d>=TUE_FROM && d<=TUE_TO; }
+  var TUE_ON=false; // paused 2026-10-19: the $9.99 offer was withdrawn; the $5.99 creative needs owner approval first
+  function tuesdayActive(ms){ if(!TUE_ON) return false; var d=centralDate(ms); return d>=TUE_FROM && d<=TUE_TO; }
   // Is a box really showing? W and H are the VISIBLE page (documentElement
   // clientWidth/Height), never the window: with a classic scrollbar the window is
   // a few px wider, and a closed drawer parked just off-screen sits under that
