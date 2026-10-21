@@ -17,7 +17,7 @@ const m = /\/\* promo-logic:start[^*]*\*\/([\s\S]*?)\/\* promo-logic:end \*\//.e
 assert.ok(m, 'promo-logic markers not found in index.html');
 const ctx = vm.createContext({ Intl, Date, Math });
 vm.runInContext(m[1], ctx);
-const { centralDate, bogoActive, tuesdayActive, onScreen } = ctx;
+const { centralDate, bogoActive, tuesdayActive, riceActive, onScreen } = ctx;
 
 let n = 0; const check = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
 const at = (iso) => Date.parse(iso);
@@ -49,6 +49,18 @@ check('Tuesday Roll Deal off from Oct 21 12:00 AM Central, and every day after (
 });
 check('BOGO and Tuesday windows never overlap', () => {
   for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-10-23T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(bogoActive(t) && tuesdayActive(t), false, new Date(t).toISOString());
+});
+check('Rice Deal off before Oct 21 Central (incl. the Tuesday Roll Deal day)', () => {
+  for (const iso of ['2026-10-21T04:59:59Z', '2026-10-20T17:00:00Z', '2026-10-17T17:00:00Z']) assert.equal(riceActive(at(iso)), false, iso);
+});
+check('Rice Deal on from Oct 21 12:00 AM Central through Thu Oct 22 9:59:59 PM Central', () => {
+  for (const iso of ['2026-10-21T05:00:00Z', '2026-10-21T17:00:00Z', '2026-10-22T04:59:59Z', '2026-10-22T17:00:00Z', '2026-10-23T02:59:59Z']) assert.equal(riceActive(at(iso)), true, iso);
+});
+check('Rice Deal off from Thu Oct 22 10:00 PM Central, and every day after', () => {
+  for (const iso of ['2026-10-23T03:00:00Z', '2026-10-23T04:30:00Z', '2026-10-28T17:00:00Z', '2027-10-21T17:00:00Z']) assert.equal(riceActive(at(iso)), false, iso);
+});
+check('Rice Deal never overlaps BOGO or Tuesday', () => {
+  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-10-25T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(riceActive(t) && (bogoActive(t) || tuesdayActive(t)), false, new Date(t).toISOString());
 });
 check('DST: Central midnight is 05:00Z in CDT and 06:00Z in CST (Nov 1 2026 change)', () => {
   assert.equal(centralDate(at('2026-11-02T05:59:59Z')), '2026-11-01');   // 11:59:59 PM CST Nov 1
