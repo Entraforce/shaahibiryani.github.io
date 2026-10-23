@@ -7505,9 +7505,9 @@ document.addEventListener('click', function(e){
 <template id="pmTpl">
 <div class="pm-ov pm-bogo" id="pmBogo" hidden>
   <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmBogoT">
-    <button type="button" class="pm-x" data-pm-close aria-label="Close weekend special">&#10005;</button>
-    <h2 class="sr-only" id="pmBogoT">Weekend special: Buy one, get one free Hyderabadi Chicken Dum Biryani</h2>
-    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Weekend Special. Buy one, get one free: Hyderabadi Chicken Dum Biryani. Buy one for $13.99, get one free. Saturday and Sunday, October 17 to 18. Available in-store: dine-in (regular plate) or takeout (28 oz), while supplies last. Get your BOGO at Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300.">
+    <button type="button" class="pm-x" data-pm-close aria-label="Close weekend BOGO">&#10005;</button>
+    <h2 class="sr-only" id="pmBogoT">Weekend BOGO, Friday to Sunday: buy one Chicken Dum Biryani for $13.99, get one free</h2>
+    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Weekend Special, Friday, Saturday and Sunday. Buy 1, get 1 free: Chicken Dum Biryani. Buy one for $13.99, get one free. October 23 to 25, 2026. Dine-in: regular plate. Takeout: 28 oz. Available in-store, dine-in or takeout, while supplies last. Ask for the BOGO when you order. Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300. Instagram @shaahibiryani_planotx.">
     <button type="button" class="pm-act" data-pm-go="contact">View location &amp; hours <span aria-hidden="true">&rarr;</span></button>
     <p class="pm-note">In-store offer &middot; not applied to online orders</p>
   </div>
@@ -7548,7 +7548,9 @@ document.addEventListener('click', function(e){
   var K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_RICE='shaahiPromoRiceDealShown', K_U10='shaahiPromoUnder10LastShownDate';
 
   /* promo-logic:start — pure rules, run as-is by scripts/verify-promo-logic.mjs */
-  var TZ='America/Chicago', BOGO_FROM='2026-10-17', BOGO_TO='2026-10-18', TUE_FROM='2026-10-20', TUE_TO='2026-10-20';
+  var TZ='America/Chicago', BOGO_FROM='2026-10-23', TUE_FROM='2026-10-20', TUE_TO='2026-10-20';
+  // Weekend BOGO: Fri Oct 23 2026 (Central) until Mon Oct 26 12:00 AM CDT (= 05:00Z Oct 26), i.e. Fri, Sat and Sun.
+  var BOGO_END_MS=Date.UTC(2026,9,26,5,0,0);
   // Rice Deal: from Wed Oct 21 2026 (Central) until Thu Oct 22 10:00 PM CDT (= 03:00Z Oct 23), closing time.
   var RICE_FROM='2026-10-21', RICE_END_MS=Date.UTC(2026,9,23,3,0,0);
   // Calendar date in Central Time, YYYY-MM-DD.
@@ -7557,7 +7559,7 @@ document.addEventListener('click', function(e){
       .formatToParts(new Date(ms)).forEach(function(x){ p[x.type]=x.value; });
     return p.year+'-'+p.month+'-'+p.day;
   }
-  function bogoActive(ms){ var d=centralDate(ms); return d>=BOGO_FROM && d<=BOGO_TO; }
+  function bogoActive(ms){ return centralDate(ms)>=BOGO_FROM && ms<BOGO_END_MS; }
   function tuesdayActive(ms){ var d=centralDate(ms); return d>=TUE_FROM && d<=TUE_TO; }
   function riceActive(ms){ return centralDate(ms)>=RICE_FROM && ms<RICE_END_MS; }
   // Is a box really showing? W and H are the VISIBLE page (documentElement
@@ -7565,6 +7567,15 @@ document.addEventListener('click', function(e){
   // a few px wider, and a closed drawer parked just off-screen sits under that
   // strip. Counting it as open once left every promo waiting forever.
   function onScreen(r,W,H){ return Math.min(r.right,W)-Math.max(r.left,0)>8 && Math.min(r.bottom,H)-Math.max(r.top,0)>8; }
+  // Arrived from an Under $10 ad: the #under10 link, or a utm_campaign naming
+  // under10 / under-10 / under_10 / under $10. Those guests see the section they
+  // clicked for first; no promo popup covers it on arrival.
+  function paidU10Landing(hash,search){
+    if(/^#under-?10$/i.test(hash||'')) return true;
+    var m=/[?&]utm_campaign=([^&#]*)/i.exec(search||''); if(!m) return false;
+    var c=m[1].replace(/\+/g,' '); try{ c=decodeURIComponent(c); }catch(e){}
+    return /under[\s_\-$]*10(?!\d)/i.test(c);
+  }
   /* promo-logic:end */
 
   // The clock is injectable (window.__shaahiPromoNow, ms) so the dates can be
@@ -7572,7 +7583,7 @@ document.addEventListener('click', function(e){
   function now(){ var t=window.__shaahiPromoNow; return typeof t==='number'?t:Date.now(); }
   function get(store,k){ try{ return window[store].getItem(k); }catch(e){ return null; } }
   function set(store,k,v){ try{ window[store].setItem(k,v); }catch(e){} }
-  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,onScreen:onScreen,
+  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,onScreen:onScreen,paidU10Landing:paidU10Landing,
     under10Due:function(ms){ return get('localStorage',K_U10)!==centralDate(ms); }};
 
   var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -7697,7 +7708,7 @@ document.addEventListener('click', function(e){
       view:'promo_rice_deal_shown', closed:'promo_rice_deal_closed' },
     { id:'pmTue', key:K_TUE, active:tuesdayActive, src:'assets/promo/tuesday-roll-deal-599-oct20-',
       view:'promo_tuesday_roll_shown', closed:'promo_tuesday_roll_closed' },
-    { id:'pmBogo', key:K_BOGO, active:bogoActive, src:'assets/promo/bogo-chicken-dum-biryani-oct17-18-',
+    { id:'pmBogo', key:K_BOGO, active:bogoActive, src:'assets/promo/bogo-chicken-dum-biryani-oct23-25-',
       view:'promo_bogo_view', closed:'promo_bogo_close' }
   ];
   function dueFlyer(ms){
@@ -7733,9 +7744,33 @@ document.addEventListener('click', function(e){
       var h=c.querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); } } });
   });
 
+  // Under $10 ad landing: the section is the promo they asked for, so it counts as
+  // today's Under $10 view and no popup opens over it. A dated flyer becomes
+  // eligible only once they browse elsewhere on purpose: a link to another part of
+  // the page, or the section scrolled out of view for a moment after they've had
+  // time to see it. Still at most once per session (the flyer's sessionStorage key).
+  function afterPaidLanding(){
+    set('localStorage',K_U10,centralDate(now()));
+    var sec=document.getElementById('under10'), t0=Date.now(), y0=window.scrollY, seen=false, away=0, done=false;
+    function vis(){ return !!sec&&onScreen(sec.getBoundingClientRect(),document.documentElement.clientWidth,document.documentElement.clientHeight); }
+    function leave(){ if(done) return; done=true; cleanup();
+      var f=dueFlyer(now()); if(f) whenFree(function(){ showFlyer(f); }); }
+    function check(){
+      if(vis()){ seen=true; away=0; return; }
+      if(Date.now()-t0<6000||!(seen||Math.abs(window.scrollY-y0)>innerHeight)) return;
+      if(!away) away=Date.now(); else if(Date.now()-away>=1500) leave();
+    }
+    function onHash(){ if(!/^#under-?10$/i.test(location.hash)) leave(); }
+    var tick=setInterval(check,500);
+    function cleanup(){ clearInterval(tick); removeEventListener('hashchange',onHash); }
+    addEventListener('hashchange',onHash);
+    check();
+  }
+
   // Start only after the hero photo has painted (or 4s, whichever first).
   function begin(){
     var since=(window.performance&&performance.now)?performance.now():0;
+    if(paidU10Landing(location.hash,location.search)){ afterPaidLanding(); return; }
     var f=dueFlyer(now());
     if(f) setTimeout(function(){ showFlyer(f); },Math.max(1800-since,600));
     else scheduleU10(5000,1500);

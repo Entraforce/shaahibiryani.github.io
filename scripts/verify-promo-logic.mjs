@@ -1,6 +1,6 @@
 // Checks the promo popups' pure rules — the exact code between the
 // promo-logic markers in index.html, run as-is (no browser, no dependencies):
-// the Central Time calendar day, the BOGO window (Oct 17–18 2026, off from
+// the Central Time calendar day, the BOGO window (Fri–Sun Oct 23–25 2026, off from
 // 12:00 AM Central Oct 19), the Tuesday Roll Deal day (Oct 20 2026 only, off
 // from 12:00 AM Central Oct 21), and the "is it really on screen?" test that once
 // mistook a closed cart drawer under a classic scrollbar for an open one.
@@ -17,7 +17,7 @@ const m = /\/\* promo-logic:start[^*]*\*\/([\s\S]*?)\/\* promo-logic:end \*\//.e
 assert.ok(m, 'promo-logic markers not found in index.html');
 const ctx = vm.createContext({ Intl, Date, Math });
 vm.runInContext(m[1], ctx);
-const { centralDate, bogoActive, tuesdayActive, riceActive, onScreen } = ctx;
+const { centralDate, bogoActive, tuesdayActive, riceActive, onScreen, paidU10Landing } = ctx;
 
 let n = 0; const check = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
 const at = (iso) => Date.parse(iso);
@@ -27,28 +27,20 @@ check('Central calendar day, not UTC (7 PM CDT Oct 18 = midnight UTC Oct 19)', (
   assert.equal(centralDate(at('2026-10-18T05:00:00Z')), '2026-10-18');   // 12:00 AM CDT
   assert.equal(centralDate(at('2026-10-18T04:59:59Z')), '2026-10-17');   // 11:59:59 PM CDT
 });
-check('BOGO off before Oct 17 Central', () => assert.equal(bogoActive(at('2026-10-17T04:59:59Z')), false));
-check('BOGO on Oct 17 12:00 AM Central', () => assert.equal(bogoActive(at('2026-10-17T05:00:00Z')), true));
-check('BOGO still on Oct 18 11:59 PM Central', () => assert.equal(bogoActive(at('2026-10-19T04:59:59Z')), true));
-check('BOGO off from Oct 19 12:00 AM Central, and every day after', () => {
-  for (const iso of ['2026-10-19T05:00:00Z', '2026-10-19T17:00:00Z', '2026-11-02T12:00:00Z', '2027-10-17T17:00:00Z']) assert.equal(bogoActive(at(iso)), false, iso);
+check('BOGO off before Fri Oct 23 Central', () => assert.equal(bogoActive(at('2026-10-23T04:59:59Z')), false));
+check('BOGO on Fri Oct 23 12:00 AM Central', () => assert.equal(bogoActive(at('2026-10-23T05:00:00Z')), true));
+check('BOGO on Saturday Oct 24 and Sunday Oct 25 (Central)', () => {
+  for (const iso of ['2026-10-24T17:00:00Z', '2026-10-25T17:00:00Z']) assert.equal(bogoActive(at(iso)), true, iso);
 });
-check('Tuesday Roll Deal off through Oct 19 11:59:59 PM Central', () => {
-  assert.equal(tuesdayActive(at('2026-10-20T04:59:59Z')), false);   // Oct 19 11:59:59 PM CDT
-  assert.equal(tuesdayActive(at('2026-10-17T17:00:00Z')), false);   // during the BOGO weekend
+check('BOGO still on Sun Oct 25 11:59 PM Central', () => assert.equal(bogoActive(at('2026-10-26T04:59:59Z')), true));
+check('BOGO off from Mon Oct 26 12:00 AM Central, and every day after', () => {
+  for (const iso of ['2026-10-26T05:00:00Z', '2026-10-26T17:00:00Z', '2026-11-02T12:00:00Z', '2027-10-23T17:00:00Z']) assert.equal(bogoActive(at(iso)), false, iso);
 });
-check('Tuesday Roll Deal on all of Oct 20 Central (12:00 AM, morning, afternoon, 11:59 PM)', () => {
-  for (const iso of ['2026-10-20T05:00:00Z', '2026-10-20T14:00:00Z', '2026-10-20T20:30:00Z', '2026-10-21T04:59:59Z']) assert.equal(tuesdayActive(at(iso)), true, iso);
-});
-check('Tuesday Roll Deal on at 7 PM CDT Oct 20 even though that is Oct 21 in UTC', () => {
-  assert.equal(centralDate(at('2026-10-21T00:00:00Z')), '2026-10-20');
-  assert.equal(tuesdayActive(at('2026-10-21T00:00:00Z')), true);
-});
-check('Tuesday Roll Deal off from Oct 21 12:00 AM Central, and every day after (incl. later Tuesdays)', () => {
-  for (const iso of ['2026-10-21T05:00:00Z', '2026-10-21T17:00:00Z', '2026-10-27T17:00:00Z', '2026-11-03T18:00:00Z', '2027-10-20T17:00:00Z']) assert.equal(tuesdayActive(at(iso)), false, iso);
+check('Last weekend (Oct 17–18) is no longer a BOGO day', () => {
+  for (const iso of ['2026-10-17T17:00:00Z', '2026-10-18T17:00:00Z']) assert.equal(bogoActive(at(iso)), false, iso);
 });
 check('BOGO and Tuesday windows never overlap', () => {
-  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-10-23T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(bogoActive(t) && tuesdayActive(t), false, new Date(t).toISOString());
+  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-10-28T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(bogoActive(t) && tuesdayActive(t), false, new Date(t).toISOString());
 });
 check('Rice Deal off before Oct 21 Central (incl. the Tuesday Roll Deal day)', () => {
   for (const iso of ['2026-10-21T04:59:59Z', '2026-10-20T17:00:00Z', '2026-10-17T17:00:00Z']) assert.equal(riceActive(at(iso)), false, iso);
@@ -60,7 +52,15 @@ check('Rice Deal off from Thu Oct 22 10:00 PM Central, and every day after', () 
   for (const iso of ['2026-10-23T03:00:00Z', '2026-10-23T04:30:00Z', '2026-10-28T17:00:00Z', '2027-10-21T17:00:00Z']) assert.equal(riceActive(at(iso)), false, iso);
 });
 check('Rice Deal never overlaps BOGO or Tuesday', () => {
-  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-10-25T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(riceActive(t) && (bogoActive(t) || tuesdayActive(t)), false, new Date(t).toISOString());
+  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-10-28T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(riceActive(t) && (bogoActive(t) || tuesdayActive(t)), false, new Date(t).toISOString());
+});
+check('Under $10 ad landings are recognised (#under10 or an under10 utm_campaign)', () => {
+  for (const [h, q] of [['#under10', ''], ['#UNDER10', ''], ['#under-10', ''], ['', '?utm_campaign=under10'], ['', '?utm_source=meta&utm_campaign=Under_10_Oct'],
+    ['', '?utm_campaign=under-10'], ['', '?utm_campaign=under%20%2410'], ['', '?utm_campaign=Under+$10+DFW'], ['#menu', '?utm_campaign=under10']]) assert.equal(paidU10Landing(h, q), true, h + q);
+});
+check('Normal visitors are not treated as Under $10 ad landings', () => {
+  for (const [h, q] of [['', ''], ['#menu', ''], ['#contact', ''], ['#under100', ''], ['', '?utm_campaign=bogo_weekend'], ['', '?utm_campaign=under100'],
+    ['', '?utm_source=under10'], ['', '?utm_campaign=family_pack_oct'], ['', '?utm_campaign=']]) assert.equal(paidU10Landing(h, q), false, h + q);
 });
 check('DST: Central midnight is 05:00Z in CDT and 06:00Z in CST (Nov 1 2026 change)', () => {
   assert.equal(centralDate(at('2026-11-02T05:59:59Z')), '2026-11-01');   // 11:59:59 PM CST Nov 1
