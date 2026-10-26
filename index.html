@@ -5217,6 +5217,23 @@ function _trayLimitError(){
   return 'Your order has '+over.join(' and ')+'. Larger orders need 4–5 days’ notice so we can prep properly.';
 }
 
+// One add-on naan per curry or grill dish, as at the register. The server
+// (create-web-order) enforces the same rule; this only says it early.
+var NAAN_DISH_CATS=['Chicken','Goat','Vegetable','Grill'];
+function _isAddOnItem(it){
+  var m=PID_MAP[it.name]; var k=m?(m[it.size||'']||m['']||''):'';
+  return /-addon$/.test(k);
+}
+function _naanLimitError(){
+  var addOns=0, dishes=0;
+  cart.forEach(function(it){
+    if(_isAddOnItem(it)){ addOns+=it.qty; return; }
+    var el=null; try{ el=document.querySelector('[data-name="'+CSS.escape(it.name)+'"][data-cat]'); }catch(e){}
+    if(el && NAAN_DISH_CATS.indexOf(el.getAttribute('data-cat'))>-1) dishes+=it.qty;
+  });
+  return addOns>dishes ? 'Add-on naans are one per curry or grill dish. Please remove the extra naan.' : null;
+}
+
 function _wpResolveItems(){
   var items=[],bad=[];
   cart.forEach(function(it){
@@ -5558,7 +5575,9 @@ function addToCart(name,price,qty,size,label){
   label=label||name;
   var ex=cart.find(function(i){return i.name===name&&i.size===size;});
   if(ex){ex.qty+=qty;}else{cart.push({name:name,label:label,price:price,qty:qty,size:size});}
-  renderCart(); showToast('Added: '+label+(size?' ('+size+')':''), true);
+  renderCart();
+  var nErr=_naanLimitError();
+  if(nErr) showToast(nErr, false); else showToast('Added: '+label+(size?' ('+size+')':''), true);
 }
 
 function removeFromCart(i){cart.splice(i,1);renderCart();}
@@ -5637,6 +5656,10 @@ function renderCart(){
       coBtn.disabled=true; coBtn.style.opacity='.5'; coBtn.style.cursor='not-allowed';
       coBtn.setAttribute('aria-disabled','true');
       coBtn.textContent='Add $'+(DELIVERY_MIN-tot).toFixed(2)+' more for delivery';
+    } else if(_naanLimitError()){
+      coBtn.disabled=true; coBtn.style.opacity='.5'; coBtn.style.cursor='not-allowed';
+      coBtn.setAttribute('aria-disabled','true');
+      coBtn.textContent='One add-on naan per curry or grill dish';
     } else if(_trayLimitError()){
       // Say it here rather than at the payment step — nobody should fill in
       // their card details before finding out we can't cook it that fast.

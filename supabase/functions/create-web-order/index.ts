@@ -26,7 +26,7 @@ import { PRICES } from "../_shared/prices.ts";
 // @ts-ignore — shared plain-JS module (also used by publish-menu and locally)
 import { inScheduleWindow, scheduleLabel } from "../_shared/render-menu.js";
 // @ts-ignore — shared plain-JS module (also run by scripts/verify-order-rules.mjs)
-import { addOnOnlyError } from "../_shared/order-rules.js";
+import { addOnLimitError, addOnOnlyError } from "../_shared/order-rules.js";
 
 // The website uses its OWN Stripe key (STRIPE_SECRET_KEY_WEB = the live, real
 // account) so it is fully independent of the app's create-payment-intent, which
@@ -153,11 +153,11 @@ Deno.serve(async (req) => {
     // edit awaiting Publish. Charge what the customer saw.
     const dbPrices: Record<
       string,
-      { price: number; available: boolean; schedule: unknown }
+      { price: number; available: boolean; schedule: unknown; category: string | null }
     > = {};
     const { data: menuRows, error: menuErr } = await supabase
       .from("web_menu_items")
-      .select("pid, price, published_price, available, schedule, inactive")
+      .select("pid, price, published_price, available, schedule, inactive, category")
       .not("pid", "is", null);
     if (!menuErr && menuRows) {
       for (const r of menuRows) {
@@ -171,6 +171,7 @@ Deno.serve(async (req) => {
             // call — pricing, tax and idempotency are untouched by this.
             available: !!r.available && r.inactive !== true,
             schedule: r.schedule ?? null,
+            category: r.category ?? null,
           };
         }
       }
@@ -208,6 +209,13 @@ Deno.serve(async (req) => {
           `4–5 days' notice so we can prep properly — please call ` +
           `(469) 960-3300 and we'll take care of you.`,
       }, 400);
+    }
+
+    // One add-on naan per curry/grill dish, as at the register. Needs the
+    // menu table's categories, so it only runs when that read succeeded.
+    if (!menuErr && menuRows) {
+      const limitErr = addOnLimitError(items, (pid: string) => dbPrices[pid]?.category ?? null);
+      if (limitErr) return json({ error: limitErr }, 400);
     }
 
     for (const line of items as LineRef[]) {

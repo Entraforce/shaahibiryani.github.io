@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { addOnOnlyError, isAddOnLine } from '../supabase/functions/_shared/order-rules.js';
+import { addOnLimitError, addOnOnlyError, isAddOnLine, NAAN_LIMIT_MSG } from '../supabase/functions/_shared/order-rules.js';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const line = (pid, quantity = 1) => {
@@ -54,7 +54,7 @@ t('add-on detection is by the -addon variant suffix', () => {
 // Wiring: the deployed function must import THIS rule and run it first.
 const src = readFileSync(resolve(repo, 'supabase/functions/create-web-order/index.ts'), 'utf8');
 t('create-web-order imports the shared rule', () =>
-  assert.match(src, /import \{ addOnOnlyError \} from "\.\.\/_shared\/order-rules\.js";/));
+  assert.match(src, /import \{ addOnLimitError, addOnOnlyError \} from "\.\.\/_shared\/order-rules\.js";/));
 t('create-web-order refuses before pricing, DB writes and Stripe', () => {
   const guard = src.indexOf('addOnOnlyError(items)');
   assert.ok(guard > 0, 'guard call not found');
@@ -64,6 +64,29 @@ t('create-web-order refuses before pricing, DB writes and Stripe', () => {
     assert.ok(at > guard, `${later} must come after the add-on guard`);
   }
   assert.match(src.slice(guard, guard + 120), /if \(addOnErr\) return json\(\{ error: addOnErr \}, 400\);/);
+});
+
+// One add-on naan per curry/grill dish (the register's rule).
+const CAT = { 'butter-chicken|butter-chicken-regular': 'chk', 'chicken-tikka|chicken-tikka-standard': 'grl',
+  'dal-tadka|dal-tadka-standard': 'veg', 'goat-dum-biryani|goat-dum-biryani-regular': 'bry' };
+const catOf = pid => CAT[pid] ?? null;
+const CURRY = 'butter-chicken|butter-chicken-regular', GRILL = 'chicken-tikka|chicken-tikka-standard';
+const DAL = 'dal-tadka|dal-tadka-standard', BIRYANI = 'goat-dum-biryani|goat-dum-biryani-regular';
+t('1 curry + 1 naan -> accepted', () => assert.equal(addOnLimitError([line(CURRY), line(NAAN)], catOf), null));
+t('1 curry + 2 naans -> refused', () => assert.equal(addOnLimitError([line(CURRY), line(NAAN, 2)], catOf), NAAN_LIMIT_MSG));
+t('1 curry + naan + butter naan -> refused (all add-ons count)', () =>
+  assert.equal(addOnLimitError([line(CURRY), line(NAAN), line(BUTTER)], catOf), NAAN_LIMIT_MSG));
+t('2 curries (qty 2) + 2 naans -> accepted', () => assert.equal(addOnLimitError([line(CURRY, 2), line(GARLIC, 2)], catOf), null));
+t('curry + grill + veg + 3 add-ons -> accepted', () =>
+  assert.equal(addOnLimitError([line(CURRY), line(GRILL), line(DAL), line(NAAN), line(BUTTER), line(GARLIC)], catOf), null));
+t('biryani + naan -> refused (biryani is not curry/grill)', () =>
+  assert.equal(addOnLimitError([line(BIRYANI), line(NAAN)], catOf), NAAN_LIMIT_MSG));
+t('no add-ons -> rule does not apply', () => assert.equal(addOnLimitError([line(BIRYANI, 3)], catOf), null));
+t('create-web-order applies the limit before DB writes and Stripe', () => {
+  const g = src.indexOf('addOnLimitError(items');
+  assert.ok(g > 0, 'limit call not found');
+  for (const later of ['.rpc("claim_checkout_attempt"', 'stripe.paymentIntents.create(', '.from("orders")'])
+    assert.ok(src.indexOf(later) > g, `${later} must come after the naan limit`);
 });
 // Same wording as the app, so a guest hears one answer on both surfaces.
 t('message matches the app\'s create-payment-intent', () => {
