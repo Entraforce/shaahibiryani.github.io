@@ -12,7 +12,7 @@ docs in this directory for details):
 |---|---|---|
 | 0 — Repository discovery | `00-repository-audit.md` | ✅ Done (2026-10-27), findings mostly fixed on `main` |
 | 1 — Technical SEO (CWV + full metadata) | `technical-seo-audit.md` | ✅ Done, merged to `main` (2026-10-28). Font-loading CLS fix still needs a separate approval before implementing. |
-| 2 — Structured data / knowledge graph | `structured-data-audit.md` | Not started (Phase 0's review-quotes question is resolved — confirmed real; foundingDate already resolved in 2026-07) |
+| 2 — Structured data / knowledge graph | `structured-data-audit.md` | ✅ Done (2026-10-28), on branch `seo/phase2-structured-data`, awaiting review. Overall healthy — 3 low-risk field-completeness fixes proposed, no fabrication issues. |
 | 3 — Google Business Profile | `google-business-profile-audit.md` | Not started |
 | 4 — Apple Maps / Business Connect | `apple-maps-optimization.md` | Not started |
 | 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | Not started |
