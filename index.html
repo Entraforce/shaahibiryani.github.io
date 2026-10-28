@@ -7492,6 +7492,10 @@ document.addEventListener('click', function(e){
        session and switched off automatically at 12:00 AM Central after its
        last day; outside its dates a flyer is never built or downloaded:
          · BOGO weekend, Oct 17–18 2026 (ended).
+         · Achari Chicken BOGO, Wed Oct 28 2026: buy 1 for $15.99, get 1 free,
+           plus 1 regular naan + 12 oz rice per BOGO; dine-in (regular plate) or
+           takeout (28 oz box), "ask for the Achari Chicken BOGO".
+           Off at 12:00 AM Central Oct 29.
          · Dum Ka Chicken BOGO, Tue Oct 27 2026: buy 1 for $15.99, get 1 free,
            plus 1 regular naan + 12 oz rice per BOGO; dine-in or takeout,
            "ask for the Dum Ka Chicken BOGO". Off at 12:00 AM Central Oct 28.
@@ -7553,6 +7557,15 @@ document.addEventListener('click', function(e){
     <p class="pm-note">In-store offer &middot; not applied to online orders</p>
   </div>
 </div>
+<div class="pm-ov pm-fly" id="pmAch" hidden>
+  <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmAchT">
+    <button type="button" class="pm-x" data-pm-close aria-label="Close Achari Chicken BOGO">&#10005;</button>
+    <h2 class="sr-only" id="pmAchT">Wednesday Special, Achari Chicken BOGO: buy one for $15.99, get one free, with 1 regular naan and 12 oz rice</h2>
+    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Wednesday Special, Wednesday, October 28. Buy 1, get 1 free: Achari Chicken. Buy one for $15.99, get one free. Plus, included with your BOGO: 1 regular naan and 12 oz rice. Your BOGO order: 2 Achari Chicken, 1 regular naan, 1 × 12 oz rice. Dine-in: regular plate. Takeout: 28 oz box. Serving the Dallas–Fort Worth area. October 28, 2026, 11:30 AM to 10:00 PM. While supplies last. Ask for the Achari Chicken BOGO. Dine-in or takeout. Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300. Instagram @shaahibiryani_planotx.">
+    <button type="button" class="pm-act" data-pm-go="contact">View location &amp; hours <span aria-hidden="true">&rarr;</span></button>
+    <p class="pm-note">Dine-in or takeout &middot; takeout curry: 28 oz box &middot; ask for the Achari Chicken BOGO &middot; not applied to online orders</p>
+  </div>
+</div>
 <div class="pm-ov pm-fly" id="pmDkc" hidden>
   <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmDkcT">
     <button type="button" class="pm-x" data-pm-close aria-label="Close Dum Ka Chicken BOGO">&#10005;</button>
@@ -7595,7 +7608,7 @@ document.addEventListener('click', function(e){
 <script>
 (function(){
   'use strict';
-  var K_DKC='shaahiPromoDumKaChickenBogoShown', K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_RICE='shaahiPromoRiceDealShown', K_U10='shaahiPromoUnder10LastShownDate';
+  var K_ACH='shaahiPromoAchariChickenBogoShown', K_DKC='shaahiPromoDumKaChickenBogoShown', K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_RICE='shaahiPromoRiceDealShown', K_U10='shaahiPromoUnder10LastShownDate';
 
   /* promo-logic:start — pure rules, run as-is by scripts/verify-promo-logic.mjs */
   var TZ='America/Chicago', BOGO_FROM='2026-10-23', TUE_FROM='2026-10-20', TUE_TO='2026-10-20';
@@ -7605,6 +7618,8 @@ document.addEventListener('click', function(e){
   var RICE_FROM='2026-10-21', RICE_END_MS=Date.UTC(2026,9,23,3,0,0);
   // Dum Ka Chicken BOGO: Tue Oct 27 2026 (Central) until Wed Oct 28 12:00 AM CDT (= 05:00Z Oct 28).
   var DKC_FROM='2026-10-27', DKC_END_MS=Date.UTC(2026,9,28,5,0,0);
+  // Achari Chicken BOGO: Wed Oct 28 2026 (Central) until Thu Oct 29 12:00 AM CDT (= 05:00Z Oct 29).
+  var ACH_FROM='2026-10-28', ACH_END_MS=Date.UTC(2026,9,29,5,0,0);
   // Calendar date in Central Time, YYYY-MM-DD.
   function centralDate(ms){
     var p={}; new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'})
@@ -7615,6 +7630,7 @@ document.addEventListener('click', function(e){
   function tuesdayActive(ms){ var d=centralDate(ms); return d>=TUE_FROM && d<=TUE_TO; }
   function riceActive(ms){ return centralDate(ms)>=RICE_FROM && ms<RICE_END_MS; }
   function dkcActive(ms){ return centralDate(ms)>=DKC_FROM && ms<DKC_END_MS; }
+  function achActive(ms){ return centralDate(ms)>=ACH_FROM && ms<ACH_END_MS; }
   // Is a box really showing? W and H are the VISIBLE page (documentElement
   // clientWidth/Height), never the window: with a classic scrollbar the window is
   // a few px wider, and a closed drawer parked just off-screen sits under that
@@ -7636,7 +7652,7 @@ document.addEventListener('click', function(e){
   function now(){ var t=window.__shaahiPromoNow; return typeof t==='number'?t:Date.now(); }
   function get(store,k){ try{ return window[store].getItem(k); }catch(e){ return null; } }
   function set(store,k,v){ try{ window[store].setItem(k,v); }catch(e){} }
-  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,dkcActive:dkcActive,onScreen:onScreen,paidU10Landing:paidU10Landing,
+  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,dkcActive:dkcActive,achActive:achActive,onScreen:onScreen,paidU10Landing:paidU10Landing,
     under10Due:function(ms){ return get('localStorage',K_U10)!==centralDate(ms); }};
 
   var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -7757,6 +7773,8 @@ document.addEventListener('click', function(e){
   // ── Dated flyers ──
   // In priority order; at most one is shown per page load, and only on its days.
   var FLYERS=[
+    { id:'pmAch', key:K_ACH, active:achActive, src:'assets/promo/achari-bogo-oct28-',
+      view:'promo_achari_bogo_view', closed:'promo_achari_bogo_close' },
     { id:'pmDkc', key:K_DKC, active:dkcActive, src:'assets/promo/dkc-bogo-oct27-',
       view:'promo_dkc_bogo_view', closed:'promo_dkc_bogo_close' },
     { id:'pmRice', key:K_RICE, active:riceActive, src:'assets/promo/rice-deal-oct21-22-',
