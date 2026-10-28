@@ -11,8 +11,8 @@ docs in this directory for details):
 | Phase | Deliverable | Status |
 |---|---|---|
 | 0 — Repository discovery | `00-repository-audit.md` | ✅ Done (2026-10-27), findings mostly fixed on `main` |
-| 1 — Technical SEO (CWV + full metadata) | `technical-seo-audit.md` | ✅ Done (2026-10-28), on branch `seo/phase1-technical-audit`, not yet merged |
-| 2 — Structured data / knowledge graph | `structured-data-audit.md` | Not started (Phase 0 already surfaced the review-quotes + foundingDate items) |
+| 1 — Technical SEO (CWV + full metadata) | `technical-seo-audit.md` | ✅ Done, merged to `main` (2026-10-28). Font-loading CLS fix still needs a separate approval before implementing. |
+| 2 — Structured data / knowledge graph | `structured-data-audit.md` | Not started (Phase 0's review-quotes question is resolved — confirmed real; foundingDate already resolved in 2026-07) |
 | 3 — Google Business Profile | `google-business-profile-audit.md` | Not started |
 | 4 — Apple Maps / Business Connect | `apple-maps-optimization.md` | Not started |
 | 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | Not started |
