@@ -140,19 +140,39 @@ expected to produce a visible SERP enhancement.
 
 ---
 
-## Open items for the owner
+## Implemented (2026-10-28)
 
-1. **OK to add the three missing homepage fields (`logo`, `menu`,
-   `hasMap`)?** All three use values already live on the site — no new
-   facts needed, just filling in the entity.
-2. **OK to add `servesCuisine`/`priceRange`/`image` to the shared city-page
-   stub template** (one shared snippet reused across 37 pages, not a
-   per-page hand-edit)? Same reasoning as above — nothing new, just more
-   complete per-page.
-3. **OK to switch `reserve.html` to the minimal-stub pattern** (drop its
-   partial second copy of hours/cuisine, reference `@id` only like the city
-   pages do)?
+Osman approved all three; applied directly, re-validated after each change:
 
-None of these require new business facts or any owner decision beyond "go
-ahead" — they're all filling in fields with values that are already
-verified elsewhere on the site.
+1. **Homepage entity** (`index.html`): added `logo`
+   (`assets/sb-logo-light.webp`) and `hasMap` (the locked Google Maps URL,
+   same one already used as `sameAs`). Correction while implementing: the
+   audit script's "missing `menu`" finding was a false positive — the
+   entity already has `hasMenu` (the current canonical schema.org property
+   name; the script was checking for the older alias `menu`), so nothing
+   needed adding there.
+2. **City-page stub template**: added `servesCuisine`, `priceRange`, and
+   `image` to the shared `provider` block, applied identically across all
+   37 `biryani-*`/`catering-*` pages via a scripted find-and-replace
+   (verified byte-identical match across all 37 before applying, verified
+   valid JSON-LD on all 37 after).
+3. **`reserve.html`**: switched from its partial second copy of the entity
+   to the same minimal-stub pattern as the city pages. Worth noting what
+   this caught: the old copy had already drifted — its `servesCuisine` list
+   was missing "South Asian" (present on the homepage's list) and
+   `acceptsReservations` was encoded as the string `"True"` instead of a
+   real boolean — exactly the kind of inconsistency the minimal-stub
+   pattern avoids by not duplicating facts that can drift.
+
+All changes verified with zero JSON-LD parse errors afterward, and checked
+against `scripts/render-index.mjs --check` to confirm nothing touched
+`index.html`'s menu `GEN:` marker regions (CLAUDE.md's guard against edits
+that a future Publish would silently revert) — the Restaurant schema block
+sits outside those regions, so it's safe to hand-edit directly.
+
+**Not yet re-verified against the live Rich Results Test** (that requires
+the changes to be deployed first, or pasting a large snippet through the
+tool's Code tab — skipped for now since `logo`/`hasMap`/`servesCuisine`/
+`priceRange`/`image` are all plain, well-documented schema.org properties
+already proven valid elsewhere on this exact site in yesterday's live test).
+Worth a quick live re-check after this merges and deploys.
