@@ -367,15 +367,15 @@ than a page meant to be viewed (see §1).
 These need a business decision or information we can't get from the code —
 plain-language version of each:
 
-1. **Are the reviews shown in the website's "rich snippet" code real?**
-   Buried in the homepage's code (not visible to a normal visitor, but
-   visible to Google) are a star rating (4.3 out of 5, from 484 reviews) and a
-   handful of named customer quotes ("Fatima A.", "Tariq M.", etc.). If these
-   numbers and quotes are pulled from real Google/Yelp reviews, that's fine.
-   If they were written as placeholder/example content and never swapped for
-   the real thing, Google treats that as a fake-reviews violation and can
-   penalize the whole site's search visibility — this is worth confirming
-   before we touch anything else.
+1. ~~**Are the reviews shown in the website's "rich snippet" code real?**~~
+   **RESOLVED (2026-10-28) — confirmed real by the owner.** Osman confirmed
+   the named customer quotes in `index.html`'s Restaurant schema (e.g.
+   "Fatima A.", "Tariq M.") are genuine customer reviews, not placeholder
+   text. No fake-reviews compliance risk — no action needed on the quotes
+   themselves. (The separate `aggregateRating` number/count is now
+   auto-refreshed live from the Google Places API as of 2026-10-27 — see
+   `scripts/update-review-rating.mjs` — so that part was already addressed
+   independently of this question.)
 2. **When should the website officially say Shaahi Biryani was "founded"?**
    The code currently tells Google the business was founded in 2025. Your
    own house rules say the brand started in 2017 in Illinois, and the Plano
