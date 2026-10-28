@@ -17,7 +17,7 @@ const m = /\/\* promo-logic:start[^*]*\*\/([\s\S]*?)\/\* promo-logic:end \*\//.e
 assert.ok(m, 'promo-logic markers not found in index.html');
 const ctx = vm.createContext({ Intl, Date, Math });
 vm.runInContext(m[1], ctx);
-const { centralDate, bogoActive, tuesdayActive, riceActive, dkcActive, onScreen, paidU10Landing } = ctx;
+const { centralDate, bogoActive, tuesdayActive, riceActive, dkcActive, achActive, onScreen, paidU10Landing } = ctx;
 
 let n = 0; const check = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
 const at = (iso) => Date.parse(iso);
@@ -65,6 +65,18 @@ check('Dum Ka Chicken BOGO off from Wed Oct 28 12:00 AM Central, and every day a
 });
 check('Dum Ka Chicken BOGO never overlaps the other flyers', () => {
   for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-11-05T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(dkcActive(t) && (bogoActive(t) || tuesdayActive(t) || riceActive(t)), false, new Date(t).toISOString());
+});
+check('Achari Chicken BOGO off before Wed Oct 28 Central (incl. all of the Dum Ka Chicken Tuesday)', () => {
+  for (const iso of ['2026-10-28T04:59:59Z', '2026-10-27T17:00:00Z', '2026-10-26T17:00:00Z']) assert.equal(achActive(at(iso)), false, iso);
+});
+check('Achari Chicken BOGO on all of Wed Oct 28 Central', () => {
+  for (const iso of ['2026-10-28T05:00:00Z', '2026-10-28T16:30:00Z', '2026-10-29T02:59:00Z', '2026-10-29T04:59:59Z']) assert.equal(achActive(at(iso)), true, iso);
+});
+check('Achari Chicken BOGO off from Thu Oct 29 12:00 AM Central, and every day after', () => {
+  for (const iso of ['2026-10-29T05:00:00Z', '2026-10-29T17:00:00Z', '2026-11-04T17:00:00Z', '2027-10-28T17:00:00Z']) assert.equal(achActive(at(iso)), false, iso);
+});
+check('Achari Chicken BOGO never overlaps the other flyers', () => {
+  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-11-05T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(achActive(t) && (bogoActive(t) || tuesdayActive(t) || riceActive(t) || dkcActive(t)), false, new Date(t).toISOString());
 });
 check('Under $10 ad landings are recognised (#under10 or an under10 utm_campaign)', () => {
   for (const [h, q] of [['#under10', ''], ['#UNDER10', ''], ['#under-10', ''], ['', '?utm_campaign=under10'], ['', '?utm_source=meta&utm_campaign=Under_10_Oct'],
