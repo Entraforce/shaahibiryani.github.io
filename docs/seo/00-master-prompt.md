@@ -13,7 +13,7 @@ docs in this directory for details):
 | 0 — Repository discovery | `00-repository-audit.md` | ✅ Done (2026-10-27), findings mostly fixed on `main` |
 | 1 — Technical SEO (CWV + full metadata) | `technical-seo-audit.md` | ✅ Done, merged to `main` (2026-10-28). Font-loading CLS fix still needs a separate approval before implementing. |
 | 2 — Structured data / knowledge graph | `structured-data-audit.md` | ✅ Done, merged to `main` (2026-10-28). Overall healthy — 3 low-risk field-completeness fixes implemented, no fabrication issues. |
-| 3 — Google Business Profile | `google-business-profile-audit.md` | Not started |
+| 3 — Google Business Profile | `google-business-profile-audit.md` | ✅ Done (2026-10-28), on branch `seo/phase3-gbp-audit`, awaiting review. Overall strong consistency; 3 minor open items + 23 unreplied reviews. |
 | 4 — Apple Maps / Business Connect | `apple-maps-optimization.md` | Not started |
 | 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | Not started |
 | 6 — AEO (answer engine) | `aeo-answer-strategy.md` | Not started |
