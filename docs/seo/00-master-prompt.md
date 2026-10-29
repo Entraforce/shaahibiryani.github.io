@@ -16,7 +16,7 @@ docs in this directory for details):
 | 3 — Google Business Profile | `google-business-profile-audit.md` | ✅ Done, merged to `main` (2026-10-28). Overall strong consistency; 3 minor open items + 23 unreplied reviews. |
 | 4 — Apple Maps / Business Connect | `apple-maps-optimization.md` | ✅ Done (2026-10-28), merged to `main`. NAP solid; category too generic ("Indian Cuisine", no Halal), rating pulls from Yelp (4.1/24) not Google. No ABC login — action checklist only for items needing dashboard access. |
 | 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | ✅ Done (2026-10-29), merged to `main`. City coverage already complete, no cannibalization found. Critical fix already applied: removed fabricated venue-relationship claims from all 19 catering pages (Osman confirmed invented, not real past events). Gap found: "wedding catering" queries don't surface hall.html/venues.html despite both targeting that intent. |
-| 6 — AEO (answer engine) | `aeo-answer-strategy.md` | Not started |
+| 6 — AEO (answer engine) | `aeo-answer-strategy.md` | ✅ Done (2026-10-29), merged to `main`. Two bugs fixed: stale hardcoded rating text in homepage FAQ (now covered by the refresh automation), and dine-in.html's FAQ schema lacked matching visible content. One content gap proposed, not yet added: no FAQ explains Hyderabadi dum biryani vs. other styles. |
 | 7 — AIO (AI search) | `ai-search-visibility.md` | Not started |
 | 8 — GEO (generative engine) | `geo-implementation.md` | Not started |
 | 9 — Content authority / topical clusters | (content roadmap) | Not started |
