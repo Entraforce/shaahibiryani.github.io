@@ -16,7 +16,7 @@ docs in this directory for details):
 | 3 — Google Business Profile | `google-business-profile-audit.md` | ✅ Done (2026-10-28), on branch `seo/phase3-gbp-audit`, awaiting review. Overall strong consistency; 3 minor open items + 23 unreplied reviews. |
 | 4 — Apple Maps / Business Connect | `apple-maps-optimization.md` | Not started |
 | 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | Not started |
-| 6 — AEO (answer engine) | `aeo-answer-strategy.md` | Not started |
+| 6 — AEO (answer engine) | `aeo-answer-strategy.md` | ✅ Done (2026-10-29), on branch `seo/phase6-aeo`, awaiting review. Two bugs fixed: stale hardcoded rating text in homepage FAQ (now covered by the refresh automation), and dine-in.html's FAQ schema lacked matching visible content. One content gap proposed, not yet added: no FAQ explains Hyderabadi dum biryani vs. other styles. |
 | 7 — AIO (AI search) | `ai-search-visibility.md` | Not started |
 | 8 — GEO (generative engine) | `geo-implementation.md` | Not started |
 | 9 — Content authority / topical clusters | (content roadmap) | Not started |
