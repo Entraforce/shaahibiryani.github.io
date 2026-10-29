@@ -29,6 +29,15 @@ if (!API_KEY) {
 const AGGREGATE_RATING_RE =
   /("aggregateRating":\s*\{\s*"@type":\s*"AggregateRating",\s*"ratingValue":\s*")([^"]+)("\s*,\s*"reviewCount":\s*")([^"]+)("\s*\}\s*,)/;
 
+// The "best biryani in DFW" FAQ answer (appears twice: once in the FAQPage
+// JSON-LD, once in the matching visible HTML) hardcodes the same rating as
+// prose, rounded down to the nearest 10 reviews (e.g. "4.4★ from 550+ Google
+// reviews"). It's a separate string from aggregateRating above, so it needs
+// its own refresh or it silently drifts stale even as the schema stays
+// current — this already happened once (found during the Phase 6 AEO audit,
+// 2026-10-29).
+const FAQ_RATING_RE = /\d(?:\.\d)?★ from \d+\+ Google reviews/g;
+
 async function fetchLiveRating() {
   const url = `https://places.googleapis.com/v1/places/${PLACE_ID}`;
   const res = await fetch(url, {
@@ -80,14 +89,29 @@ function main() {
         return;
       }
 
-      const updated = html.replace(
+      let updated = html.replace(
         AGGREGATE_RATING_RE,
         `$1${rating}$3${reviewCount}$5`
       );
+
+      const roundedCount = Math.floor(newCount / 10) * 10;
+      const faqText = `${rating}★ from ${roundedCount}+ Google reviews`;
+      const faqMatches = updated.match(FAQ_RATING_RE) || [];
+      if (faqMatches.length === 0) {
+        console.warn(
+          "Could not find the 'best biryani in DFW' FAQ rating text — skipping it (aggregateRating still updated)."
+        );
+      } else {
+        updated = updated.replace(FAQ_RATING_RE, faqText);
+      }
+
       writeFileSync(INDEX_PATH, updated);
       console.log(
         `Updated aggregateRating: ${currentRating} stars / ${currentCount} reviews -> ${rating} stars / ${reviewCount} reviews.`
       );
+      if (faqMatches.length > 0) {
+        console.log(`Updated FAQ rating text (${faqMatches.length} occurrence(s)) to: ${faqText}`);
+      }
     })
     .catch((err) => {
       console.error(err.message || err);
