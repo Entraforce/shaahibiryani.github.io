@@ -17,7 +17,7 @@ docs in this directory for details):
 | 4 — Apple Maps / Business Connect | `apple-maps-optimization.md` | Not started |
 | 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | Not started |
 | 6 — AEO (answer engine) | `aeo-answer-strategy.md` | Not started |
-| 7 — AIO (AI search) | `ai-search-visibility.md` | Not started |
+| 7 — AIO (AI search) | `ai-search-visibility.md` | ✅ Done (2026-10-29), on branch `seo/phase7-aio`, awaiting review. Live-tested on Perplexity/Bing AI Mode/Google AI Overview: 4 of 5 queries cite Shaahi accurately with zero factual errors; "Indian wedding catering in Plano" absent on all 3, confirming Phase 5's gap. robots.txt crawler policy (currently wide open to all AI bots) flagged as a business decision for Osman, not changed. |
 | 8 — GEO (generative engine) | `geo-implementation.md` | Not started |
 | 9 — Content authority / topical clusters | (content roadmap) | Not started |
 | 10 — Image/video SEO | — | Not started |
