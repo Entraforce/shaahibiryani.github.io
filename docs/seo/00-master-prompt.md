@@ -15,7 +15,7 @@ docs in this directory for details):
 | 2 — Structured data / knowledge graph | `structured-data-audit.md` | ✅ Done, merged to `main` (2026-10-28). Overall healthy — 3 low-risk field-completeness fixes implemented, no fabrication issues. |
 | 3 — Google Business Profile | `google-business-profile-audit.md` | ✅ Done (2026-10-28), on branch `seo/phase3-gbp-audit`, awaiting review. Overall strong consistency; 3 minor open items + 23 unreplied reviews. |
 | 4 — Apple Maps / Business Connect | `apple-maps-optimization.md` | Not started |
-| 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | Not started |
+| 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | ✅ Done (2026-10-29), on branch `seo/phase5-local-seo`, awaiting review. City coverage already complete, no cannibalization found. Critical fix already applied: removed fabricated venue-relationship claims from all 19 catering pages (Osman confirmed invented, not real past events). Gap found: "wedding catering" queries don't surface hall.html/venues.html despite both targeting that intent. |
 | 6 — AEO (answer engine) | `aeo-answer-strategy.md` | Not started |
 | 7 — AIO (AI search) | `ai-search-visibility.md` | Not started |
 | 8 — GEO (generative engine) | `geo-implementation.md` | Not started |
