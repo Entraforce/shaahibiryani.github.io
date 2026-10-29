@@ -18,7 +18,7 @@ docs in this directory for details):
 | 5 — Advanced local SEO (DFW) | `local-keyword-map.md` | Not started |
 | 6 — AEO (answer engine) | `aeo-answer-strategy.md` | Not started |
 | 7 — AIO (AI search) | `ai-search-visibility.md` | Not started |
-| 8 — GEO (generative engine) | `geo-implementation.md` | Not started |
+| 8 — GEO (generative engine) | `geo-implementation.md` | ✅ Done (2026-10-29), on branch `seo/phase8-geo`, awaiting review. llms.txt already existed and is accurate (kept, not expanded — no proven AI-citation benefit per current research). Original photography confirmed, no stock-image risk. One likely third-party hours-listing error surfaced, not yet pinpointed — flagged to Phase 11. |
 | 9 — Content authority / topical clusters | (content roadmap) | Not started |
 | 10 — Image/video SEO | — | Not started |
 | 11 — Citations / local authority | — | Not started |
