@@ -114,7 +114,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#C9A84C;--gold-l:#E8C97A;--gold-p:#F5E4B0;--gold-d:#8B6914;--maroon:#5C0A14;--maroon-d:#3A0509;--black:#08020A;--near-black:#100308;--cream:#F5EDD8;--text-warm:#E0C9A0;--text-muted:#907050;}
+:root{--gold:#C9A84C;--gold-l:#E8C97A;--gold-p:#F5E4B0;--gold-d:#8B6914;--maroon:#5C0A14;--maroon-d:#3A0509;--black:#08020A;--near-black:#100308;--cream:#F5EDD8;--text-warm:#E0C9A0;--text-muted:#A07F5F;}
 *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
 body{background:var(--near-black);color:var(--cream);font-family:"Cormorant Garamond",Georgia,serif;min-height:100vh;}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--maroon-d);}::-webkit-scrollbar-thumb{background:var(--gold-d);}
@@ -221,11 +221,11 @@ textarea.finp{resize:vertical;min-height:100px;}
         </div>
         <div class="frow"><label class="flbl">Email</label><input type="email" name="email" class="finp" placeholder="you@example.com" required></div>
         <div class="form-grid">
-          <div><label class="flbl">Event Date</label><input type="date" name="Event Date" class="finp"></div>
+          <div><label class="flbl">Event Date</label><input type="date" name="Event Date" class="finp" aria-label="Event Date"></div>
           <div><label class="flbl">Number of Guests</label><input type="number" name="Number of Guests" class="finp" placeholder="Approx. guest count"></div>
         </div>
         <div class="frow"><label class="flbl">Type of Event</label>
-          <select name="Event Type" class="finp"><option value="">Select event type</option><option>Wedding / Reception</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
+          <select name="Event Type" class="finp" aria-label="Type of Event"><option value="">Select event type</option><option>Wedding / Reception</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
         </div>
         <div class="frow"><label class="flbl">Additional Details</label><textarea name="Additional Details" class="finp" placeholder="Tell us about your event, any special requirements..."></textarea></div>
         <div style="text-align:center;margin-top:8px;">

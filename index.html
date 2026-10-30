@@ -3310,7 +3310,7 @@ html.fresh{
   --f-line:#ECECEC; --f-line-2:#E2E2E2;
   --f-red:#B8322A; --f-red-d:#962821; --f-red-soft:#FDEEEC;
   --f-saffron:#D6953A; --f-saffron-soft:#FBF2E4; --f-saffron-ink:#8A5A14;
-  --f-veg:#0F8A3C;
+  --f-veg:#0B7A34;
   --f-r-sm:8px; --f-r-md:12px; --f-r-lg:16px; --f-r-xl:20px;
   --f-shadow:0 3px 10px rgba(0,0,0,.08);
   --f-shadow-lg:0 12px 32px rgba(0,0,0,.12);
@@ -3718,6 +3718,9 @@ html.fresh .mi-add{position:absolute;right:12px;left:auto;top:112px;bottom:auto;
 html.fresh .mi-add::before{content:"ADD";font-size:.84rem;font-weight:800;letter-spacing:.04em;}
 html.fresh .mi-add::after{content:"+";position:absolute;top:1px;right:6px;font-size:.8rem;font-weight:800;}
 html.fresh .mi:hover .mi-add{background:var(--f-red-soft);color:var(--f-red);}
+html.fresh .mi.soldout{opacity:1;}
+html.fresh .mi.soldout .mi-thumb{opacity:.55;}
+html.fresh .mi.soldout .min,html.fresh .mi.soldout .mprice{color:var(--f-muted);}
 html.fresh .mi.soldout:hover{padding-left:0;}
 html.fresh .mi.soldout:hover .min{color:var(--f-text);}
 @media(max-width:560px){
@@ -4590,9 +4593,9 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
         <div class="book-controls">
           <button class="book-btn" id="bookPrev" disabled>&#8592; Prev</button>
           <div class="book-indicators" id="bookDots">
-            <button class="book-dot active"></button>
-            <button class="book-dot"></button>
-            <button class="book-dot"></button>
+            <button class="book-dot active" aria-label="Page 1"></button>
+            <button class="book-dot" aria-label="Page 2"></button>
+            <button class="book-dot" aria-label="Page 3"></button>
           </div>
           <button class="book-btn" id="bookNext">Next &#8594;</button>
         </div>
@@ -4707,12 +4710,12 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
         </div>
         <div class="frow"><label class="flbl">Email</label><input type="email" name="email" class="finp" placeholder="you@example.com" required></div>
         <div class="form-grid">
-          <div><label class="flbl">Event Date</label><input type="date" name="Event Date" class="finp"></div>
+          <div><label class="flbl">Event Date</label><input type="date" name="Event Date" class="finp" aria-label="Event Date"></div>
           <div><label class="flbl">Number of Guests</label><input type="number" name="Number of Guests" class="finp" placeholder="Approx. guest count"></div>
         </div>
         <div class="form-grid">
           <div><label class="flbl">Type of Event</label>
-            <select name="Event Type" class="finp"><option value="">Select event type</option><option>Wedding / Reception</option><option>Walima</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
+            <select name="Event Type" class="finp" aria-label="Type of Event"><option value="">Select event type</option><option>Wedding / Reception</option><option>Walima</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
           </div>
           <div><label class="flbl">City / Area</label><input type="text" name="City / Area" class="finp" placeholder="e.g. Plano, Frisco, Dallas..."></div>
         </div>
@@ -4891,7 +4894,7 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
     <div class="size-row">
       <span class="size-label">Size</span>
       <div class="size-select-wrap">
-        <select id="sizeSelect" class="size-select">
+        <select id="sizeSelect" class="size-select" aria-label="Size">
           <option value="Single">Single</option>
           <option value="Family">Family</option>
           <option value="Jumbo">Jumbo</option>
@@ -7137,7 +7140,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <!-- Header -->
   <div class="chat-header">
     <div class="chat-header-logo">
-      <img id="chatLogoImg" src="" alt="Shaahi Biryani">
+      <img id="chatLogoImg" src="" alt="Shaahi Biryani" width="220" height="232">
     </div>
     <div class="chat-header-info">
       <div class="chat-header-name">Ask Shaahi &mdash; Maya</div>

@@ -174,7 +174,7 @@
 <title>Zabihah Halal Catering Addison, TX | Shaahi Biryani</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#C9A84C;--gold-l:#E8C97A;--gold-p:#F5E4B0;--gold-d:#8B6914;--maroon:#5C0A14;--maroon-d:#3A0509;--black:#08020A;--near-black:#100308;--cream:#F5EDD8;--text-warm:#E0C9A0;--text-muted:#907050;}
+:root{--gold:#C9A84C;--gold-l:#E8C97A;--gold-p:#F5E4B0;--gold-d:#8B6914;--maroon:#5C0A14;--maroon-d:#3A0509;--black:#08020A;--near-black:#100308;--cream:#F5EDD8;--text-warm:#E0C9A0;--text-muted:#A07F5F;}
 *{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
 body{background:var(--near-black);color:var(--cream);font-family:"Cormorant Garamond",Georgia,serif;min-height:100vh;}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--maroon-d);}::-webkit-scrollbar-thumb{background:var(--gold-d);}
@@ -222,7 +222,7 @@ h2.s-title{font-family:"Cinzel",serif;font-size:clamp(1.4rem,2.6vw,1.9rem);color
 textarea.finp{resize:vertical;min-height:100px;}
 .frow{margin-bottom:16px;}
 footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding:36px 24px;text-align:center;}
-.footer-copy{font-size:.72rem;font-style:italic;color:rgba(224,201,160,.5);line-height:1.8;}
+.footer-copy{font-size:.72rem;font-style:italic;color:rgba(224,201,160,.66);line-height:1.8;}
 .footer-copy a{color:var(--gold-l);text-decoration:none;}
 #quote{scroll-margin-top:90px;}
 .hero-cta{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;margin:28px auto 0;max-width:620px;}
@@ -260,6 +260,8 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
 <section>
   <div class="wrap">
     <p class="lead">A short drive southwest via the Dallas North Tollway brings <strong>Shaahi Biryani</strong> straight to Addison. We routinely cater weddings, walimas, engagements and corporate events at hotels, conference venues and private residences throughout Addison, including the Addison Circle district. Every dish is <strong>100% Zabihah Halal</strong>, Hafsah Certified and HMS Certified — and made fresh the morning of your event.</p>
+
+    <figure style="margin:28px auto 4px;max-width:640px;"><img src="assets/dishes/canon/regular-platter.webp" width="800" height="640" alt="A Shaahi grill platter at Shaahi Biryani, a 100% Zabihah Halal Hyderabadi restaurant in Plano, TX" loading="lazy" decoding="async" style="width:100%;height:auto;border-radius:12px;display:block;"><figcaption style="color:var(--text-warm);font-size:.95rem;line-height:1.6;text-align:center;margin-top:10px;">A Shaahi grill platter, made fresh in our Plano kitchen — about 19 minutes by car from Addison.</figcaption></figure>
 
     <h2 class="s-title">Why Addison Hosts Choose Shaahi Biryani</h2>
     <div class="feat-grid">
@@ -314,11 +316,11 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
         </div>
         <div class="frow"><label class="flbl">Email</label><input type="email" name="email" class="finp" placeholder="you@example.com" required></div>
         <div class="form-grid">
-          <div><label class="flbl">Event Date</label><input type="date" name="Event Date" class="finp"></div>
+          <div><label class="flbl">Event Date</label><input type="date" name="Event Date" class="finp" aria-label="Event Date"></div>
           <div><label class="flbl">Number of Guests</label><input type="number" name="Number of Guests" class="finp" placeholder="Approx. guest count"></div>
         </div>
         <div class="frow"><label class="flbl">Type of Event</label>
-          <select name="Event Type" class="finp"><option value="">Select event type</option><option>Wedding / Reception</option><option>Walima</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
+          <select name="Event Type" class="finp" aria-label="Type of Event"><option value="">Select event type</option><option>Wedding / Reception</option><option>Walima</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
         </div>
         <div class="frow"><label class="flbl">Menu Preferences / Additional Details</label><textarea name="Additional Details" class="finp" placeholder="Dietary needs, preferred dishes, venue, anything else we should know..."></textarea></div>
         <div style="text-align:center;margin-top:8px;">
