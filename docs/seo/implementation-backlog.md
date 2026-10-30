@@ -48,7 +48,7 @@ session. What remains below is real but lower-urgency.
 | 12 | GBP's "No private dining room" attribute may mislead given the real 132-guest hall | Phase 3 | Review and correct the attribute in GBP | Low | Low-medium | **Not started, needs Osman's GBP access** |
 | 13 | Apple Maps claims "Outdoor Dining" as an attribute — not confirmed true anywhere else | Phase 4 | Confirm with Osman; remove via ABC if not accurate | Low | Low — but an inaccurate attribute is a real-info-accuracy issue regardless of size | **Open question, unanswered** |
 | 14 | zabihah.com listing has no phone number, only a sales email | Phases 8, 11 | Add phone number via whatever access manages that listing | Low | Low-medium — this directory's whole audience is Shaahi's target customer | **Not started** |
-| 15 | robots.txt currently allows all AI crawlers equally (citation bots and training-only bots alike) | Phase 7 | Decide: keep fully open (recommended) or selectively block training-only bots | Low (once decided) | Medium — affects both AI-citation visibility and training-data consent | **Business decision needed, not a bug** |
+| 15 | robots.txt currently allows all AI crawlers equally (citation bots and training-only bots alike) | Phase 7 | Decided (2026-10-30): keep the current fully-open policy — no code change needed, it already achieves this. Citation-bot upside (confirmed working in Phase 7) outweighs the training-data concern for restaurant marketing copy. | Low | Medium — affects both AI-citation visibility and training-data consent | **Decided — no change** |
 
 ---
 

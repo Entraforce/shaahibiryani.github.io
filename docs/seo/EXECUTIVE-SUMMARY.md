@@ -60,6 +60,13 @@ implementation:
 - **`venues.html`'s list of 11 named venues is confirmed real** by Osman
   (2026-10-30) — unlike the fabricated venue names already removed from
   the catering pages in Phase 5, this list required no changes.
+- **robots.txt AI-crawler policy decided (2026-10-30): keep fully open.**
+  No code change needed — the current wildcard already allows every AI
+  crawler, and Phase 7 already confirmed real payoff from that openness
+  (Perplexity, Bing AI Mode, and Google AI Overview all cite Shaahi
+  accurately today). The content at stake is restaurant marketing copy,
+  not proprietary work, so the training-data trade-off that matters for
+  publishers doesn't really apply here.
 - **A real competitive moat exists**: of 4 real competitors deep-audited
   (Bawarchi Biryanis, Biryaniify, Just Punjabi Foods, Dil Se Desi),
   none mention halal certification and none have visible structured
@@ -113,8 +120,6 @@ Full detail and effort estimates are in Phase 15's backlog
   core fields — Name, Phone, Email, Number of Guests, Additional
   Details — still have no `for`/`id` association anywhere checked.
   Treat this as unresolved, not done.
-- **robots.txt AI-crawler policy** — a business decision (keep fully
-  open vs. selectively block training-only bots), not a bug.
 
 ## Blocked tasks
 
@@ -150,7 +155,6 @@ decision:
   removal (both touch shared, sitewide CSS).
 - Converting the hero carousel to `<img>` elements.
 - Going ahead with the form-label fix across ~21 files.
-- Deciding the robots.txt AI-crawler policy direction.
 - Confirming whether Apple Maps' "Outdoor Dining" attribute is accurate.
 
 ## Items that could not be verified
