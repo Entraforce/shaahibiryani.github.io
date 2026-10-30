@@ -20,7 +20,7 @@ docs in this directory for details):
 | 7 — AIO (AI search) | `ai-search-visibility.md` | ✅ Done (2026-10-29), merged to `main`. Live-tested on Perplexity/Bing AI Mode/Google AI Overview: 4 of 5 queries cite Shaahi accurately with zero factual errors; "Indian wedding catering in Plano" absent on all 3, confirming Phase 5's gap. robots.txt crawler policy (currently wide open to all AI bots) flagged as a business decision for Osman, not changed. |
 | 8 — GEO (generative engine) | `geo-implementation.md` | ✅ Done (2026-10-29), merged to `main`. llms.txt already existed and is accurate (kept, not expanded — no proven AI-citation benefit per current research). Original photography confirmed, no stock-image risk. One likely third-party hours-listing error surfaced, not yet pinpointed — flagged to Phase 11. |
 | 9 — Content authority / topical clusters | (content roadmap) | Not started |
-| 10 — Image/video SEO | — | Not started |
+| 10 — Image/video SEO | `image-video-seo.md` | ✅ Done (2026-10-30), on branch `seo/phase10-image-video`, awaiting review. Image pipeline already well-engineered (responsive WebP, lazy loading, good alt text) — no re-work proposed. One real gap: hero carousel uses CSS background-image (no alt text, invisible to Google Images) — proposed for approval, not changed. No video content exists sitewide (N/A). |
 | 11 — Citations / local authority | — | Not started |
 | 12 — Conversion rate optimization | — | Not started |
 | 13 — Analytics / search performance | `performance-measurement.md` | Not started |
