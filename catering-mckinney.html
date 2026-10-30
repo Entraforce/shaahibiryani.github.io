@@ -311,18 +311,18 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
         <input type="hidden" name="City / Area" value="McKinney">
         <input type="text" name="_honey" style="display:none">
         <div class="form-grid">
-          <div><label class="flbl">Your Name</label><input type="text" name="Name" class="finp" placeholder="Full name" required></div>
-          <div><label class="flbl">Phone Number</label><input type="tel" name="Phone" class="finp" placeholder="(xxx) xxx-xxxx" required></div>
+          <div><label class="flbl" for="cf-name">Your Name</label><input type="text" id="cf-name" name="Name" class="finp" placeholder="Full name" required></div>
+          <div><label class="flbl" for="cf-phone">Phone Number</label><input type="tel" id="cf-phone" name="Phone" class="finp" placeholder="(xxx) xxx-xxxx" required></div>
         </div>
-        <div class="frow"><label class="flbl">Email</label><input type="email" name="email" class="finp" placeholder="you@example.com" required></div>
+        <div class="frow"><label class="flbl" for="cf-email">Email</label><input type="email" id="cf-email" name="email" class="finp" placeholder="you@example.com" required></div>
         <div class="form-grid">
-          <div><label class="flbl">Event Date</label><input type="date" name="Event Date" class="finp" aria-label="Event Date"></div>
-          <div><label class="flbl">Number of Guests</label><input type="number" name="Number of Guests" class="finp" placeholder="Approx. guest count"></div>
+          <div><label class="flbl" for="cf-date">Event Date</label><input type="date" id="cf-date" name="Event Date" class="finp"></div>
+          <div><label class="flbl" for="cf-guests">Number of Guests</label><input type="number" id="cf-guests" name="Number of Guests" class="finp" placeholder="Approx. guest count"></div>
         </div>
-        <div class="frow"><label class="flbl">Type of Event</label>
-          <select name="Event Type" class="finp" aria-label="Type of Event"><option value="">Select event type</option><option>Wedding / Reception</option><option>Walima</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
+        <div class="frow"><label class="flbl" for="cf-event-type">Type of Event</label>
+          <select id="cf-event-type" name="Event Type" class="finp"><option value="">Select event type</option><option>Wedding / Reception</option><option>Walima</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
         </div>
-        <div class="frow"><label class="flbl">Menu Preferences / Additional Details</label><textarea name="Additional Details" class="finp" placeholder="Dietary needs, preferred dishes, venue, anything else we should know..."></textarea></div>
+        <div class="frow"><label class="flbl" for="cf-details">Menu Preferences / Additional Details</label><textarea id="cf-details" name="Additional Details" class="finp" placeholder="Dietary needs, preferred dishes, venue, anything else we should know..."></textarea></div>
         <div style="text-align:center;margin-top:8px;">
           <button type="submit" class="btn-gold">Request Quote</button>
         </div>
