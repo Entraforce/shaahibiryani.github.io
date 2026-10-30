@@ -23,7 +23,7 @@ docs in this directory for details):
 | 10 — Image/video SEO | — | Not started |
 | 11 — Citations / local authority | — | Not started |
 | 12 — Conversion rate optimization | — | Not started |
-| 13 — Analytics / search performance | `performance-measurement.md` | Not started |
+| 13 — Analytics / search performance | `performance-measurement.md` | ✅ Done (2026-10-30), on branch `seo/phase13-analytics`, awaiting review. GA4 + Google Ads tracking confirmed installed with zero duplicate tags. GSC verified; Bing Webmaster Tools not verified (real, low-effort gap). No account access this session — dashboard built as a sourced template, not populated with invented numbers. |
 | 14 — Competitor analysis | `competitor-analysis.md` | Not started |
 | 15 — Implementation priorities | `implementation-backlog.md` | Not started |
 | 16 — Implementation & testing | — | Ongoing as each phase's fixes get approved |
