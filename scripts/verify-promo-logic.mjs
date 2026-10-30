@@ -17,7 +17,7 @@ const m = /\/\* promo-logic:start[^*]*\*\/([\s\S]*?)\/\* promo-logic:end \*\//.e
 assert.ok(m, 'promo-logic markers not found in index.html');
 const ctx = vm.createContext({ Intl, Date, Math });
 vm.runInContext(m[1], ctx);
-const { centralDate, bogoActive, tuesdayActive, riceActive, dkcActive, achActive, onScreen, paidU10Landing } = ctx;
+const { centralDate, bogoActive, tuesdayActive, riceActive, dkcActive, achActive, pakActive, onScreen, paidU10Landing } = ctx;
 
 let n = 0; const check = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
 const at = (iso) => Date.parse(iso);
@@ -74,6 +74,18 @@ check('Achari Chicken BOGO on all of Wed Oct 28 Central', () => {
 });
 check('Achari Chicken BOGO off from Thu Oct 29 12:00 AM Central, and every day after', () => {
   for (const iso of ['2026-10-29T05:00:00Z', '2026-10-29T17:00:00Z', '2026-11-04T17:00:00Z', '2027-10-28T17:00:00Z']) assert.equal(achActive(at(iso)), false, iso);
+});
+check('Chicken Pakora BOGO off before Fri Oct 30 Central', () => {
+  for (const iso of ['2026-10-30T04:59:59Z', '2026-10-29T17:00:00Z', '2026-10-28T17:00:00Z']) assert.equal(pakActive(at(iso)), false, iso);
+});
+check('Chicken Pakora BOGO on all of Fri Oct 30 Central', () => {
+  for (const iso of ['2026-10-30T05:00:00Z', '2026-10-30T16:30:00Z', '2026-10-31T03:59:00Z', '2026-10-31T04:59:59Z']) assert.equal(pakActive(at(iso)), true, iso);
+});
+check('Chicken Pakora BOGO off from Sat Oct 31 12:00 AM Central, and every day after', () => {
+  for (const iso of ['2026-10-31T05:00:00Z', '2026-10-31T17:00:00Z', '2026-11-06T18:00:00Z', '2027-10-30T17:00:00Z']) assert.equal(pakActive(at(iso)), false, iso);
+});
+check('Chicken Pakora BOGO never overlaps the other flyers', () => {
+  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-11-07T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(pakActive(t) && (bogoActive(t) || tuesdayActive(t) || riceActive(t) || dkcActive(t) || achActive(t)), false, new Date(t).toISOString());
 });
 check('Achari Chicken BOGO never overlaps the other flyers', () => {
   for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-11-05T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(achActive(t) && (bogoActive(t) || tuesdayActive(t) || riceActive(t) || dkcActive(t)), false, new Date(t).toISOString());
