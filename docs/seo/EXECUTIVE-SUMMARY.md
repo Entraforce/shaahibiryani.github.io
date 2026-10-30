@@ -123,13 +123,13 @@ Full detail and effort estimates are in Phase 15's backlog
   forms on `index.html`. This corrects an earlier concurrent session's
   commit message, which claimed this was already done — direct
   verification at the time found it wasn't.
-- **New finding while fixing the above**: the homepage's "Send a
-  Message" contact form isn't actually wired up — no `<form>` tag, no
-  `name` attributes, and the submit button just shows a JS `alert()`.
-  A customer filling it out believes their message went through;
-  nothing is ever received. Labels are now fixed for accessibility, but
-  the form itself still needs to be connected to a real destination —
-  not done in this pass.
+- **The homepage's "Send a Message" contact form is fixed** (2026-10-30,
+  commit `2cb4436`) — it previously wasn't wired up at all (no real
+  `<form>`, no `name` attributes, submit button just showed a JS
+  `alert()`). Now wired to `formsubmit.co` the same proven way every
+  catering form on the site already works, with its own distinct
+  `?contact=thanks` redirect so it can't cross-trigger the catering
+  form's thank-you state.
 
 ## Blocked tasks
 
@@ -163,8 +163,6 @@ decision:
 - Implementing the font-loading fix and the newly found dead-CSS
   removal (both touch shared, sitewide CSS).
 - Converting the hero carousel to `<img>` elements.
-- Wiring up the homepage's broken "Send a Message" contact form (found
-  2026-10-30 — currently goes nowhere).
 - Confirming whether Apple Maps' "Outdoor Dining" attribute is accurate.
 
 ## Items that could not be verified
