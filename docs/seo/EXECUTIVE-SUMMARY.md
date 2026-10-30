@@ -116,13 +116,20 @@ Full detail and effort estimates are in Phase 15's backlog
   hardcodes current menu prices the same way `dine-in.html` already
   does — neither auto-syncs with `/kadmin`, so both need a manual price
   update if Family/Jumbo Pack pricing changes.
-- **Form label accessibility fix is still open** — important
-  correction: the concurrent audit pass's commit message claimed
-  catering-form fields were "labelled," but direct verification this
-  session (grepping `catering-frisco.html` and `index.html`) shows the
-  core fields — Name, Phone, Email, Number of Guests, Additional
-  Details — still have no `for`/`id` association anywhere checked.
-  Treat this as unresolved, not done.
+- **Form label accessibility fix is done** (2026-10-30, commit
+  `c906442`) — added matching `id`/`for` pairs to Name, Phone, Email,
+  Event Date, Number of Guests, Type of Event, and Additional Details
+  across all 19 catering city pages, `wedding-catering.html`, and both
+  forms on `index.html`. This corrects an earlier concurrent session's
+  commit message, which claimed this was already done — direct
+  verification at the time found it wasn't.
+- **New finding while fixing the above**: the homepage's "Send a
+  Message" contact form isn't actually wired up — no `<form>` tag, no
+  `name` attributes, and the submit button just shows a JS `alert()`.
+  A customer filling it out believes their message went through;
+  nothing is ever received. Labels are now fixed for accessibility, but
+  the form itself still needs to be connected to a real destination —
+  not done in this pass.
 
 ## Blocked tasks
 
@@ -156,7 +163,8 @@ decision:
 - Implementing the font-loading fix and the newly found dead-CSS
   removal (both touch shared, sitewide CSS).
 - Converting the hero carousel to `<img>` elements.
-- Going ahead with the form-label fix across ~21 files.
+- Wiring up the homepage's broken "Send a Message" contact form (found
+  2026-10-30 — currently goes nowhere).
 - Confirming whether Apple Maps' "Outdoor Dining" attribute is accurate.
 
 ## Items that could not be verified
