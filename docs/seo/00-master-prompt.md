@@ -25,7 +25,7 @@ docs in this directory for details):
 | 12 — Conversion rate optimization | — | Not started |
 | 13 — Analytics / search performance | `performance-measurement.md` | Not started |
 | 14 — Competitor analysis | `competitor-analysis.md` | Not started |
-| 15 — Implementation priorities | `implementation-backlog.md` | Not started |
+| 15 — Implementation priorities | `implementation-backlog.md` | ✅ Done (2026-10-30), on branch `seo/phase15-implementation-priorities`, awaiting review. Consolidates every open item from Phases 0-14 into P0-P3. Headline: zero open P0 items — everything critical found this project was fixed as it was found. 23 items remain across P1-P3, plus the Google Ads billing issue flagged outside SEO scope. |
 | 16 — Implementation & testing | — | Ongoing as each phase's fixes get approved |
 | 17 — Deliverables index | `EXECUTIVE-SUMMARY.md` | Not started |
 | 18 — 30/60/90 day roadmap | `30-60-90-day-roadmap.md` | Not started |
