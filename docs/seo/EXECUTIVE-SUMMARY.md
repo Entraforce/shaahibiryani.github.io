@@ -57,6 +57,9 @@ implementation:
   lazy loading, genuinely descriptive alt text (Phase 10).
 - City-page network (37 pages) is complete with zero keyword
   cannibalization (Phase 5).
+- **`venues.html`'s list of 11 named venues is confirmed real** by Osman
+  (2026-10-30) — unlike the fabricated venue names already removed from
+  the catering pages in Phase 5, this list required no changes.
 - **A real competitive moat exists**: of 4 real competitors deep-audited
   (Bawarchi Biryanis, Biryaniify, Just Punjabi Foods, Dil Se Desi),
   none mention halal certification and none have visible structured
@@ -149,8 +152,6 @@ decision:
 - Going ahead with the form-label fix across ~21 files.
 - Deciding the robots.txt AI-crawler policy direction.
 - Confirming whether Apple Maps' "Outdoor Dining" attribute is accurate.
-- Confirming whether `venues.html`'s list of 11 named venues is accurate
-  (separate from the already-resolved fabricated-venue fix elsewhere).
 
 ## Items that could not be verified
 
