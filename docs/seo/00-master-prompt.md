@@ -21,7 +21,7 @@ docs in this directory for details):
 | 8 — GEO (generative engine) | `geo-implementation.md` | ✅ Done (2026-10-29), merged to `main`. llms.txt already existed and is accurate (kept, not expanded — no proven AI-citation benefit per current research). Original photography confirmed, no stock-image risk. One likely third-party hours-listing error surfaced, not yet pinpointed — flagged to Phase 11. |
 | 9 — Content authority / topical clusters | (content roadmap) | Not started |
 | 10 — Image/video SEO | — | Not started |
-| 11 — Citations / local authority | — | Not started |
+| 11 — Citations / local authority | `citations-audit.md` | ✅ Done (2026-10-30), on branch `seo/phase11-citations`, awaiting review. Resolved Phase 8's wrong-hours mystery: likely Postmates (caveat — listing URL is dead, may be stale index data, needs a live human check). Yelp/Facebook/RestaurantGuru/Roadtrippers/order.online all accurate. zabihah.com missing a phone number (gap, not wrong). Bing Places existence unconfirmed. |
 | 12 — Conversion rate optimization | — | Not started |
 | 13 — Analytics / search performance | `performance-measurement.md` | Not started |
 | 14 — Competitor analysis | `competitor-analysis.md` | Not started |
