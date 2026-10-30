@@ -26,8 +26,8 @@ docs in this directory for details):
 | 13 — Analytics / search performance | `performance-measurement.md` | Not started |
 | 14 — Competitor analysis | `competitor-analysis.md` | Not started |
 | 15 — Implementation priorities | `implementation-backlog.md` | Not started |
-| 16 — Implementation & testing | — | Ongoing as each phase's fixes get approved |
-| 17 — Deliverables index | `EXECUTIVE-SUMMARY.md` | Not started |
+| 16 — Implementation & testing | — | Not a separate audit — each phase's code changes were implemented and validated inline as they were found (see `validation-results.md`), not deferred to a batch step. |
+| 17 — Deliverables index | `EXECUTIVE-SUMMARY.md` | ✅ Done (2026-10-30), on branch `seo/phase17-deliverables`, awaiting review. Adds `change-log.md`, `validation-results.md`, and `EXECUTIVE-SUMMARY.md`. Incorporates and verifies a separate concurrent audit pass Osman ran — confirmed its Search Console/accessibility findings, but corrected one claim (form-label fix) that direct verification showed wasn't actually done. |
 | 18 — 30/60/90 day roadmap | `30-60-90-day-roadmap.md` | Not started |
 
 ---
