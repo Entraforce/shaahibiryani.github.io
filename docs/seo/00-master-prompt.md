@@ -22,7 +22,7 @@ docs in this directory for details):
 | 9 — Content authority / topical clusters | (content roadmap) | Not started |
 | 10 — Image/video SEO | — | Not started |
 | 11 — Citations / local authority | — | Not started |
-| 12 — Conversion rate optimization | — | Not started |
+| 12 — Conversion rate optimization | `conversion-optimization.md` | ✅ Done (2026-10-30), on branch `seo/phase12-cro`, awaiting review. Call-tracking, catering-form, and purchase conversion tracking already reliable. Fixed directly: added GA4 event tracking for Order button clicks, Directions clicks, and menu-section views (none were tracked before). Proposed, not fixed: form labels aren't programmatically linked to inputs across ~21 forms sitewide. |
 | 13 — Analytics / search performance | `performance-measurement.md` | Not started |
 | 14 — Competitor analysis | `competitor-analysis.md` | Not started |
 | 15 — Implementation priorities | `implementation-backlog.md` | Not started |
