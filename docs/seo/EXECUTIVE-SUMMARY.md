@@ -100,15 +100,22 @@ Full detail and effort estimates are in Phase 15's backlog
   re-running Phase 7's AI-visibility test once it's indexed to confirm
   the gap actually closed — building the page doesn't guarantee that on
   its own.
-- **Font-loading CLS fix** (P1) — proposed since Phase 1, still
-  unapproved.
-- **A newly surfaced, real technical-debt item from the concurrent
-  pass**: dead "Midnight theme" CSS (~125KB, two theme layers loaded
-  simultaneously) is identified as the actual root cause of ~62% of
-  mobile LCP delay — explicitly deferred by that session as "a separate
-  project." This is a real, significant finding worth prioritizing
-  alongside the font-loading fix, not yet in Phase 15's backlog since
-  it surfaced after that phase was written.
+- **Font-loading CLS fix is done** (2026-10-30, commit `af99c06`) —
+  switched `font-display: swap` to `optional` and added preconnect/
+  preload across all 47 "Midnight theme" pages. While doing this, found
+  that `index.html`'s Manrope font already had a more thorough fix
+  (a matched-metrics fallback font) implemented separately, tied to an
+  in-progress visual redesign (`<html class="fresh">`, already live on
+  the homepage only) — the old dark/gold "Midnight" look is kept
+  dormant in the same stylesheet purely as a one-class rollback switch.
+  Worth knowing this redesign exists and is partially live when
+  deciding what to do with the dead-CSS item below.
+- **Dead "Midnight theme" CSS removal** (P1, from the concurrent audit
+  pass) — still open. ~125KB of CSS for the old theme ships on every
+  page even though the homepage no longer uses it, identified as the
+  actual root cause of ~62% of mobile LCP delay. That session
+  deliberately deferred this as "a separate project"; now that the
+  font-loading CLS fix is done, this is the next real performance item.
 - **Hero carousel → `<img>` conversion** (P2) — still proposed, full spec
   in Phase 10's doc. **Both the Hyderabadi dum biryani FAQ and the
   Family Meal Packs page have since been added** (2026-10-30, commits
@@ -160,8 +167,8 @@ Full detail and effort estimates are in Phase 15's backlog
 These aren't blocked by access — they're proposals waiting on Osman's
 decision:
 
-- Implementing the font-loading fix and the newly found dead-CSS
-  removal (both touch shared, sitewide CSS).
+- The dead Midnight-theme CSS removal (font-loading fix is done; this
+  is the remaining sitewide-CSS item).
 - Converting the hero carousel to `<img>` elements.
 - Confirming whether Apple Maps' "Outdoor Dining" attribute is accurate.
 
