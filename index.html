@@ -190,7 +190,7 @@
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "4.4",
-    "reviewCount": "558"
+    "reviewCount": "559"
   },
   "review": [
     {
@@ -7600,6 +7600,15 @@ document.addEventListener('click', function(e){
     <p class="pm-note">In-store offer &middot; not applied to online orders</p>
   </div>
 </div>
+<div class="pm-ov pm-fly" id="pmPak" hidden>
+  <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmPakT">
+    <button type="button" class="pm-x" data-pm-close aria-label="Close Chicken Pakora BOGO">&#10005;</button>
+    <h2 class="sr-only" id="pmPakT">Friday Special, Chicken Pakora BOGO: buy one 16 oz box for $7.99, get one free, takeout only</h2>
+    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Friday Special, Friday, October 30. Buy 1, get 1 free: Chicken Pakora, 16 oz box, 2 boxes per BOGO. Buy one for $7.99, get one free. Serving the Dallas–Fort Worth area. October 30, 2026, 11:30 AM to 11:00 PM, while supplies last. Ask for the Chicken Pakora BOGO. Takeout only. Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300.">
+    <button type="button" class="pm-act" data-pm-go="contact">View location &amp; hours <span aria-hidden="true">&rarr;</span></button>
+    <p class="pm-note">Takeout only &middot; 16 oz box &middot; ask for the Chicken Pakora BOGO &middot; not applied to online orders</p>
+  </div>
+</div>
 <div class="pm-ov pm-fly" id="pmAch" hidden>
   <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmAchT">
     <button type="button" class="pm-x" data-pm-close aria-label="Close Achari Chicken BOGO">&#10005;</button>
@@ -7651,7 +7660,7 @@ document.addEventListener('click', function(e){
 <script>
 (function(){
   'use strict';
-  var K_ACH='shaahiPromoAchariChickenBogoShown', K_DKC='shaahiPromoDumKaChickenBogoShown', K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_RICE='shaahiPromoRiceDealShown', K_U10='shaahiPromoUnder10LastShownDate';
+  var K_PAK='shaahiPromoChickenPakoraBogoShown', K_ACH='shaahiPromoAchariChickenBogoShown', K_DKC='shaahiPromoDumKaChickenBogoShown', K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_RICE='shaahiPromoRiceDealShown', K_U10='shaahiPromoUnder10LastShownDate';
 
   /* promo-logic:start — pure rules, run as-is by scripts/verify-promo-logic.mjs */
   var TZ='America/Chicago', BOGO_FROM='2026-10-23', TUE_FROM='2026-10-20', TUE_TO='2026-10-20';
@@ -7663,6 +7672,8 @@ document.addEventListener('click', function(e){
   var DKC_FROM='2026-10-27', DKC_END_MS=Date.UTC(2026,9,28,5,0,0);
   // Achari Chicken BOGO: Wed Oct 28 2026 (Central) until Thu Oct 29 12:00 AM CDT (= 05:00Z Oct 29).
   var ACH_FROM='2026-10-28', ACH_END_MS=Date.UTC(2026,9,29,5,0,0);
+  // Chicken Pakora BOGO: Fri Oct 30 2026 (Central) until Sat Oct 31 12:00 AM CDT (= 05:00Z Oct 31; DST ends Nov 1).
+  var PAK_FROM='2026-10-30', PAK_END_MS=Date.UTC(2026,9,31,5,0,0);
   // Calendar date in Central Time, YYYY-MM-DD.
   function centralDate(ms){
     var p={}; new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'})
@@ -7674,6 +7685,7 @@ document.addEventListener('click', function(e){
   function riceActive(ms){ return centralDate(ms)>=RICE_FROM && ms<RICE_END_MS; }
   function dkcActive(ms){ return centralDate(ms)>=DKC_FROM && ms<DKC_END_MS; }
   function achActive(ms){ return centralDate(ms)>=ACH_FROM && ms<ACH_END_MS; }
+  function pakActive(ms){ return centralDate(ms)>=PAK_FROM && ms<PAK_END_MS; }
   // Is a box really showing? W and H are the VISIBLE page (documentElement
   // clientWidth/Height), never the window: with a classic scrollbar the window is
   // a few px wider, and a closed drawer parked just off-screen sits under that
@@ -7695,7 +7707,7 @@ document.addEventListener('click', function(e){
   function now(){ var t=window.__shaahiPromoNow; return typeof t==='number'?t:Date.now(); }
   function get(store,k){ try{ return window[store].getItem(k); }catch(e){ return null; } }
   function set(store,k,v){ try{ window[store].setItem(k,v); }catch(e){} }
-  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,dkcActive:dkcActive,achActive:achActive,onScreen:onScreen,paidU10Landing:paidU10Landing,
+  window.shaahiPromo={centralDate:centralDate,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,dkcActive:dkcActive,achActive:achActive,pakActive:pakActive,onScreen:onScreen,paidU10Landing:paidU10Landing,
     under10Due:function(ms){ return get('localStorage',K_U10)!==centralDate(ms); }};
 
   var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -7816,6 +7828,8 @@ document.addEventListener('click', function(e){
   // ── Dated flyers ──
   // In priority order; at most one is shown per page load, and only on its days.
   var FLYERS=[
+    { id:'pmPak', key:K_PAK, active:pakActive, src:'assets/promo/chicken-pakora-bogo-oct30-',
+      view:'promo_chicken_pakora_bogo_view', closed:'promo_chicken_pakora_bogo_close' },
     { id:'pmAch', key:K_ACH, active:achActive, src:'assets/promo/achari-bogo-oct28-',
       view:'promo_achari_bogo_view', closed:'promo_achari_bogo_close' },
     { id:'pmDkc', key:K_DKC, active:dkcActive, src:'assets/promo/dkc-bogo-oct27-',
