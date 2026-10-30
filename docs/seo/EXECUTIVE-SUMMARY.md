@@ -1,0 +1,177 @@
+# Executive Summary — Enterprise Search Visibility Project
+
+Date: 2026-10-30
+Covers Phases 0–15 of `docs/seo/00-master-prompt.md`. This is the
+orienting document — read this first, then follow into individual
+phase docs for full evidence. Organized by what kind of action each
+item needs, per the master prompt's own structure.
+
+**One important correction this document makes**: a separate,
+independent audit Osman ran in parallel this same week (documented in
+`docs/seo/audit-fixes-2026-10-29.md`) produced real, valuable data this
+project didn't otherwise have access to — including an actual Google
+Search Console baseline. That data is incorporated below, with direct
+verification of its claims where this project could check them (one
+discrepancy was found and corrected, not glossed over — see
+"Recommended changes").
+
+---
+
+## Completed changes
+
+Everything in this section is already live on `main`, verified after
+implementation:
+
+- **Content-integrity fixes**: removed fabricated venue-relationship
+  claims from all 19 catering pages (Phase 5); fixed a stale
+  hardcoded rating in the homepage FAQ and hardened the refresh
+  automation so it can't drift again (Phase 6); added missing visible
+  FAQ content to `dine-in.html` (Phase 6).
+- **Foundational fixes from Phase 0**: broken links corrected, a real
+  404 page, daily review-rating automation, `robots.txt` crawl hygiene,
+  localized meta descriptions, internal-link rebalancing.
+- **Structured data completeness** (Phase 2): filled missing
+  `logo`/`hasMap`/`servesCuisine`/`priceRange`/`image` fields across
+  the homepage and all 37 city-page stubs; fixed real schema drift on
+  `reserve.html`.
+- **New conversion tracking** (Phase 12): Order button clicks,
+  Directions clicks, and menu-section views are now measured via GA4
+  events — none were tracked before.
+- **From the concurrent audit pass**: corrected drive-time/mileage
+  claims on all 37 city pages against real driving routes; added one
+  authentic owner photo per city page; shortened 18 `biryani-*` meta
+  descriptions to ≤160 characters; real accessibility fixes (homepage
+  Lighthouse accessibility score 84→97, color-contrast corrections,
+  sold-out row fading fixed).
+
+## Verified findings (no action needed)
+
+- **Zero open P0 (critical) issues** — see Phase 15's backlog. Every
+  critical issue found this project was fixed as it was found.
+- **Zero duplicate analytics tags** — exactly one GA4 ID and one Google
+  Ads ID exist anywhere sitewide (Phase 13).
+- Call-tracking, catering-form submissions, and purchase conversions
+  are all reliably tracked with real confirmation, not guesses (Phase
+  12).
+- The image pipeline is already well-engineered — responsive WebP,
+  lazy loading, genuinely descriptive alt text (Phase 10).
+- City-page network (37 pages) is complete with zero keyword
+  cannibalization (Phase 5).
+- **A real competitive moat exists**: of 4 real competitors deep-audited
+  (Bawarchi Biryanis, Biryaniify, Just Punjabi Foods, Dil Se Desi),
+  none mention halal certification and none have visible structured
+  data or a city-page network (Phase 14).
+- Homepage testimonial quotes are confirmed by Osman as real customer
+  quotes — clarified by the concurrent audit pass's cross-check against
+  all 558 Google reviews that they are not verbatim Google review text
+  specifically (likely sourced elsewhere, e.g. comment cards or direct
+  feedback). Not a fabrication risk; just a clarified provenance detail.
+- `llms.txt` already existed and is accurate (Phase 8).
+- No video content exists sitewide — the video-SEO checklist is simply
+  not applicable (Phase 10).
+- **Real Search Console baseline now exists** (from the concurrent
+  pass, URL-prefix property, trailing 3 months to 2026-10-27): 622
+  clicks, 69.3K impressions, 0.9% CTR, average position 7.1. Homepage
+  takes 566 of 622 clicks; city pages get impressions (55–621 each)
+  but mostly 0–4 clicks. 48 pages indexed; non-indexed pages are
+  expected redirects/duplicates, not errors. **Core Web Vitals field
+  data: "not enough usage data"** — meaning Phase 1's CLS/LCP findings
+  remain lab-only (Lighthouse), not yet confirmed by real users, and
+  speed is not currently a ranking input for this site either way.
+
+## Recommended changes (proposed, awaiting a decision)
+
+Full detail and effort estimates are in Phase 15's backlog
+(`implementation-backlog.md`) — summarized here by what's needed:
+
+- **Wedding & Event Catering hub page** (P1) — the single
+  best-evidenced gap in the whole project, confirmed missing across
+  plain search, Perplexity, Bing AI Mode, and Google AI Overview.
+- **Font-loading CLS fix** (P1) — proposed since Phase 1, still
+  unapproved.
+- **A newly surfaced, real technical-debt item from the concurrent
+  pass**: dead "Midnight theme" CSS (~125KB, two theme layers loaded
+  simultaneously) is identified as the actual root cause of ~62% of
+  mobile LCP delay — explicitly deferred by that session as "a separate
+  project." This is a real, significant finding worth prioritizing
+  alongside the font-loading fix, not yet in Phase 15's backlog since
+  it surfaced after that phase was written.
+- **Family Meal Packs page** (P2), **Hyderabadi dum biryani FAQ** (P2),
+  **hero carousel → `<img>` conversion** (P2) — all proposed with full
+  specs in their originating phase docs.
+- **Form label accessibility fix is still open** — important
+  correction: the concurrent audit pass's commit message claimed
+  catering-form fields were "labelled," but direct verification this
+  session (grepping `catering-frisco.html` and `index.html`) shows the
+  core fields — Name, Phone, Email, Number of Guests, Additional
+  Details — still have no `for`/`id` association anywhere checked.
+  Treat this as unresolved, not done.
+- **robots.txt AI-crawler policy** — a business decision (keep fully
+  open vs. selectively block training-only bots), not a bug.
+
+## Blocked tasks
+
+- Any Apple Business Connect change — no ABC login has existed at any
+  point in this project.
+- Google Search Console's domain-level property (`sc-domain:`) is not
+  accessible from the Google account used — only the URL-prefix
+  property is, per the concurrent pass's finding. This limits some
+  future GSC analysis (e.g. non-www/http variants) until resolved.
+
+## Tasks requiring account access
+
+- **Google Business Profile**: price-range mismatch, `www` website
+  field, "No private dining room" attribute — all need Osman's GBP
+  login.
+- **Bing**: Webmaster Tools verification and Bing Places existence
+  confirmation both need direct access to Bing's tools.
+- **Postmates**: confirming and correcting the likely-wrong hours needs
+  merchant-portal access (the public listing URL checked was dead).
+- **zabihah.com**: adding a phone number needs whatever access manages
+  that listing.
+- **Recurring GSC/GA4 reporting automation**: possible, following the
+  same pattern as the review-rating refresher, but needs a Google Cloud
+  OAuth/service-account setup walked through with Osman.
+
+## Tasks requiring business-owner approval
+
+These aren't blocked by access — they're proposals waiting on Osman's
+decision:
+
+- Building the Wedding & Event Catering and Family Meal Packs pages.
+- Implementing the font-loading fix and the newly found dead-CSS
+  removal (both touch shared, sitewide CSS).
+- Adding the Hyderabadi dum biryani FAQ (copy already drafted).
+- Converting the hero carousel to `<img>` elements.
+- Going ahead with the form-label fix across ~21 files.
+- Deciding the robots.txt AI-crawler policy direction.
+- Confirming whether Apple Maps' "Outdoor Dining" attribute is accurate.
+- Confirming whether `venues.html`'s list of 11 named venues is accurate
+  (separate from the already-resolved fabricated-venue fix elsewhere).
+
+## Items that could not be verified
+
+- Whether the Postmates wrong-hours listing is still live today — the
+  direct URL returned HTTP 410 (Gone) when checked; the "wrong hours"
+  evidence came from a search-index snapshot that may be stale.
+- Whether a Bing Places listing exists at all — searches were
+  inconclusive either way.
+- Current accuracy of DoorDash/Uber Eats/Grubhub per-city delivery
+  coverage claims — these looked genuinely checked rather than
+  boilerplate, but platform coverage drifts over time and wasn't
+  independently re-verified.
+- Current status of the Google Ads payment-method failure flagged in
+  Phase 3 — unrelated to SEO, urgent, status unknown since it was first
+  raised.
+- Whether the new `CTATRACK` event-tracking block (Phase 12) actually
+  fires correctly in a live browser — validated by code review and the
+  project's static guard script, not by an actual browser session.
+
+---
+
+## Where to go next
+
+Phase 15's `implementation-backlog.md` has the full prioritized list
+with effort/impact estimates. Phase 18's 30/60/90-day roadmap (next)
+will sequence the "Tasks requiring business-owner approval" items above
+into a realistic timeline.
