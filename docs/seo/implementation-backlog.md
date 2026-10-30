@@ -40,7 +40,7 @@ session. What remains below is real but lower-urgency.
 
 | # | Problem | Source | Recommended solution | Effort | Business impact | Status |
 |---|---|---|---|---|---|---|
-| 7 | No FAQ anywhere explains Hyderabadi dum biryani vs. other biryani styles — an explicit master-prompt example question, genuinely unanswered | Phase 6 | Add the proposed FAQ entry to `index.html` | Low (copy already drafted) | Medium — AEO/AIO value, educational content AI engines favor | **Proposed, drafted, awaiting wording approval** |
+| 7 | No FAQ anywhere explains Hyderabadi dum biryani vs. other biryani styles — an explicit master-prompt example question, genuinely unanswered | Phase 6 | Add the proposed FAQ entry to `index.html` | Low | Medium — AEO/AIO value, educational content AI engines favor | **Done (2026-10-30, commit `f2367d7`)** |
 | 8 | Family Pack / Jumbo Pack biryani pricing exists but has no dedicated landing content | Phase 9 | Build the proposed Family Meal Packs page (`/family-meals`) | Medium | Medium — real priced inventory with zero fabrication risk | **Proposed, not built** |
 | 9 | Hero carousel uses CSS `background-image`, not `<img>` — no alt text, invisible to Google Images | Phase 10 | Convert to `<img>` elements with descriptive alt text | Medium (touches hero layout CSS) | Low-medium — ambiance photos rarely drive food-search traffic the way dish photos do | **Proposed, not approved** |
 | 10 | Form labels aren't programmatically linked to inputs across ~21 forms sitewide | Phase 12 | Add matching `id`/`for` pairs (purely additive, no visual change) | Medium (many files, mechanical) | Medium — accessibility + the catering quote form is a primary conversion point | **Proposed, awaiting go-ahead** |

@@ -96,9 +96,10 @@ Full detail and effort estimates are in Phase 15's backlog
   project." This is a real, significant finding worth prioritizing
   alongside the font-loading fix, not yet in Phase 15's backlog since
   it surfaced after that phase was written.
-- **Family Meal Packs page** (P2), **Hyderabadi dum biryani FAQ** (P2),
-  **hero carousel → `<img>` conversion** (P2) — all proposed with full
-  specs in their originating phase docs.
+- **Family Meal Packs page** (P2) and **hero carousel → `<img>`
+  conversion** (P2) — proposed with full specs in their originating phase
+  docs. **The Hyderabadi dum biryani FAQ has since been added** (2026-10-30,
+  commit `f2367d7`) — no longer open.
 - **Form label accessibility fix is still open** — important
   correction: the concurrent audit pass's commit message claimed
   catering-form fields were "labelled," but direct verification this
@@ -141,7 +142,6 @@ decision:
 - Building the Wedding & Event Catering and Family Meal Packs pages.
 - Implementing the font-loading fix and the newly found dead-CSS
   removal (both touch shared, sitewide CSS).
-- Adding the Hyderabadi dum biryani FAQ (copy already drafted).
 - Converting the hero carousel to `<img>` elements.
 - Going ahead with the form-label fix across ~21 files.
 - Deciding the robots.txt AI-crawler policy direction.
