@@ -84,9 +84,12 @@ implementation:
 Full detail and effort estimates are in Phase 15's backlog
 (`implementation-backlog.md`) — summarized here by what's needed:
 
-- **Wedding & Event Catering hub page** (P1) — the single
-  best-evidenced gap in the whole project, confirmed missing across
-  plain search, Perplexity, Bing AI Mode, and Google AI Overview.
+- **Wedding & Event Catering hub page — done** (2026-10-30, commit
+  `2a9e7d5`), no longer open. Built at `/wedding-catering`, linked from
+  `hall.html`, `venues.html`, and the homepage's catering section. Worth
+  re-running Phase 7's AI-visibility test once it's indexed to confirm
+  the gap actually closed — building the page doesn't guarantee that on
+  its own.
 - **Font-loading CLS fix** (P1) — proposed since Phase 1, still
   unapproved.
 - **A newly surfaced, real technical-debt item from the concurrent
@@ -139,7 +142,7 @@ Full detail and effort estimates are in Phase 15's backlog
 These aren't blocked by access — they're proposals waiting on Osman's
 decision:
 
-- Building the Wedding & Event Catering and Family Meal Packs pages.
+- Building the Family Meal Packs page (Wedding & Event Catering is done).
 - Implementing the font-loading fix and the newly found dead-CSS
   removal (both touch shared, sitewide CSS).
 - Converting the hero carousel to `<img>` elements.
