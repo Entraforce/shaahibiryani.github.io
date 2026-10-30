@@ -28,7 +28,7 @@ docs in this directory for details):
 | 15 — Implementation priorities | `implementation-backlog.md` | Not started |
 | 16 — Implementation & testing | — | Ongoing as each phase's fixes get approved |
 | 17 — Deliverables index | `EXECUTIVE-SUMMARY.md` | Not started |
-| 18 — 30/60/90 day roadmap | `30-60-90-day-roadmap.md` | Not started |
+| 18 — 30/60/90 day roadmap | `30-60-90-day-roadmap.md` | ✅ Done (2026-10-30), on branch `seo/phase18-roadmap`, awaiting review. All 18 phases now complete. Sequences every open backlog item into 30/60/90-day windows with owners and dependencies; no ranking/placement/AI-recommendation outcomes promised anywhere. |
 
 ---
 
