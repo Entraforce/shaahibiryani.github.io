@@ -26,6 +26,6 @@ do $$
 declare n int;
 begin
   select count(*) into n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-   where s.nspname = 'public' and pg_get_functiondef(p.oid) ilike '%wtdthjhqgsbnyjucdqxl%';
+   where s.nspname = 'public' and p.prokind in ('f','p') and pg_get_functiondef(p.oid) ilike '%wtdthjhqgsbnyjucdqxl%';
   if n > 0 then raise exception 'staging isolation: % public function(s) reference the production project', n; end if;
 end $$;
