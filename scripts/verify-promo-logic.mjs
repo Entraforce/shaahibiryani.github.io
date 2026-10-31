@@ -17,7 +17,7 @@ const m = /\/\* promo-logic:start[^*]*\*\/([\s\S]*?)\/\* promo-logic:end \*\//.e
 assert.ok(m, 'promo-logic markers not found in index.html');
 const ctx = vm.createContext({ Intl, Date, Math });
 vm.runInContext(m[1], ctx);
-const { centralDate, bogoActive, tuesdayActive, riceActive, dkcActive, achActive, pakActive, onScreen, paidU10Landing } = ctx;
+const { centralDate, bogoActive, tuesdayActive, riceActive, dkcActive, achActive, pakActive, wbgActive, onScreen, paidU10Landing } = ctx;
 
 let n = 0; const check = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
 const at = (iso) => Date.parse(iso);
@@ -86,6 +86,22 @@ check('Chicken Pakora BOGO off from Sat Oct 31 12:00 AM Central, and every day a
 });
 check('Chicken Pakora BOGO never overlaps the other flyers', () => {
   for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-11-07T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(pakActive(t) && (bogoActive(t) || tuesdayActive(t) || riceActive(t) || dkcActive(t) || achActive(t)), false, new Date(t).toISOString());
+});
+check('Weekend BOGO (Oct 31 - Nov 1) off before Sat Oct 31 Central', () => {
+  for (const iso of ['2026-10-31T04:59:59Z', '2026-10-30T17:00:00Z', '2026-10-24T17:00:00Z']) assert.equal(wbgActive(at(iso)), false, iso);
+});
+check('Weekend BOGO on all of Sat Oct 31 and Sun Nov 1 Central, across the DST change', () => {
+  for (const iso of ['2026-10-31T05:00:00Z', '2026-10-31T17:00:00Z', '2026-11-01T04:59:00Z',
+                     '2026-11-01T06:30:00Z',   // 1:30 AM CDT, before the fall-back
+                     '2026-11-01T07:30:00Z',   // 1:30 AM CST, the SAME wall clock after the fall-back
+                     '2026-11-01T18:00:00Z', '2026-11-02T05:59:59Z']) assert.equal(wbgActive(at(iso)), true, iso);
+});
+check('Weekend BOGO off from Mon Nov 2 12:00 AM CST (06:00Z, not 05:00Z), and every day after', () => {
+  assert.equal(wbgActive(at('2026-11-02T05:00:00Z')), true, 'still Sun 11 PM Central - a 05:00Z cutoff would kill it an hour early');
+  for (const iso of ['2026-11-02T06:00:00Z', '2026-11-02T18:00:00Z', '2026-11-09T18:00:00Z']) assert.equal(wbgActive(at(iso)), false, iso);
+});
+check('Weekend BOGO never overlaps the other flyers', () => {
+  for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-11-10T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(wbgActive(t) && (bogoActive(t) || tuesdayActive(t) || riceActive(t) || dkcActive(t) || achActive(t) || pakActive(t)), false, new Date(t).toISOString());
 });
 check('Achari Chicken BOGO never overlaps the other flyers', () => {
   for (let t = at('2026-10-16T00:00:00Z'); t < at('2026-11-05T00:00:00Z'); t += 15 * 60 * 1000) assert.equal(achActive(t) && (bogoActive(t) || tuesdayActive(t) || riceActive(t) || dkcActive(t)), false, new Date(t).toISOString());
