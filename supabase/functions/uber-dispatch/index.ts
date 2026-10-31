@@ -6,24 +6,31 @@
 // A courier is booked ONLY when ALL hold (delivery-policy.canDispatch):
 //   delivery order · payment_status = paid · kitchen has accepted it
 //   (accepted / preparing / ready — never "pending") · no courier yet ·
-//   not handed to staff · created in sandbox mode.
+//   not handed to staff · created in the current Uber mode (sandbox or live).
 // Exactly-once: claim_uber_dispatch() lets one caller own an order; Uber gets
 // external_id + idempotency_key = the order id; a unique index refuses a
 // second delivery id for the same order.
 //
-// SANDBOX ONLY. Sandbox deliveries use Uber's robo courier unless
-// UBER_DIRECT_ROBO=off (then a test driver app moves it).
+// Sandbox deliveries use Uber's robo courier unless UBER_DIRECT_ROBO=off.
+//
+// Also, when DELIVERY_AUTO_REFUND=on: a PAID delivery the kitchen rejected
+// BEFORE any courier was booked is refunded in full automatically, once
+// (claim_auto_refund + a Stripe idempotency key). The existing Stripe webhook
+// then records refund_status and loyalty exactly as for any other refund. A
+// failed refund is left as auto_refund_state='failed' for staff to refund
+// by hand in the Refunds tool; it is never retried automatically.
 // Deploy:  supabase functions deploy uber-dispatch --no-verify-jwt
 // Auth:    header x-dispatch-secret must equal UBER_DISPATCH_TRIGGER_SECRET.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@14?target=denonext";
 // deno-lint-ignore-file
 // @ts-ignore — shared plain-JS modules
 import { formatUberAddress, toE164, UberDirectError } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { canDispatch, requoteDecision, quoteUsableForCheckout, deliveryRequestFor, courierCancellable, addressKey, pickupReadyAt, MAX_DISPATCH_ATTEMPTS, STORE } from "../_shared/delivery-policy.js";
+import { canDispatch, autoRefundDecision, requoteDecision, quoteUsableForCheckout, deliveryRequestFor, courierCancellable, addressKey, pickupReadyAt, MAX_DISPATCH_ATTEMPTS, STORE } from "../_shared/delivery-policy.js";
 import { uberClientFor, UBER_MODE, POLICY } from "../_shared/uber-env.ts";
-import { notifyDelivery } from "../_shared/delivery-notify.ts";
+import { notifyDelivery, retryFailedNotifications } from "../_shared/delivery-notify.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -32,6 +39,9 @@ const supabase = createClient(
 );
 const TRIGGER_SECRET = Deno.env.get("UBER_DISPATCH_TRIGGER_SECRET") ?? "";
 const ROBO = (Deno.env.get("UBER_DIRECT_ROBO") ?? "auto").toLowerCase() !== "off";
+const AUTO_REFUND = ["on", "true", "1"].includes(String(Deno.env.get("DELIVERY_AUTO_REFUND") ?? "").toLowerCase());
+const STRIPE_KEY = Deno.env.get("STRIPE_SECRET_KEY_WEB") ?? Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+const stripe = STRIPE_KEY ? new Stripe(STRIPE_KEY, { apiVersion: "2023-10-16", httpClient: Stripe.createFetchHttpClient() }) : null;
 
 // Errors worth retrying on the next run; everything else goes to staff.
 const RETRYABLE = new Set(["couriers_unavailable", "rate_limited", "upstream", "unknown"]);
@@ -49,7 +59,7 @@ async function release(id: string, patch: Record<string, unknown>) {
 }
 
 async function dispatchOne(uber: any, o: any) {
-  const gate = canDispatch(o);
+  const gate = canDispatch(o, Date.now(), UBER_MODE);
   if (!gate.ok) return { id: o.id, skipped: gate.reason };
 
   const { data: claimed } = await supabase.rpc("claim_uber_dispatch", { p_order: o.id });
@@ -137,17 +147,40 @@ async function cancelOne(uber: any, o: any) {
   }
 }
 
+async function autoRefundOne(o: any) {
+  const gate = autoRefundDecision(o, UBER_MODE);
+  if (!gate.ok) return { id: o.id, skipped: gate.reason };
+  const { data: claimed } = await supabase.rpc("claim_auto_refund", { p_order: o.id });
+  if (!claimed?.length) return { id: o.id, skipped: "claimed_elsewhere" };
+  try {
+    if (!stripe) throw new Error("stripe_not_configured");
+    const r = await stripe.refunds.create(
+      { payment_intent: o.stripe_payment_intent, reason: "requested_by_customer",
+        metadata: { order_id: o.id, cause: "kitchen_rejected_delivery" } },
+      { idempotencyKey: `auto-refund-${o.id}` },
+    );
+    await supabase.from("orders").update({ auto_refund_state: "refunded", auto_refund_id: r.id, auto_refund_error: null }).eq("id", o.id);
+    await notifyDelivery(supabase, o, "refunded");
+    return { id: o.id, refunded: r.status };
+  } catch (e) {
+    const msg = String((e as any)?.code ?? (e as Error)?.message ?? "refund_failed").slice(0, 120);
+    await supabase.from("orders").update({ auto_refund_state: "failed", auto_refund_error: msg }).eq("id", o.id);
+    console.error("auto refund failed:", msg);
+    return { id: o.id, refund_failed: msg };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   if (!TRIGGER_SECRET || req.headers.get("x-dispatch-secret") !== TRIGGER_SECRET) return json({ error: "Forbidden" }, 403);
-  if (UBER_MODE !== "sandbox") return json({ ok: true, mode: "disabled", note: "UBER_DIRECT_MODE is not sandbox; nothing dispatched." });
+  if (UBER_MODE === "disabled") return json({ ok: true, mode: "disabled", note: "UBER_DIRECT_MODE is off; nothing dispatched." });
 
   const uber = uberClientFor(supabase);
   const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
 
   const { data: todo } = await supabase.from("orders")
     .select("*")
-    .eq("fulfillment", "delivery").eq("payment_status", "paid").eq("uber_mode", "sandbox")
+    .eq("fulfillment", "delivery").eq("payment_status", "paid").eq("uber_mode", UBER_MODE)
     .is("uber_delivery_id", null).in("status", ["accepted", "preparing", "ready"])
     .gte("created_at", since).limit(20);
 
@@ -161,7 +194,7 @@ Deno.serve(async (req) => {
 
   // "We got your order" text for newly paid delivery orders (deduplicated per order).
   const { data: fresh } = await supabase.from("orders").select("*")
-    .eq("fulfillment", "delivery").eq("payment_status", "paid").eq("uber_mode", "sandbox")
+    .eq("fulfillment", "delivery").eq("payment_status", "paid").eq("uber_mode", UBER_MODE)
     .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString()).limit(50);
   for (const o of fresh ?? []) await notifyDelivery(supabase, o, "confirmed");
 
@@ -169,5 +202,16 @@ Deno.serve(async (req) => {
   for (const o of todo ?? []) dispatched.push(await dispatchOne(uber, o));
   const cancelled = [];
   for (const o of toCancel ?? []) cancelled.push(await cancelOne(uber, o));
-  return json({ ok: true, mode: UBER_MODE, dispatched, cancelled });
+  // Kitchen rejected a paid delivery before a courier existed → refund it.
+  const refunds = [];
+  if (AUTO_REFUND) {
+    const { data: rejected } = await supabase.from("orders").select("*")
+      .eq("fulfillment", "delivery").eq("status", "cancelled").eq("payment_status", "paid")
+      .eq("refund_status", "none").eq("uber_mode", UBER_MODE)
+      .is("uber_delivery_id", null).is("auto_refund_state", null)
+      .gte("created_at", since).limit(20);
+    for (const o of rejected ?? []) refunds.push(await autoRefundOne(o));
+  }
+  const retried = await retryFailedNotifications(supabase);
+  return json({ ok: true, mode: UBER_MODE, dispatched, cancelled, refunds, retried });
 });

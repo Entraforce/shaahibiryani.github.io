@@ -5358,7 +5358,7 @@ async function startWebPayment(){
       var qb=gi('toPayBtn'); if(qb){qb.disabled=true;} if(err){err.style.display='block';err.textContent='Getting your delivery price…';}
       try{
         var qr=await fetch(SB_URL+'/functions/v1/uber-delivery-quote',{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-          body:JSON.stringify({address:{street:street,apt:apt,city:city,zip:zip},phone:((gi('custPhone')||{}).value||'')})});
+          body:JSON.stringify({address:{street:street,apt:apt,city:city,zip:zip},phone:((gi('custPhone')||{}).value||''),pilotCode:DELIVERY_PILOT_CODE||undefined})});
         var qd=await qr.json();
         if(qb){qb.disabled=false;}
         if(!qr.ok){ _delivQuote=null; DELIVERY_FEE=DELIVERY_SANDBOX?0:DELIVERY_FEE; _refreshWaTotals();
@@ -5407,7 +5407,7 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,deliveryQuoteId:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.id:null,courierTipCents:(fulfillment==='delivery'&&_delivQuote)?courierTipCents:0,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,deliveryQuoteId:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.id:null,courierTipCents:(fulfillment==='delivery'&&_delivQuote)?courierTipCents:0,pilotCode:(fulfillment==='delivery'&&DELIVERY_PILOT_CODE)?DELIVERY_PILOT_CODE:undefined,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
     });
     var data=await res.json();
     if(!res.ok){
@@ -5885,9 +5885,11 @@ function orderTotals(items, tipPercent, deliveryFeeCents){
   var subtotalCents = items.reduce(function(sum, i){
     return sum + _cents(_p(i.price)) * Math.max(0, Math.trunc(i.qty));
   }, 0);
-  var taxCents = Math.round(subtotalCents * TAX_RATE);
   var tipCents = Math.max(0, Math.round(subtotalCents * ((tipPercent || 0) / 100)));
   var feeCents = Math.max(0, Math.round(deliveryFeeCents || 0));
+  // Texas taxes a delivery charge billed with taxable food; the server
+  // (delivery-policy.orderTax) computes the same single rounding. Pickup: fee 0.
+  var taxCents = Math.round((subtotalCents + feeCents) * TAX_RATE);
   return {
     subtotalCents: subtotalCents,
     taxCents: taxCents,
@@ -5908,7 +5910,17 @@ var DELIVERY_LIVE = false;
 // server refuses sandbox delivery whenever it holds a live Stripe key, so this
 // can never take a real customer's money for a test courier.
 var DELIVERY_SANDBOX = /[?&]delivery=sandbox(&|$)/.test(location.search);
-var DELIVERY_ON = DELIVERY_LIVE || DELIVERY_SANDBOX;
+// Staff pilot: ?delivery=pilot&code=… opens the hidden checkout. The SERVER
+// decides who may order (code + allow-listed phone); this only shows the form.
+// The code is moved out of the address bar so it isn't shared by accident.
+var DELIVERY_PILOT_CODE = (function(){
+  var m = /[?&]delivery=pilot(?:&|$)/.test(location.search) ? /[?&]code=([^&]+)/.exec(location.search) : null;
+  try {
+    if (m) { sessionStorage.setItem('shaahiPilot', decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname + '?delivery=pilot'); }
+    return /[?&]delivery=pilot(&|$)/.test(location.search) ? (sessionStorage.getItem('shaahiPilot') || '') : '';
+  } catch (e) { return m ? decodeURIComponent(m[1]) : ''; }
+})();
+var DELIVERY_ON = DELIVERY_LIVE || DELIVERY_SANDBOX || !!DELIVERY_PILOT_CODE;
 if (DELIVERY_ON) document.documentElement.classList.add('deliv-on');
 if (DELIVERY_ON) document.addEventListener('DOMContentLoaded', function(){ setFulfillment(fulfillment); });
 var _delivQuote = null;   // {id, feeCents, etaMinutes, prepMinutes, expiresAt, key} from uber-delivery-quote
@@ -5978,6 +5990,7 @@ function _refreshWaTotals(){
   if(gi('courierTipBlock')) gi('courierTipBlock').style.display = (del && _delivQuote && !_wpSecret) ? 'block' : 'none';
   document.querySelectorAll('.ctip-btn').forEach(function(b){ var on=parseInt(b.dataset.ctip,10)===courierTipCents; b.style.background=on?'var(--gold)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; b.setAttribute('aria-pressed',on?'true':'false'); });
   var pb=gi('toPayBtn'); if(pb && !pb.disabled) pb.innerHTML = (del && DELIVERY_ON && !_delivQuote) ? 'Get delivery price &#8594;' : 'Pay Securely &#8594;';
+  if(gi('waTax')) gi('waTax').textContent = _fmtCents(T.taxCents);
   gi('waTotal').textContent = _fmtCents(T.totalCents + ct);
 }
 

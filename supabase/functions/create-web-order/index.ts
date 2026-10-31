@@ -30,12 +30,15 @@ import { addOnLimitError, addOnOnlyError } from "../_shared/order-rules.js";
 // @ts-ignore — shared plain-JS modules (also run by scripts/verify-uber-direct.mjs)
 import { uberMode, toE164 } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, quoteUsableForCheckout, policyFromEnv, courierTipCents as courierTipFrom } from "../_shared/delivery-policy.js";
+import { normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, quoteUsableForCheckout, policyFromEnv, courierTipCents as courierTipFrom, orderTax } from "../_shared/delivery-policy.js";
+// @ts-ignore
+import { pilotGate, NEW_DELIVERY_ORDERS } from "../_shared/uber-env.ts";
 
 // Website delivery via Uber Direct is SANDBOX-ONLY in this build and off unless
-// UBER_DIRECT_MODE=sandbox. Sandbox delivery is also refused whenever this
-// function holds a LIVE Stripe key, so a real customer can never pay for a
-// test courier. Pickup is untouched by everything below.
+// UBER_DIRECT_MODE=sandbox|live. Sandbox delivery requires a TEST Stripe key
+// and live delivery a LIVE one, so a real customer never pays for a test
+// courier and a test card never books a real one. Live also requires the pilot
+// gate. Pickup is untouched by everything below.
 const UBER_MODE = uberMode(Deno.env.get("UBER_DIRECT_MODE"));
 const POLICY = policyFromEnv((k: string) => Deno.env.get(k));
 const STRIPE_KEY_IS_LIVE = /^(sk|rk)_live_/.test(
@@ -277,7 +280,9 @@ Deno.serve(async (req) => {
     }
     if (subtotalCents <= 0) return json({ error: "Empty order." }, 400);
 
-    const taxCents = Math.round(subtotalCents * TAX_RATE);
+    // Pickup: tax on food, as always. Delivery adds tax on the delivery fee below.
+    let taxCents = Math.round(subtotalCents * TAX_RATE);
+    let deliveryTaxCents = 0;
 
     let tipCents = Number(body?.tipCents);
     if (!Number.isFinite(tipCents) || tipCents < 0) tipCents = 0;
@@ -291,8 +296,11 @@ Deno.serve(async (req) => {
     let courierTipCents = 0;
     let delivery: null | { address: Record<string, string>; quoteRowId: string; key: string; phoneE164: string } = null;
     if (fulfillment === "delivery") {
-      if (UBER_MODE !== "sandbox") return json({ error: "Delivery isn't available yet. Please choose pickup." }, 400);
-      if (STRIPE_KEY_IS_LIVE) return json({ error: "Delivery is in testing and can't be paid for yet. Please choose pickup." }, 400);
+      if (UBER_MODE === "disabled" || !NEW_DELIVERY_ORDERS) return json({ error: "Delivery isn't available yet. Please choose pickup." }, 400);
+      // Test couriers only with test cards; real couriers only with real cards.
+      if ((UBER_MODE === "sandbox") === STRIPE_KEY_IS_LIVE) return json({ error: "Delivery isn't available yet. Please choose pickup." }, 400);
+      const gate = pilotGate(body?.pilotCode, guestPhone);
+      if (!gate.ok) return json({ error: "Delivery isn't available yet. Please choose pickup.", code: gate.reason }, 403);
       const norm = normaliseDeliveryAddress(body?.deliveryAddress);
       if (norm.error) return json({ error: norm.error }, 400);
       const phoneE164 = toE164(guestPhone);
@@ -307,7 +315,7 @@ Deno.serve(async (req) => {
         .select("id, fee_cents, address_key, expires_at, uber_mode, used_by_order")
         .eq("id", quoteRowId)
         .maybeSingle();
-      if (!q || q.uber_mode !== "sandbox") return json({ error: "Please get a delivery price for your address first." }, 400);
+      if (!q || q.uber_mode !== UBER_MODE) return json({ error: "Please get a delivery price for your address first." }, 400);
       if (q.address_key !== addressKey(norm.address)) return json({ error: "Your address changed. Please get a new delivery price." }, 409);
       if (!quoteUsableForCheckout(q.expires_at)) return json({ error: "Your delivery price expired. Please refresh it.", code: "quote_expired" }, 409);
       const fee = customerDeliveryFeeCents(q.fee_cents, POLICY);
@@ -316,10 +324,14 @@ Deno.serve(async (req) => {
       // Optional tip for the Uber courier — passed to Uber in full. The
       // restaurant-staff tip (tipCents) stays separate and never goes to Uber.
       courierTipCents = courierTipFrom(body?.courierTipCents, POLICY);
+      // Texas taxes a delivery charge the seller bills for taxable food.
+      const t = orderTax(subtotalCents, deliveryFeeCents, POLICY, TAX_RATE);
+      taxCents = t.taxCents;
+      deliveryTaxCents = t.deliveryTaxCents;
       delivery = { address: norm.address, quoteRowId: q.id, key: addressKey(norm.address) + "#" + q.id + "#ct" + courierTipCents, phoneE164 };
     }
 
-    // Tax is on food only; the delivery fee is a pass-through of Uber's quote.
+    // Tips are never taxed. taxCents includes deliveryTaxCents for delivery.
     const totalCents = subtotalCents + taxCents + tipCents + deliveryFeeCents + courierTipCents;
     if (totalCents < 50) return json({ error: "Order total too low." }, 400);
 
@@ -402,7 +414,7 @@ Deno.serve(async (req) => {
         // visible wherever the customer is being looked at. Our table is the
         // record of evidence; this is a convenience copy.
         marketing_opt_in: marketingOptIn ? "yes" : "no",
-        ...(delivery ? { fulfillment: "delivery", delivery_fee_cents: String(deliveryFeeCents), courier_tip_cents: String(courierTipCents), staff_tip_cents: String(tipCents), uber_mode: UBER_MODE } : {}),
+        ...(delivery ? { fulfillment: "delivery", delivery_fee_cents: String(deliveryFeeCents), courier_tip_cents: String(courierTipCents), staff_tip_cents: String(tipCents), delivery_tax_cents: String(deliveryTaxCents), uber_mode: UBER_MODE } : {}),
       },
     }, { idempotencyKey: ckey });
 
@@ -429,7 +441,7 @@ Deno.serve(async (req) => {
         delivery_address: delivery ? delivery.address : null,
         // Delivery-only columns (from the Uber Direct migration); pickup rows
         // never mention them, so pickup works whether or not it is applied.
-        ...(delivery ? { delivery_quote_id: delivery.quoteRowId, uber_mode: UBER_MODE, courier_tip: courierTipCents / 100, tracking_token: trackingToken } : {}),
+        ...(delivery ? { delivery_quote_id: delivery.quoteRowId, uber_mode: UBER_MODE, courier_tip: courierTipCents / 100, delivery_tax: deliveryTaxCents / 100, tracking_token: trackingToken } : {}),
         scheduled_for: scheduledFor,
         points_redeemed: 0,
         points_earned: 0,
@@ -501,7 +513,7 @@ Deno.serve(async (req) => {
       p_amount: totalCents,
       p_breakdown: {
         subtotalCents, taxCents, tipCents, totalCents,
-        ...(delivery ? { deliveryFeeCents, courierTipCents, trackingToken } : {}),
+        ...(delivery ? { deliveryFeeCents, deliveryTaxCents, courierTipCents, trackingToken } : {}),
       },
     });
 
@@ -509,7 +521,7 @@ Deno.serve(async (req) => {
       paymentIntent: paymentIntent.client_secret,
       orderId: order.id,
       orderNumber: String(order.id).slice(-6).toUpperCase(),
-      breakdown: { subtotalCents, taxCents, tipCents, totalCents, ...(delivery ? { deliveryFeeCents, courierTipCents } : {}) },
+      breakdown: { subtotalCents, taxCents, tipCents, totalCents, ...(delivery ? { deliveryFeeCents, deliveryTaxCents, courierTipCents } : {}) },
       ...(trackingToken ? { trackingToken } : {}),
     });
   } catch (err) {

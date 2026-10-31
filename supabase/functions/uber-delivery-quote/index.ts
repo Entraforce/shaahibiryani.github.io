@@ -6,7 +6,7 @@
 // expiresAt }. create-web-order later charges ONLY a fee that came from one of
 // these rows, for the same address, while it is still valid.
 //
-// SANDBOX ONLY (UBER_DIRECT_MODE=sandbox); otherwise answers "not available".
+// Runs when UBER_DIRECT_MODE is sandbox or live (live only behind the pilot gate).
 // Deploy WITHOUT JWT verification (guests have no login):
 //   supabase functions deploy uber-delivery-quote --no-verify-jwt
 
@@ -16,7 +16,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { formatUberAddress, toE164, UberDirectError } from "../_shared/uber-direct.js";
 // @ts-ignore
 import { STORE, normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents } from "../_shared/delivery-policy.js";
-import { uberClientFor, UBER_MODE, POLICY } from "../_shared/uber-env.ts";
+import { uberClientFor, UBER_MODE, POLICY, pilotGate, NEW_DELIVERY_ORDERS } from "../_shared/uber-env.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -48,10 +48,12 @@ const CUSTOMER_MESSAGE: Record<string, string> = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (UBER_MODE !== "sandbox") return json({ error: "Delivery isn't available yet. Please choose pickup." }, 503);
+  if (UBER_MODE === "disabled" || !NEW_DELIVERY_ORDERS) return json({ error: "Delivery isn't available yet. Please choose pickup." }, 503);
 
   try {
     const body = await req.json().catch(() => ({}));
+    const gate = pilotGate(body?.pilotCode, body?.phone);
+    if (!gate.ok) return json({ error: "Delivery isn't available yet. Please choose pickup.", code: gate.reason }, 403);
     const norm = normaliseDeliveryAddress(body?.address);
     if (norm.error) return json({ error: norm.error }, 400);
     const dropoffAddress = formatUberAddress(norm.address);
@@ -104,7 +106,7 @@ Deno.serve(async (req) => {
       expiresAt: q.expiresAt,
       minSubtotalCents: POLICY.minSubtotalCents,
       courierTips: POLICY.courierTips,
-      sandbox: true,
+      sandbox: UBER_MODE === "sandbox",
     });
   } catch (e) {
     if (e instanceof UberDirectError) {

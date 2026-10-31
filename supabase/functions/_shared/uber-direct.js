@@ -32,7 +32,9 @@ export class UberDirectError extends Error {
  * is "disabled". Going live is a separate, deliberate change to this file.
  */
 export function uberMode(value) {
-  return String(value ?? "").trim().toLowerCase() === "sandbox" ? "sandbox" : "disabled";
+  const v = String(value ?? "").trim().toLowerCase();
+  // "live" must be spelled out; anything else (typo, unset) is disabled.
+  return v === "sandbox" ? "sandbox" : v === "live" ? "live" : "disabled";
 }
 
 /**
@@ -128,7 +130,7 @@ export function makeUberClient(opts) {
   const store = opts.tokenStore ?? { get: () => memo, set: (v) => { memo = v; } };
 
   function requireReady() {
-    if (mode !== "sandbox") throw new UberDirectError("disabled", "Uber Direct is not enabled (mode must be 'sandbox').");
+    if (mode !== "sandbox" && mode !== "live") throw new UberDirectError("disabled", "Uber Direct is not enabled (mode must be 'sandbox' or 'live').");
     if (!customerId || !clientId || !clientSecret) throw new UberDirectError("auth", "Uber Direct credentials are not configured.");
   }
 
@@ -164,8 +166,10 @@ export function makeUberClient(opts) {
       return call(method, path, payload, true);
     }
     if (!res.ok) throw new UberDirectError(classifyUberError(res.status, body), body?.message || `Uber ${method} ${path} failed`, { status: res.status, detail: body });
-    // A sandbox build must never act on a live delivery or quote.
-    if (body && body.live_mode === true) throw new UberDirectError("live_mode", "Uber returned live_mode=true to a sandbox build; refusing.");
+    // Test and live must never cross: sandbox refuses live data, live refuses test data
+    // (test credentials accidentally configured in production are caught here).
+    if (body && mode === "sandbox" && body.live_mode === true) throw new UberDirectError("live_mode", "Uber returned live_mode=true to a sandbox build; refusing.");
+    if (body && mode === "live" && body.live_mode === false) throw new UberDirectError("live_mode", "Uber returned test data to a live build; refusing (test credentials in production?).");
     return body;
   }
 

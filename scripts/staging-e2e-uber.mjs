@@ -372,15 +372,16 @@ await test('T2', 'tracking page data: right token works; wrong token = 404; no p
   must(!JSON.stringify(ok.body).includes('469555'), 'phone digits in response');
   return `200 {status:${ok.body.kitchenStatus}, courier:${ok.body.courierStatus}, tracking:${ok.body.trackingUrl ? 'yes' : 'no'}}; wrong token 404`;
 });
-await test('N1', 'notifications: one per order per event, recorded but NOT sent (no approved provider), no marketing sign-up', async () => {
+await test('N1', 'notifications: one per order per event, captured in staging (no SMS sent), no marketing sign-up', async () => {
   const n = (await rest('GET', `delivery_notifications?order_id=eq.${Tp.orderId}&select=kind,status,suppressed_reason,body`)).body;
   const kinds = n.map((x) => x.kind);
   must(kinds.includes('confirmed') && kinds.includes('courier_booked'), `kinds ${kinds}`);
   must(new Set(kinds).size === kinds.length, 'duplicate notification');
-  must(n.every((x) => x.status === 'suppressed' && x.suppressed_reason === 'transport_disabled'), JSON.stringify(n.map((x) => x.status + ':' + x.suppressed_reason)));
+  // Staging runs NOTIFY_TRANSPORT=capture: the full workflow, no real SMS.
+  must(n.every((x) => x.status === 'captured' || (x.status === 'suppressed' && x.suppressed_reason === 'transport_disabled')), JSON.stringify(n.map((x) => x.status + ':' + x.suppressed_reason)));
   must(n.every((x) => /Reply STOP/.test(x.body)), 'missing STOP wording');
   const mc = (await rest('GET', `marketing_consent?order_id=eq.${Tp.orderId}&select=id`)).body; must(mc.length === 0, 'marketing consent row written!');
-  return `${kinds.join(', ')} — all transport_disabled; 0 marketing_consent rows`;
+  return `${kinds.join(', ')} — ${n[0].status}, none sent; 0 marketing_consent rows`;
 });
 await test('N2', 'a number that replied STOP is never texted', async () => {
   const p = phone();
@@ -394,6 +395,85 @@ await test('N2', 'a number that replied STOP is never texted', async () => {
   must(n.length && n.every((x) => x.suppressed_reason === 'replied_stop'), JSON.stringify(n));
   await kitchen(c.body.orderId, 'cancelled');
   return `${n.length} message(s) suppressed: replied_stop`;
+});
+// ── Step 3: automatic refund when the kitchen rejects a paid delivery ──
+let AR;
+await test('AR1', 'kitchen rejects a PAID delivery before any courier → full automatic refund, recorded by the Stripe webhook', async () => {
+  AR = await paidOrder({ accept: false });
+  await kitchen(AR.orderId, 'cancelled');
+  // Our run or the every-minute job may get there first; either way exactly one refund.
+  const d = await dispatch(); const r = (d.refunds ?? []).find((x) => x.id === AR.orderId);
+  must(r?.refunded || r?.skipped === 'already_attempted' || r?.skipped === 'claimed_elsewhere' || !r, `dispatch refunds: ${JSON.stringify(d.refunds)}`);
+  const o = await waitFor(async () => { const o = await getOrder(AR.orderId); return o.refund_status === 'full' ? o : null; }, 45_000) ?? await getOrder(AR.orderId);
+  must(o.refund_status === 'full', `refund_status ${o.refund_status} (webhook never recorded it)`);
+  must(o.auto_refund_state === 'refunded' && o.auto_refund_id?.startsWith('re_'), `auto_refund_state ${o.auto_refund_state}`);
+  must(!o.uber_delivery_id, 'a courier was booked for a rejected order!');
+  const pi = await stripe('GET', `payment_intents/${AR.piId}?expand[]=latest_charge`);
+  must(pi.latest_charge.amount_refunded === pi.amount, `refunded ${pi.latest_charge.amount_refunded} of ${pi.amount}`);
+  const n = (await rest('GET', `delivery_notifications?order_id=eq.${AR.orderId}&kind=eq.refunded&select=status,body`)).body;
+  must(n.length === 1 && /refunded in full/.test(n[0].body), `refund message ${JSON.stringify(n)}`);
+  return `Stripe refunded ${pi.amount}c of ${pi.amount}c → webhook set refund_status=full; status cancelled; no courier; "refunded" message ${n[0].status}`;
+});
+await test('AR2', 'auto-refund is exactly-once: repeated and simultaneous runs never refund twice', async () => {
+  await Promise.all([dispatch(), dispatch(), dispatch()]);
+  const claim = await rest('POST', 'rpc/claim_auto_refund', { p_order: AR.orderId });
+  must(Array.isArray(claim.body) && claim.body.length === 0, `second claim returned ${JSON.stringify(claim.body).slice(0, 80)}`);
+  const rf = await stripe('GET', `refunds?payment_intent=${AR.piId}`);
+  must(rf.data.length === 1, `${rf.data.length} Stripe refunds`);
+  return `4 runs + a direct claim → 1 Stripe refund (idempotency key auto-refund-<order>)`;
+});
+await test('AR3', 'rejection AFTER a courier is booked → no automatic refund (courier cancelled, staff decide)', async () => {
+  const B = await paidOrder(); await dispatch();
+  must((await getOrder(B.orderId)).uber_delivery_id, 'not booked');
+  await kitchen(B.orderId, 'cancelled'); await dispatch(); await dispatch();
+  const o = await getOrder(B.orderId);
+  must(!o.auto_refund_state && o.refund_status === 'none', `auto_refund_state ${o.auto_refund_state} refund ${o.refund_status}`);
+  return `courier ${o.uber_status}; refund left to staff (auto_refund_state empty)`;
+});
+await test('AR4', 'refund failure → flagged for staff, never retried; manual refund then reconciles', async () => {
+  const C = await paidOrder({ accept: false });
+  // Simulate Stripe refusing the refund: point the order at a PaymentIntent that does not exist.
+  await rest('PATCH', `orders?id=eq.${C.orderId}`, { stripe_payment_intent: 'pi_staging_simulated_failure' });
+  await kitchen(C.orderId, 'cancelled'); await dispatch(); await dispatch();
+  let o = await getOrder(C.orderId);
+  must(o.auto_refund_state === 'failed' && o.auto_refund_error, `state ${o.auto_refund_state}`);
+  const failedState = o.auto_refund_error;
+  const rf0 = await stripe('GET', `refunds?payment_intent=${C.piId}`); must(rf0.data.length === 0, 'refunded despite failure');
+  // Manual exception process: staff refund the real payment (Refunds tool / Stripe); the webhook reconciles.
+  await rest('PATCH', `orders?id=eq.${C.orderId}`, { stripe_payment_intent: C.piId });
+  await stripe('POST', 'refunds', { payment_intent: C.piId });
+  o = await waitFor(async () => { const x = await getOrder(C.orderId); return x.refund_status === 'full' ? x : null; }, 45_000) ?? await getOrder(C.orderId);
+  must(o.refund_status === 'full', `after manual refund: ${o.refund_status}`);
+  return `auto refund failed (${failedState.slice(0, 40)}) → flagged, 0 refunds, no retry → manual refund → refund_status=full`;
+});
+await test('NT1', 'failed text is retried at most 3 times; STOP re-checked each time', async () => {
+  const ids = [];
+  for (const [kind, attempts] of [['delivered', 1], ['picked_up', 3]]) {
+    const r = await rest('POST', 'delivery_notifications', { order_id: AR.orderId, kind, channel: 'sms', body: `Staging retry test ${kind}. Reply STOP to stop order texts.`, status: 'failed', attempts, last_error: 'simulated', created_at: new Date(Date.now() - 120_000).toISOString() }, SERVICE, { Prefer: 'return=representation' });
+    must(r.status === 201, `insert ${r.status} ${JSON.stringify(r.body).slice(0, 100)}`); ids.push(r.body[0].id);
+  }
+  const d = await dispatch();
+  const rows = (await rest('GET', `delivery_notifications?id=in.(${ids.join(',')})&select=kind,status,suppressed_reason,attempts&order=id`)).body;
+  // A retry re-checks STOP: a recycled test number that replied STOP earlier is correctly suppressed.
+  must(rows[0].attempts === 2 && (rows[0].status === 'captured' || rows[0].suppressed_reason === 'replied_stop'), `retry row ${JSON.stringify(rows[0])}`);
+  must(rows[1].status === 'failed' && rows[1].attempts === 3, `capped row ${JSON.stringify(rows[1])}`);
+  return `attempt 1 failed → retried → ${rows[0].status}${rows[0].suppressed_reason ? ':' + rows[0].suppressed_reason : ''} (attempt 2); a 3-attempt failure stays failed for staff (retried=${d.retried})`;
+});
+// ── Emergency switch (only with RUN_SWITCH=1: changes a staging secret for ~1 min) ──
+if (process.env.RUN_SWITCH === '1') await test('SW1', 'emergency switch: new delivery orders stop; a paid order already in the kitchen still gets its courier; pickup unaffected', async () => {
+  const { execSync } = await import('node:child_process');
+  const setSecret = (v) => execSync(`supabase secrets set --project-ref ${ST.STAGING_PROJECT_REF} DELIVERY_NEW_ORDERS=${v}`, { stdio: 'ignore' });
+  const K = await paidOrder({ accept: false });
+  setSecret('off');
+  try {
+    await sleep(15_000);
+    const q = await quote(); must(q.status === 503, `quote while off: ${q.status}`);
+    const pk = await call('create-web-order', { items: ITEMS.map((i) => ({ ...i, quantity: 1 })), guestName: 'Switch Pickup', guestPhone: phone(), guestEmail: '', tipCents: 0, fulfillment: 'pickup' });
+    must(pk.status === 200, `pickup while off: ${pk.status}`);
+    await kitchen(K.orderId, 'accepted'); await dispatch();
+    const o = await getOrder(K.orderId); must(o.uber_delivery_id, 'paid order lost its courier');
+    return `quote ${q.status} while off; pickup ${pk.status}; in-kitchen order still booked ${short(o.uber_delivery_id)}`;
+  } finally { setSecret('on'); }
 });
 await test('X3', 'kitchen cancels AFTER the courier picked up → courier not cancelled, nothing breaks', async () => {
   must(Tp?.orderId, 'no order');

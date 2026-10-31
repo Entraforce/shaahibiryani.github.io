@@ -33,7 +33,81 @@ export const DEFAULT_POLICY = Object.freeze({
   requoteAbsorbCents: 0,    // DELIVERY_REQUOTE_ABSORB_CENTS — 0 = never silently absorb
   prepMinutes: 25,          // DELIVERY_PREP_MINUTES — kitchen prep added to every ETA
   courierTips: true,        // DELIVERY_COURIER_TIPS — offer an optional tip for the courier
+  deliveryFeeTaxable: true, // DELIVERY_FEE_TAXABLE — Texas taxes seller-billed delivery of taxable
+                            //   food (34 TAC 3.293(h)(2)); accountant to confirm before launch
 });
+
+// Texas state 6.25% + Plano 1% + DART 1%.
+export const TAX_RATE = 0.0825;
+
+/**
+ * Sales tax for an order. Food is taxed as today; a delivery fee the
+ * restaurant bills is taxed on the same receipt when policy says so. Tips are
+ * never taxed (voluntary). One rounding over the taxable base, so the split
+ * always adds up to the total.
+ */
+export function orderTax(foodCents, deliveryFeeCents = 0, policy = DEFAULT_POLICY, rate = TAX_RATE) {
+  const foodTaxCents = Math.round(foodCents * rate);
+  const base = foodCents + (policy.deliveryFeeTaxable ? deliveryFeeCents : 0);
+  const taxCents = Math.round(base * rate);
+  return { foodTaxCents, deliveryTaxCents: taxCents - foodTaxCents, taxCents };
+}
+
+/**
+ * Where every cent of a delivery order goes. Nothing here is "profit": food
+ * proceeds are before food cost, labour and overhead.
+ *   gross              what the customer paid (Stripe)
+ *   passThroughUber    delivery fee + courier tip — Uber bills Shaahi this
+ *   salesTaxLiability  food tax + delivery-fee tax — owed to Texas
+ *   staffTips          owed to restaurant staff
+ *   stripeFee          card processing (all of it borne by Shaahi)
+ *   stripeFeeOnPassThrough  the share of stripeFee caused by pass-through money
+ *   netFoodProceeds    food − stripeFee (before food cost, labour, overhead)
+ */
+export function deliveryLedger({ foodCents, foodTaxCents, deliveryTaxCents = 0, staffTipCents, deliveryFeeCents, courierTipCents, stripeFeeCents = 0 }) {
+  const gross = foodCents + foodTaxCents + deliveryTaxCents + staffTipCents + deliveryFeeCents + courierTipCents;
+  const passThroughUber = deliveryFeeCents + courierTipCents;
+  const salesTaxLiability = foodTaxCents + deliveryTaxCents;
+  const netFoodProceeds = foodCents - stripeFeeCents;
+  return {
+    gross, passThroughUber, salesTaxLiability,
+    staffTips: staffTipCents,
+    stripeFee: stripeFeeCents,
+    stripeFeeOnPassThrough: gross ? Math.round(stripeFeeCents * passThroughUber / gross) : 0,
+    netFoodProceeds,
+    balances: gross - passThroughUber - salesTaxLiability - staffTipCents - stripeFeeCents === netFoodProceeds,
+  };
+}
+
+/**
+ * Pilot access, enforced on the server. When the pilot gate is on, delivery is
+ * offered only to a caller who presents the pilot code AND whose phone is on
+ * the tester list. Live mode is never open to the public in this build.
+ */
+export function pilotAccess({ mode, pilotOn, codeOk, phoneListed }) {
+  if (mode === "live" && !pilotOn) return { ok: false, reason: "live_requires_pilot" };
+  if (!pilotOn) return { ok: true };
+  if (!codeOk) return { ok: false, reason: "pilot_code" };
+  if (!phoneListed) return { ok: false, reason: "pilot_phone" };
+  return { ok: true };
+}
+
+/**
+ * Automatic refund when the kitchen rejects a PAID delivery BEFORE any courier
+ * was booked. Anything else (courier booked, partial refund, already refunded)
+ * stays with staff and the existing Refunds tool.
+ */
+export function autoRefundDecision(o, mode = "sandbox") {
+  if (!o || o.fulfillment !== "delivery") return { ok: false, reason: "not_delivery" };
+  if (o.status !== "cancelled") return { ok: false, reason: "not_cancelled" };
+  if (o.payment_status !== "paid") return { ok: false, reason: "not_paid" };
+  if (o.refund_status && o.refund_status !== "none") return { ok: false, reason: "already_refunded" };
+  if (o.uber_delivery_id) return { ok: false, reason: "courier_was_booked" };
+  if (o.auto_refund_state) return { ok: false, reason: "already_attempted" };
+  if (!o.stripe_payment_intent) return { ok: false, reason: "no_payment" };
+  if (o.uber_mode !== mode) return { ok: false, reason: "other_mode" };
+  return { ok: true };
+}
 
 /** The fee ceiling implied by a mileage limit (the tier that covers it). */
 export function maxFeeForMiles(miles) {
@@ -51,6 +125,7 @@ export function policyFromEnv(get) {
     requoteAbsorbCents: num("DELIVERY_REQUOTE_ABSORB_CENTS", DEFAULT_POLICY.requoteAbsorbCents),
     prepMinutes: num("DELIVERY_PREP_MINUTES", DEFAULT_POLICY.prepMinutes),
     courierTips: flag("DELIVERY_COURIER_TIPS", DEFAULT_POLICY.courierTips),
+    deliveryFeeTaxable: flag("DELIVERY_FEE_TAXABLE", DEFAULT_POLICY.deliveryFeeTaxable),
   });
 }
 
@@ -126,7 +201,7 @@ export const MAX_DISPATCH_ATTEMPTS = 5;
  * May we book an Uber courier for this order right now?
  * Returns { ok: true } or { ok: false, reason }.
  */
-export function canDispatch(o, now = Date.now()) {
+export function canDispatch(o, now = Date.now(), mode = "sandbox") {
   if (!o) return { ok: false, reason: "no_order" };
   if (o.fulfillment !== "delivery") return { ok: false, reason: "not_delivery" };
   if (o.payment_status !== "paid") return { ok: false, reason: "not_paid" };
@@ -140,7 +215,9 @@ export function canDispatch(o, now = Date.now()) {
   const claimed = o.uber_dispatch_claimed_at ? Date.parse(o.uber_dispatch_claimed_at) : NaN;
   if (Number.isFinite(claimed) && now - claimed < DISPATCH_CLAIM_TTL_MS) return { ok: false, reason: "in_flight" };
   // Only orders created while Uber was in sandbox mode are dispatched by this build.
-  if (o.uber_mode !== "sandbox") return { ok: false, reason: "not_sandbox_order" };
+  // Only orders created in the CURRENT Uber mode are dispatched: a test order
+  // never gets a live courier, and a live order never a test one.
+  if (o.uber_mode !== mode) return { ok: false, reason: mode === "sandbox" ? "not_sandbox_order" : "not_live_order" };
   return { ok: true };
 }
 

@@ -10,7 +10,7 @@ import {
 import {
   STORE, customerDeliveryFeeCents, DEFAULT_POLICY, policyFromEnv, maxFeeForMiles, courierTipCents, pickupReadyAt, quoteUsableForCheckout, normaliseDeliveryAddress, addressKey,
   canDispatch, requoteDecision, orderStatusFromUber, uberNeedsStaff, courierCancellable,
-  deliveryRequestFor, MAX_DISPATCH_ATTEMPTS,
+  deliveryRequestFor, MAX_DISPATCH_ATTEMPTS, orderTax, deliveryLedger, pilotAccess, autoRefundDecision, TAX_RATE,
 } from '../supabase/functions/_shared/delivery-policy.js';
 
 let passed = 0, failed = 0;
@@ -35,13 +35,13 @@ const tokenOk = { status: 200, body: { access_token: 'tok_1', expires_in: 259200
 const quoteBody = { kind: 'delivery_quote', id: 'dqt_1', fee: 799, currency: 'usd', expires: '2026-10-31T17:15:00Z', dropoff_eta: '2026-10-31T17:44:00Z', duration: 44, pickup_duration: 18 };
 
 // ── Mode guard ──
-await check('mode: only "sandbox" enables; live/unset/typo are disabled', () => {
+await check('mode: only "sandbox" or "live" enable; unset/typo are disabled', () => {
   assert.equal(uberMode('sandbox'), 'sandbox'); assert.equal(uberMode(' SANDBOX '), 'sandbox');
-  for (const v of [undefined, '', 'live', 'production', 'sandbx']) assert.equal(uberMode(v), 'disabled', String(v));
+  for (const v of [undefined, '', 'production', 'sandbx']) assert.equal(uberMode(v), 'disabled', String(v));
 });
-await check('client refuses to call Uber when mode is not sandbox', async () => {
+await check('client refuses to call Uber when mode is disabled', async () => {
   const u = fakeUber(() => tokenOk);
-  const c = makeUberClient({ ...creds, mode: 'live', fetch: u.fetch });
+  const c = makeUberClient({ ...creds, mode: 'production', fetch: u.fetch });
   await assert.rejects(() => c.createQuote({}), (e) => e instanceof UberDirectError && e.code === 'disabled');
   assert.equal(u.calls.length, 0);
 });
@@ -214,6 +214,71 @@ await check('webhook: valid HMAC-SHA256 hex accepted (both header names); tamper
   assert.equal(await verifyUberSignature(raw, { 'x-uber-signature': sig }, 'other'), false);
   assert.equal(await verifyUberSignature(raw, {}, secret), false);
   assert.equal(await verifyUberSignature(raw, { 'x-uber-signature': sig }, ''), false);
+});
+
+// ── Step 3: tax, money breakdown, pilot gate, auto-refund, live/test separation ──
+await check('tax: pickup unchanged (food only), browser order #C9D668 numbers', () => {
+  assert.equal(orderTax(3200, 0).taxCents, 264);
+  const t = orderTax(3200, 799);                  // $32 food + $7.99 delivery
+  assert.deepEqual(t, { foodTaxCents: 264, deliveryTaxCents: 66, taxCents: 330 });
+  assert.equal(orderTax(3200, 799, { ...DEFAULT_POLICY, deliveryFeeTaxable: false }).taxCents, 264);
+  assert.equal(TAX_RATE, 0.0825);
+});
+await check('tax: split always adds up (one rounding over the taxable base)', () => {
+  for (let f = 2000; f < 6000; f += 37) for (const d of [0, 599, 799, 999]) {
+    const t = orderTax(f, d);
+    assert.equal(t.foodTaxCents + t.deliveryTaxCents, t.taxCents);
+    assert.equal(t.taxCents, Math.round((f + d) * 0.0825));
+  }
+});
+await check('tax: page formula equals server formula (index.html orderTotals)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /var taxCents = Math\.round\(\(subtotalCents \+ feeCents\) \* TAX_RATE\);/);
+});
+await check('ledger: #C9D668 with delivery tax separates every bucket', () => {
+  const L = deliveryLedger({ foodCents: 3200, foodTaxCents: 264, deliveryTaxCents: 66, staffTipCents: 576, deliveryFeeCents: 799, courierTipCents: 300, stripeFeeCents: 181 });
+  assert.equal(L.gross, 5205);
+  assert.equal(L.passThroughUber, 1099);
+  assert.equal(L.salesTaxLiability, 330);
+  assert.equal(L.staffTips, 576);
+  assert.equal(L.netFoodProceeds, 3019);
+  assert.equal(L.stripeFeeOnPassThrough, 38);
+  assert.equal(L.balances, true);
+});
+await check('pilot gate: live never public; code AND listed phone required', () => {
+  assert.deepEqual(pilotAccess({ mode: 'live', pilotOn: false, codeOk: true, phoneListed: true }), { ok: false, reason: 'live_requires_pilot' });
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: false, phoneListed: true }).reason, 'pilot_code');
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: false }).reason, 'pilot_phone');
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: true }).ok, true);
+  assert.equal(pilotAccess({ mode: 'sandbox', pilotOn: false, codeOk: false, phoneListed: false }).ok, true);
+});
+const rejected = { fulfillment: 'delivery', status: 'cancelled', payment_status: 'paid', refund_status: 'none', uber_delivery_id: null, auto_refund_state: null, stripe_payment_intent: 'pi_1', uber_mode: 'sandbox' };
+await check('auto-refund: only a paid delivery rejected before any courier', () => {
+  assert.equal(autoRefundDecision(rejected).ok, true);
+  assert.equal(autoRefundDecision({ ...rejected, uber_delivery_id: 'del_1' }).reason, 'courier_was_booked');
+  assert.equal(autoRefundDecision({ ...rejected, status: 'accepted' }).reason, 'not_cancelled');
+  assert.equal(autoRefundDecision({ ...rejected, refund_status: 'partial' }).reason, 'already_refunded');
+  assert.equal(autoRefundDecision({ ...rejected, refund_status: 'full' }).reason, 'already_refunded');
+  assert.equal(autoRefundDecision({ ...rejected, auto_refund_state: 'failed' }).reason, 'already_attempted');
+  assert.equal(autoRefundDecision({ ...rejected, payment_status: 'pending' }).reason, 'not_paid');
+  assert.equal(autoRefundDecision({ ...rejected, fulfillment: 'pickup' }).reason, 'not_delivery');
+  assert.equal(autoRefundDecision(rejected, 'live').reason, 'other_mode');
+});
+await check('mode: "live" must be spelled exactly; anything else is disabled', () => {
+  assert.equal(uberMode('live'), 'live'); assert.equal(uberMode(' LIVE '), 'live');
+  assert.equal(uberMode('production'), 'disabled'); assert.equal(uberMode('lives'), 'disabled');
+});
+await check('dispatch: a test order never gets a live courier, and vice versa', () => {
+  const o = { fulfillment: 'delivery', payment_status: 'paid', status: 'accepted', uber_delivery_id: null, uber_mode: 'sandbox' };
+  assert.equal(canDispatch(o, Date.now(), 'sandbox').ok, true);
+  assert.equal(canDispatch(o, Date.now(), 'live').reason, 'not_live_order');
+  assert.equal(canDispatch({ ...o, uber_mode: 'live' }, Date.now(), 'sandbox').reason, 'not_sandbox_order');
+});
+await check('client: live build refuses test data (test keys in production)', async () => {
+  const { fetch } = fakeUber((url) => /oauth|token/.test(url) ? tokenOk : { status: 200, body: { ...quoteBody, live_mode: false } });
+  const uber = makeUberClient({ ...creds, mode: 'live', fetch });
+  await assert.rejects(uber.createQuote({ pickupAddress: 'a', dropoffAddress: 'b', pickupPhone: '+1', dropoffPhone: '+1' }), (e) => e.code === 'live_mode');
 });
 
 console.log(`\n${passed}/${passed + failed} Uber Direct checks passed`);

@@ -40,7 +40,9 @@ Deno.serve(async (req) => {
 
   let ev: any;
   try { ev = JSON.parse(raw); } catch { return new Response("Bad JSON", { status: 400 }); }
-  if (ev?.live_mode === true) return ok("live event ignored by sandbox build");
+  // Test and live events never cross. Checked against the ORDER's own mode
+  // (below), so couriers already on the road keep updating even after the
+  // delivery switch is turned off.
 
   const deliveryId = ev?.delivery_id ?? ev?.data?.id;
   const eventId = String(ev?.id ?? `${deliveryId}:${ev?.kind}:${ev?.status}:${ev?.created}`);
@@ -51,6 +53,7 @@ Deno.serve(async (req) => {
   if (!deliveryId) return ok("no delivery id");
   const { data: order } = await supabase.from("orders").select("*").eq("uber_delivery_id", deliveryId).maybeSingle();
   if (!order) return ok("unknown delivery");
+  if ((ev?.live_mode === true) !== (order.uber_mode === "live")) return ok(`${ev?.live_mode ? "live" : "test"} event ignored for a ${order.uber_mode} order`);
 
   const d = ev?.data ?? {};
   const uberStatus = ev?.status ?? d?.status ?? order.uber_status;
