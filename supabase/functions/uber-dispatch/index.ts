@@ -21,7 +21,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore — shared plain-JS modules
 import { formatUberAddress, toE164, UberDirectError } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { canDispatch, requoteDecision, quoteUsableForCheckout, deliveryRequestFor, courierCancellable, MAX_DISPATCH_ATTEMPTS, STORE } from "../_shared/delivery-policy.js";
+import { canDispatch, requoteDecision, quoteUsableForCheckout, deliveryRequestFor, courierCancellable, addressKey, MAX_DISPATCH_ATTEMPTS, STORE } from "../_shared/delivery-policy.js";
 import { uberClientFor, UBER_MODE } from "../_shared/uber-env.ts";
 
 const supabase = createClient(
@@ -55,12 +55,14 @@ async function dispatchOne(uber: any, o: any) {
     if (!order.guest_phone_e164) throw new UberDirectError("invalid_request", "Customer phone is not a valid US number");
     const paidFee = Math.round(Number(order.delivery_fee ?? 0) * 100);
 
-    // Use the checkout quote if it is somehow still valid, otherwise re-quote.
+    // Reuse the checkout quote only while it is valid AND still for this
+    // order's address (staff may have corrected it); otherwise re-quote. Uber
+    // does not check that a quote matches the delivery's dropoff.
     let quoteId: string | null = null;
     let feeCents = paidFee;
     if (order.delivery_quote_id) {
-      const { data: q } = await supabase.from("delivery_quotes").select("uber_quote_id, expires_at").eq("id", order.delivery_quote_id).maybeSingle();
-      if (q && quoteUsableForCheckout(q.expires_at)) quoteId = q.uber_quote_id;
+      const { data: q } = await supabase.from("delivery_quotes").select("uber_quote_id, expires_at, address_key").eq("id", order.delivery_quote_id).maybeSingle();
+      if (q && quoteUsableForCheckout(q.expires_at) && q.address_key === addressKey(order.delivery_address ?? {})) quoteId = q.uber_quote_id;
     }
     if (!quoteId) {
       const fresh = await uber.createQuote({
