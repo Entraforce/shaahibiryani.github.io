@@ -5930,7 +5930,7 @@ var selectedTip = 0; // percent
 // no delivery orders accepted). Flip to true ONLY after Uber Direct is approved AND
 // the create-web-order server function adds the $4.99 fee. Also remove the
 // "Coming Soon" badge on the Delivery button when going live.
-var DELIVERY_LIVE = false;
+var DELIVERY_LIVE = true;   // public Uber Direct delivery, owner GO 2026-10-31 (server still decides area, price and hours)
 // Uber Direct SANDBOX preview: only with ?delivery=sandbox in the URL. The
 // server refuses sandbox delivery whenever it holds a live Stripe key, so this
 // can never take a real customer's money for a test courier.
@@ -5947,7 +5947,7 @@ var DELIVERY_PILOT_CODE = (function(){
 })();
 var DELIVERY_ON = DELIVERY_LIVE || DELIVERY_SANDBOX || !!DELIVERY_PILOT_CODE;
 // Uber-priced delivery screen (live price per address, courier tip): sandbox preview or staff pilot.
-var DELIVERY_UBER = DELIVERY_SANDBOX || !!DELIVERY_PILOT_CODE;
+var DELIVERY_UBER = DELIVERY_SANDBOX || !!DELIVERY_PILOT_CODE || DELIVERY_LIVE;
 if (DELIVERY_ON) document.documentElement.classList.add('deliv-on');
 if (DELIVERY_ON) document.addEventListener('DOMContentLoaded', function(){ setFulfillment(fulfillment); });
 var _delivQuote = null;   // {id, feeCents, etaMinutes, prepMinutes, expiresAt, key} from uber-delivery-quote

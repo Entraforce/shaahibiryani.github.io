@@ -6,7 +6,7 @@
 // @ts-ignore — shared plain-JS module
 import { makeUberClient, uberMode } from "./uber-direct.js";
 // @ts-ignore — shared plain-JS module
-import { policyFromEnv, pilotAccess } from "./delivery-policy.js";
+import { policyFromEnv, pilotAccess, DEFAULT_DELIVERY_HOURS } from "./delivery-policy.js";
 
 export function uberClientFor(supabase: any) {
   return makeUberClient({
@@ -54,8 +54,13 @@ function sameText(a: string, b: string): boolean {
 // that many PAID delivery orders exist in the current Uber mode. Unset = no cap.
 const PILOT_MAX_RAW = String(Deno.env.get("DELIVERY_PILOT_MAX_ORDERS") ?? "").trim();
 export const PILOT_MAX_ORDERS = PILOT_ON && /^\d+$/.test(PILOT_MAX_RAW) ? Number(PILOT_MAX_RAW) : null;
+// Public launch switch: DELIVERY_PUBLIC=on opens live delivery to everyone.
+const PUBLIC_ON = ["on", "true", "1"].includes(String(Deno.env.get("DELIVERY_PUBLIC") ?? "").toLowerCase());
+// Ordering hours, Plano time (see DEFAULT_DELIVERY_HOURS). Empty = the default.
+export const DELIVERY_HOURS = String(Deno.env.get("DELIVERY_HOURS") ?? "").trim() || DEFAULT_DELIVERY_HOURS;
 export function pilotGate(code: unknown, phone: unknown): { ok: boolean; reason?: string } {
   return pilotAccess({
+    publicOn: PUBLIC_ON,
     mode: UBER_MODE, pilotOn: PILOT_ON,
     codeOk: sameText(String(code ?? ""), PILOT_CODE),
     phoneListed: PILOT_PHONES.has(String(phone ?? "").replace(/\D/g, "").slice(-10)),

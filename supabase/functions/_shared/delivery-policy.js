@@ -92,7 +92,10 @@ export function deliveryLedger({ foodCents, foodTaxCents, deliveryTaxCents = 0, 
  * offered only to a caller who presents the pilot code AND whose phone is on
  * the tester list. Live mode is never open to the public in this build.
  */
-export function pilotAccess({ mode, pilotOn, codeOk, phoneListed, untilMs = null, now = Date.now() }) {
+export function pilotAccess({ mode, pilotOn, codeOk, phoneListed, untilMs = null, now = Date.now(), publicOn = false }) {
+  // Public launch (DELIVERY_PUBLIC=on, owner GO 2026-10-31): everyone may order;
+  // every other rule (area, price, hours, guard, one courier per order) still applies.
+  if (mode === "live" && publicOn) return { ok: true };
   if (mode === "live" && !pilotOn) return { ok: false, reason: "live_requires_pilot" };
   if (!pilotOn) return { ok: true };
   // The pilot window must be set and still open (DELIVERY_PILOT_UNTIL).
@@ -184,6 +187,38 @@ export function deliveryPrice(quoteFeeCents, foodCents, policy = DEFAULT_POLICY,
   if (p.ok && foodCents >= policy.promoMinSubtotalCents) return { feeCents: p.feeCents, subsidyCents: p.subsidyCents, promo: true, regularFeeCents: regular };
   return { feeCents: regular, subsidyCents: 0, promo: false, regularFeeCents: regular, reason: p.ok ? "under_min" : p.reason };
 }
+
+// Delivery ordering hours (Plano time): last order 30 min before close so the
+// kitchen can cook and hand over while staffed. DELIVERY_HOURS overrides, e.g.
+// "sun,tue,wed,thu 11:30-21:30; fri,sat 11:30-22:30". Days not listed: closed.
+export const DEFAULT_DELIVERY_HOURS = "sun,tue,wed,thu 11:30-21:30; fri,sat 11:30-22:30";
+const DAY_IDX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+export function parseDeliveryHours(spec = DEFAULT_DELIVERY_HOURS) {
+  const out = {};
+  for (const part of String(spec).split(";").map((x) => x.trim()).filter(Boolean)) {
+    const m = /^([a-z,\s]+)\s+(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/i.exec(part);
+    if (!m) return null;                           // malformed: callers fail closed
+    const from = +m[2] * 60 + +m[3], to = +m[4] * 60 + +m[5];
+    if (!(to > from)) return null;
+    for (const d of m[1].toLowerCase().split(",").map((x) => x.trim())) {
+      if (!(d in DAY_IDX)) return null;
+      out[DAY_IDX[d]] = [from, to];
+    }
+  }
+  return out;
+}
+/** Is delivery ordering open right now in Plano? Malformed hours = closed. */
+export function deliveryHoursOpen(spec, now = Date.now()) {
+  const h = parseDeliveryHours(spec ?? DEFAULT_DELIVERY_HOURS);
+  if (!h) return { open: false, reason: "hours_invalid" };
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date(now)).map((p) => [p.type, p.value]));
+  const day = DAY_IDX[String(parts.weekday).slice(0, 3).toLowerCase()];
+  const min = Number(parts.hour) * 60 + Number(parts.minute);
+  const w = h[day];
+  return w && min >= w[0] && min < w[1] ? { open: true } : { open: false, reason: "closed" };
+}
+export const DELIVERY_CLOSED_MESSAGE = "Delivery orders are taken Sun & Tue–Thu 11:30 AM–9:30 PM, Fri–Sat 11:30 AM–10:30 PM (closed Mondays). Pickup is available during our opening hours.";
 
 /** Start of the current Plano (America/Chicago) calendar day, as epoch ms. */
 export function chicagoDayStartMs(now = Date.now()) {

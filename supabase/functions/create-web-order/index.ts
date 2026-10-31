@@ -30,9 +30,9 @@ import { addOnLimitError, addOnOnlyError } from "../_shared/order-rules.js";
 // @ts-ignore — shared plain-JS modules (also run by scripts/verify-uber-direct.mjs)
 import { uberMode, toE164 } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { normaliseDeliveryAddress, addressKey, deliveryPrice, claimPromoSubsidy, quoteUsableForCheckout, policyFromEnv, courierTipCents as courierTipFrom, orderTax } from "../_shared/delivery-policy.js";
+import { normaliseDeliveryAddress, addressKey, deliveryPrice, claimPromoSubsidy, deliveryHoursOpen, DELIVERY_CLOSED_MESSAGE, quoteUsableForCheckout, policyFromEnv, courierTipCents as courierTipFrom, orderTax } from "../_shared/delivery-policy.js";
 // @ts-ignore
-import { pilotGate, NEW_DELIVERY_ORDERS, PILOT_MAX_ORDERS } from "../_shared/uber-env.ts";
+import { pilotGate, NEW_DELIVERY_ORDERS, PILOT_MAX_ORDERS, DELIVERY_HOURS } from "../_shared/uber-env.ts";
 
 // Website delivery via Uber Direct is SANDBOX-ONLY in this build and off unless
 // UBER_DIRECT_MODE=sandbox|live. Sandbox delivery requires a TEST Stripe key
@@ -302,6 +302,8 @@ Deno.serve(async (req) => {
       if ((UBER_MODE === "sandbox") === STRIPE_KEY_IS_LIVE) return json({ error: "Delivery isn't available yet. Please choose pickup." }, 400);
       const gate = pilotGate(body?.pilotCode, guestPhone);
       if (!gate.ok) return json({ error: "Delivery isn't available yet. Please choose pickup.", code: gate.reason }, 403);
+      // No delivery orders outside staffed hours (Plano time), whoever asks.
+      if (!deliveryHoursOpen(DELIVERY_HOURS).open) return json({ error: DELIVERY_CLOSED_MESSAGE, code: "delivery_closed" }, 403);
       if (PILOT_MAX_ORDERS !== null) {
         const { count, error: capErr } = await supabase.from("orders").select("id", { count: "exact", head: true })
           .eq("fulfillment", "delivery").eq("uber_mode", UBER_MODE).eq("payment_status", "paid");

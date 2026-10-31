@@ -15,8 +15,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore — shared plain-JS modules
 import { formatUberAddress, toE164, UberDirectError } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { STORE, normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, promoAvailable, promoSubsidyUsedTodayCents } from "../_shared/delivery-policy.js";
-import { uberClientFor, UBER_MODE, POLICY, pilotGate, NEW_DELIVERY_ORDERS } from "../_shared/uber-env.ts";
+import { STORE, normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, promoAvailable, promoSubsidyUsedTodayCents, deliveryHoursOpen, DELIVERY_CLOSED_MESSAGE } from "../_shared/delivery-policy.js";
+import { uberClientFor, UBER_MODE, POLICY, pilotGate, NEW_DELIVERY_ORDERS, DELIVERY_HOURS } from "../_shared/uber-env.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const gate = pilotGate(body?.pilotCode, body?.phone);
     if (!gate.ok) return json({ error: "Delivery isn't available yet. Please choose pickup.", code: gate.reason }, 403);
+    if (!deliveryHoursOpen(DELIVERY_HOURS).open) return json({ error: DELIVERY_CLOSED_MESSAGE, code: "delivery_closed" }, 403);
     const norm = normaliseDeliveryAddress(body?.address);
     if (norm.error) return json({ error: norm.error }, 400);
     const dropoffAddress = formatUberAddress(norm.address);

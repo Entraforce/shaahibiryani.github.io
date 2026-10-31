@@ -315,5 +315,25 @@ await check('booking: if Uber still says test, the error keeps the delivery id (
   assert.equal(creates, 1, 'exactly one create');
 });
 
+{ const { deliveryHoursOpen, parseDeliveryHours, DEFAULT_DELIVERY_HOURS } = await import('../supabase/functions/_shared/delivery-policy.js');
+await check('hours: delivery ordering follows Plano time, last order 30 min before close, Mondays closed, DST-safe', () => {
+  const at = (iso) => deliveryHoursOpen(DEFAULT_DELIVERY_HOURS, Date.parse(iso)).open;
+  assert.equal(at('2026-10-31T16:29:00Z'), false, 'Sat 11:29 AM CDT');
+  assert.equal(at('2026-10-31T16:30:00Z'), true, 'Sat 11:30 AM CDT');
+  assert.equal(at('2026-11-01T03:29:00Z'), true, 'Sat 10:29 PM CDT');
+  assert.equal(at('2026-11-01T03:30:00Z'), false, 'Sat 10:30 PM CDT');
+  assert.equal(at('2026-11-01T08:00:00Z'), false, 'Sun 2 AM (overnight)');
+  assert.equal(at('2026-11-02T03:29:00Z'), true, 'Sun 9:29 PM CST (after DST ends)');
+  assert.equal(at('2026-11-02T03:30:00Z'), false, 'Sun 9:30 PM CST');
+  assert.equal(at('2026-11-02T18:00:00Z'), false, 'Monday noon: closed');
+  assert.equal(at('2026-11-03T17:30:00Z'), true, 'Tue 11:30 AM CST');
+  assert.equal(deliveryHoursOpen('garbage', Date.parse('2026-11-03T18:00:00Z')).open, false, 'malformed = closed');
+  assert.equal(parseDeliveryHours('mon 10:00-09:00'), null);
+});
+await check('public switch: live + DELIVERY_PUBLIC opens to all; without it the pilot rules stand', () => {
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: false, codeOk: false, phoneListed: false, publicOn: true }).ok, true);
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: false, codeOk: false, phoneListed: false, publicOn: false }).reason, 'live_requires_pilot');
+  assert.equal(pilotAccess({ mode: 'disabled', pilotOn: false, codeOk: false, phoneListed: false, publicOn: true }).ok, true); // mode itself is checked before the gate
+}); }
 console.log(`\n${passed}/${passed + failed} Uber Direct checks passed`);
 if (failed) process.exit(1);
