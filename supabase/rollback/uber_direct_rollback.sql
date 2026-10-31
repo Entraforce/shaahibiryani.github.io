@@ -6,6 +6,14 @@
 -- dropped columns/tables is lost, so export it first if any real delivery ran.
 begin;
 
+-- 20261101000000_delivery_promo (undo first; the guard function below is dropped with the rest)
+drop view if exists public.delivery_daily;
+drop function if exists public.claim_delivery_promo(text, integer, integer, timestamptz);
+drop function if exists public.delivery_promo_used(timestamptz);
+drop table if exists public.delivery_promo_claims;
+drop index if exists public.orders_delivery_subsidy_day;
+alter table public.orders drop column if exists delivery_subsidy_cents;
+
 select cron.unschedule('uber-dispatch') where exists (select 1 from cron.job where jobname = 'uber-dispatch');
 
 drop trigger if exists orders_force_delivery_fields on public.orders;

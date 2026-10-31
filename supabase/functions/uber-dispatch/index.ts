@@ -68,7 +68,10 @@ async function dispatchOne(uber: any, o: any) {
 
   try {
     if (!order.guest_phone_e164) throw new UberDirectError("invalid_request", "Customer phone is not a valid US number");
-    const paidFee = Math.round(Number(order.delivery_fee ?? 0) * 100);
+    // What was approved for Uber's fee: the customer's part plus the launch
+    // offer subsidy Shaahi already agreed to pay. Anything above that is a
+    // real price rise and goes to staff.
+    const paidFee = Math.round(Number(order.delivery_fee ?? 0) * 100) + Number(order.delivery_subsidy_cents ?? 0);
 
     // Ask the courier to arrive when the food will be ready (accept time + prep).
     const readyAt = pickupReadyAt(order.kitchen_accepted_at, order.status, POLICY);
