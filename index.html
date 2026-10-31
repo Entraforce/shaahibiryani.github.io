@@ -5380,12 +5380,13 @@ async function startWebPayment(){
         if(!qr.ok){ _delivQuote=null; DELIVERY_FEE=DELIVERY_UBER?0:DELIVERY_FEE; _refreshWaTotals();
           var qbe=gi('delivQuoteBox'); if(qbe){qbe.style.display='block';qbe.style.borderColor='rgba(248,113,113,.6)';qbe.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';}
           if(err){err.style.display='block';err.style.color='';err.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';} return; }
-        _delivQuote={id:qd.quoteId,feeCents:qd.feeCents,etaMinutes:qd.etaMinutes,prepMinutes:qd.prepMinutes,expiresAt:qd.expiresAt,key:aKey};
+        _delivQuote={id:qd.quoteId,feeCents:qd.feeCents,etaMinutes:qd.etaMinutes,prepMinutes:qd.prepMinutes,expiresAt:qd.expiresAt,key:aKey,promo:qd.promo||null};
         DELIVERY_FEE=qd.feeCents/100;
         var held=new Date(Date.parse(qd.expiresAt)-2*60*1000).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
         var qbx=gi('delivQuoteBox');
         if(qbx){qbx.style.display='block';qbx.style.borderColor='rgba(201,168,76,.3)';
-          qbx.innerHTML='<strong style="color:var(--gold-l);">Delivery by Uber Direct: $'+DELIVERY_FEE.toFixed(2)+'</strong><br>'
+          qbx.innerHTML='<strong style="color:var(--gold-l);">Delivery by Uber Direct: $'+(_cents(DELIVERY_FEE)===orderTotals(cart,0,_cents(DELIVERY_FEE)).deliveryFeeCents?DELIVERY_FEE.toFixed(2):(orderTotals(cart,0,_cents(DELIVERY_FEE)).deliveryFeeCents/100).toFixed(2)+' <span style="text-decoration:line-through;opacity:.6;">$'+DELIVERY_FEE.toFixed(2)+'</span>')+'</strong><br>'
+            +(qd.promo?'<span style="color:var(--gold-l);">$'+(qd.promo.feeCents/100).toFixed(2)+' delivery on food orders of $'+(qd.promo.minSubtotalCents/100).toFixed(0)+' or more.</span><br>':'')
             +'Arrives in about <strong>'+(qd.etaMinutes||'—')+' minutes</strong> — includes about '+(qd.prepMinutes||25)+' minutes to cook it fresh.<br>'
             +'<span style="font-size:.74rem;color:var(--text-muted);">This price is held until '+held+'.'+(qd.sandbox?' <strong style="color:#f0b429;">TEST MODE — no real courier, no real charge.</strong>':'')+'</span>';}
         var dn=gi('delivNote'); if(dn){dn.style.display='block';dn.textContent='Delivery by Uber Direct: $'+DELIVERY_FEE.toFixed(2)+' · about '+(qd.etaMinutes||'—')+' min to your door';}
@@ -5423,11 +5424,17 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,deliveryQuoteId:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.id:null,courierTipCents:(fulfillment==='delivery'&&_delivQuote)?courierTipCents:0,pilotCode:(fulfillment==='delivery'&&DELIVERY_PILOT_CODE)?DELIVERY_PILOT_CODE:undefined,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,deliveryQuoteId:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.id:null,expectedDeliveryFeeCents:(fulfillment==='delivery'&&_delivQuote)?orderTotals(cart,0,_cents(DELIVERY_FEE)).deliveryFeeCents:undefined,courierTipCents:(fulfillment==='delivery'&&_delivQuote)?courierTipCents:0,pilotCode:(fulfillment==='delivery'&&DELIVERY_PILOT_CODE)?DELIVERY_PILOT_CODE:undefined,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
     });
     var data=await res.json();
     if(!res.ok){
       // Price expired or address changed: drop the quote so Continue fetches a fresh one.
+      if(fulfillment==='delivery' && res.status===409 && data.code==='delivery_fee_changed'){
+        if(_delivQuote && !data.promo) _delivQuote.promo=null;
+        renderCart(); _refreshWaTotals();
+        var qf=gi('delivQuoteBox'); if(qf){qf.style.display='block';qf.style.borderColor='rgba(248,113,113,.6)';qf.textContent=data.error;}
+        throw new Error(data.error);
+      }
       if(fulfillment==='delivery' && res.status===409){
         _delivQuote=null; var qx=gi('delivQuoteBox'); if(qx) qx.style.display='none';
         bl='Get delivery price &#8594;'; _refreshWaTotals();
@@ -5903,6 +5910,8 @@ function orderTotals(items, tipPercent, deliveryFeeCents){
   }, 0);
   var tipCents = Math.max(0, Math.round(subtotalCents * ((tipPercent || 0) / 100)));
   var feeCents = Math.max(0, Math.round(deliveryFeeCents || 0));
+  // Launch offer: $4.99 (from the quote) once the food reaches its minimum.
+  if (feeCents > 0 && typeof _delivQuote !== "undefined" && _delivQuote && _delivQuote.promo && subtotalCents >= _delivQuote.promo.minSubtotalCents) feeCents = _delivQuote.promo.feeCents;
   // Texas taxes a delivery charge billed with taxable food; the server
   // (delivery-policy.orderTax) computes the same single rounding. Pickup: fee 0.
   var taxCents = Math.round((subtotalCents + feeCents) * TAX_RATE);
@@ -6067,7 +6076,7 @@ function initiateWhatsAppCheckout(){
   if(gi('waTip'))          gi('waTip').textContent        = selectedTip > 0 ? selectedTip+'% — $'+tip.toFixed(2) : 'None';
   var dRow = gi('waDelivRow');
   if(dRow) dRow.style.display = fulfillment==='delivery' ? 'flex' : 'none';
-  if(gi('waDeliv'))        gi('waDeliv').textContent      = '$'+DELIVERY_FEE.toFixed(2);
+  if(gi('waDeliv'))        gi('waDeliv').textContent      = '$'+(T.deliveryFeeCents/100).toFixed(2);
   var ab = gi('delivAddrBlock');
   if(ab) ab.style.display = fulfillment==='delivery' ? 'block' : 'none';
   if(gi('waIntro')) gi('waIntro').textContent = (fulfillment==='delivery')

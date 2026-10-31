@@ -35,6 +35,14 @@ export const DEFAULT_POLICY = Object.freeze({
   courierTips: true,        // DELIVERY_COURIER_TIPS — offer an optional tip for the courier
   deliveryFeeTaxable: true, // DELIVERY_FEE_TAXABLE — Texas taxes seller-billed delivery of taxable
                             //   food (34 TAC 3.293(h)(2)); accountant to confirm before launch
+  // Launch offer (owner 2026-10-31): $4.99 delivery on $30+ food when Uber
+  // quotes its 0–5 mile $7.99 tier; Shaahi pays the difference, up to a daily
+  // budget. All of it is a secret, so it can change or stop without a deploy.
+  promoOn: false,               // DELIVERY_PROMO — on/off
+  promoFeeCents: 499,           // DELIVERY_PROMO_FEE_CENTS — what the customer pays
+  promoMinSubtotalCents: 3000,  // DELIVERY_PROMO_MIN_SUBTOTAL_CENTS — food only
+  promoUberFeeCents: 799,       // DELIVERY_PROMO_UBER_FEE_CENTS — the only Uber quote that qualifies
+  promoDailyBudgetCents: 7500,  // DELIVERY_PROMO_DAILY_BUDGET_CENTS — Shaahi subsidy per Plano day
 });
 
 // Texas state 6.25% + Plano 1% + DART 1%.
@@ -129,6 +137,11 @@ export function policyFromEnv(get) {
     prepMinutes: num("DELIVERY_PREP_MINUTES", DEFAULT_POLICY.prepMinutes),
     courierTips: flag("DELIVERY_COURIER_TIPS", DEFAULT_POLICY.courierTips),
     deliveryFeeTaxable: flag("DELIVERY_FEE_TAXABLE", DEFAULT_POLICY.deliveryFeeTaxable),
+    promoOn: flag("DELIVERY_PROMO", DEFAULT_POLICY.promoOn),
+    promoFeeCents: num("DELIVERY_PROMO_FEE_CENTS", DEFAULT_POLICY.promoFeeCents),
+    promoMinSubtotalCents: num("DELIVERY_PROMO_MIN_SUBTOTAL_CENTS", DEFAULT_POLICY.promoMinSubtotalCents),
+    promoUberFeeCents: num("DELIVERY_PROMO_UBER_FEE_CENTS", DEFAULT_POLICY.promoUberFeeCents),
+    promoDailyBudgetCents: num("DELIVERY_PROMO_DAILY_BUDGET_CENTS", DEFAULT_POLICY.promoDailyBudgetCents),
   });
 }
 
@@ -140,6 +153,70 @@ export function customerDeliveryFeeCents(quoteFeeCents, policy = DEFAULT_POLICY)
   if (!Number.isFinite(fee) || fee <= 0) return null;
   if (fee > maxFeeForMiles(policy.maxMiles)) return null;
   return fee;
+}
+
+/**
+ * Can this Uber quote get the launch offer at all (before the cart is known)?
+ * Only the exact promo tier, only while the offer is on, only while today's
+ * budget still covers one more subsidy. usedTodayCents = null means "could not
+ * be counted": fail closed (regular price).
+ */
+export function promoAvailable(quoteFeeCents, policy = DEFAULT_POLICY, usedTodayCents = 0) {
+  if (!policy.promoOn) return { ok: false, reason: "off" };
+  const fee = Math.round(Number(quoteFeeCents));
+  if (fee !== policy.promoUberFeeCents) return { ok: false, reason: "tier" };
+  const subsidyCents = fee - policy.promoFeeCents;
+  if (!(subsidyCents > 0)) return { ok: false, reason: "no_subsidy" };
+  if (usedTodayCents === null || !Number.isFinite(usedTodayCents)) return { ok: false, reason: "budget_unknown" };
+  if (usedTodayCents + subsidyCents > policy.promoDailyBudgetCents) return { ok: false, reason: "budget" };
+  return { ok: true, feeCents: policy.promoFeeCents, subsidyCents };
+}
+
+/**
+ * What the customer pays for delivery, and what Shaahi subsidises. null when
+ * the address is outside the delivery area. The fee is never below the
+ * approved promo fee and never below Uber's quote outside the promo.
+ */
+export function deliveryPrice(quoteFeeCents, foodCents, policy = DEFAULT_POLICY, usedTodayCents = 0) {
+  const regular = customerDeliveryFeeCents(quoteFeeCents, policy);
+  if (regular === null) return null;
+  const p = promoAvailable(quoteFeeCents, policy, usedTodayCents);
+  if (p.ok && foodCents >= policy.promoMinSubtotalCents) return { feeCents: p.feeCents, subsidyCents: p.subsidyCents, promo: true, regularFeeCents: regular };
+  return { feeCents: regular, subsidyCents: 0, promo: false, regularFeeCents: regular, reason: p.ok ? "under_min" : p.reason };
+}
+
+/** Start of the current Plano (America/Chicago) calendar day, as epoch ms. */
+export function chicagoDayStartMs(now = Date.now()) {
+  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
+  for (const h of ["05", "06"]) {
+    const t = Date.parse(`${ymd}T${h}:00:00Z`);
+    const local = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).format(new Date(t));
+    if (local.startsWith(ymd) && /\b00$/.test(local)) return t;
+  }
+  return Date.parse(`${ymd}T06:00:00Z`);
+}
+
+/**
+ * Promo subsidy already committed today: paid orders, plus checkouts started in
+ * the last 30 minutes that may still be paid (so the budget is not oversold).
+ * Returns null if it cannot be counted (callers then charge the regular fee).
+ */
+export async function promoSubsidyUsedTodayCents(sb, now = Date.now()) {
+  const { data, error } = await sb.rpc("delivery_promo_used", { p_since: new Date(chicagoDayStartMs(now)).toISOString() });
+  if (error || typeof data !== "number") return null;
+  return data;
+}
+
+/**
+ * Atomically reserve today's subsidy for one checkout (keyed by its quote).
+ * true = the offer is this order's; false/null = budget full or unknown.
+ */
+export async function claimPromoSubsidy(sb, key, subsidyCents, policy = DEFAULT_POLICY, now = Date.now()) {
+  const { data, error } = await sb.rpc("claim_delivery_promo", {
+    p_key: key, p_subsidy: subsidyCents, p_budget: policy.promoDailyBudgetCents,
+    p_since: new Date(chicagoDayStartMs(now)).toISOString(),
+  });
+  return error ? null : data === true;
 }
 
 // Kept for older imports; the policy's minSubtotalCents is authoritative.

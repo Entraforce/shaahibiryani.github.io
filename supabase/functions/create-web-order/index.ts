@@ -30,7 +30,7 @@ import { addOnLimitError, addOnOnlyError } from "../_shared/order-rules.js";
 // @ts-ignore — shared plain-JS modules (also run by scripts/verify-uber-direct.mjs)
 import { uberMode, toE164 } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, quoteUsableForCheckout, policyFromEnv, courierTipCents as courierTipFrom, orderTax } from "../_shared/delivery-policy.js";
+import { normaliseDeliveryAddress, addressKey, deliveryPrice, claimPromoSubsidy, quoteUsableForCheckout, policyFromEnv, courierTipCents as courierTipFrom, orderTax } from "../_shared/delivery-policy.js";
 // @ts-ignore
 import { pilotGate, NEW_DELIVERY_ORDERS, PILOT_MAX_ORDERS } from "../_shared/uber-env.ts";
 
@@ -293,6 +293,7 @@ Deno.serve(async (req) => {
     // row that uber-delivery-quote wrote, for this exact address, still valid.
     const fulfillment = body?.fulfillment === "delivery" ? "delivery" : "pickup";
     let deliveryFeeCents = 0;
+    let deliverySubsidyCents = 0;   // launch offer: what Shaahi pays toward Uber's fee
     let courierTipCents = 0;
     let delivery: null | { address: Record<string, string>; quoteRowId: string; key: string; phoneE164: string } = null;
     if (fulfillment === "delivery") {
@@ -323,9 +324,23 @@ Deno.serve(async (req) => {
       if (!q || q.uber_mode !== UBER_MODE) return json({ error: "Please get a delivery price for your address first." }, 400);
       if (q.address_key !== addressKey(norm.address)) return json({ error: "Your address changed. Please get a new delivery price." }, 409);
       if (!quoteUsableForCheckout(q.expires_at)) return json({ error: "Your delivery price expired. Please refresh it.", code: "quote_expired" }, 409);
-      const fee = customerDeliveryFeeCents(q.fee_cents, POLICY);
-      if (fee === null) return json({ error: "Sorry, that address is outside our delivery area." }, 400);
-      deliveryFeeCents = fee;
+      // Launch offer ($4.99 on $30+ food in the $7.99 tier) while today's
+      // budget lasts; otherwise Uber's price. Decided here, never by the page.
+      let price = deliveryPrice(q.fee_cents, subtotalCents, POLICY, 0);
+      if (price === null) return json({ error: "Sorry, that address is outside our delivery area." }, 400);
+      // The daily budget is reserved atomically in the database (one claim
+      // per quote); if it is full, or cannot be checked, the regular fee applies.
+      if (price.promo && !(await claimPromoSubsidy(supabase, quoteRowId, price.subsidyCents, POLICY))) {
+        price = deliveryPrice(q.fee_cents, subtotalCents, POLICY, null)!;
+      }
+      // The customer must see the fee they pay BEFORE paying: if the page
+      // showed a different one (e.g. today's offer just ran out), stop here.
+      const expected = Number(body?.expectedDeliveryFeeCents);
+      if (Number.isFinite(expected) && expected !== price.feeCents) {
+        return json({ error: `Delivery is now $${(price.feeCents / 100).toFixed(2)}. Please check your total and tap Pay again — you haven't been charged.`, code: "delivery_fee_changed", deliveryFeeCents: price.feeCents, promo: price.promo }, 409);
+      }
+      deliveryFeeCents = price.feeCents;
+      deliverySubsidyCents = price.subsidyCents;
       // Optional tip for the Uber courier — passed to Uber in full. The
       // restaurant-staff tip (tipCents) stays separate and never goes to Uber.
       courierTipCents = courierTipFrom(body?.courierTipCents, POLICY);
@@ -419,7 +434,7 @@ Deno.serve(async (req) => {
         // visible wherever the customer is being looked at. Our table is the
         // record of evidence; this is a convenience copy.
         marketing_opt_in: marketingOptIn ? "yes" : "no",
-        ...(delivery ? { fulfillment: "delivery", delivery_fee_cents: String(deliveryFeeCents), courier_tip_cents: String(courierTipCents), staff_tip_cents: String(tipCents), delivery_tax_cents: String(deliveryTaxCents), uber_mode: UBER_MODE } : {}),
+        ...(delivery ? { fulfillment: "delivery", delivery_fee_cents: String(deliveryFeeCents), courier_tip_cents: String(courierTipCents), staff_tip_cents: String(tipCents), delivery_tax_cents: String(deliveryTaxCents), delivery_subsidy_cents: String(deliverySubsidyCents), uber_mode: UBER_MODE } : {}),
       },
     }, { idempotencyKey: ckey });
 
@@ -446,7 +461,7 @@ Deno.serve(async (req) => {
         delivery_address: delivery ? delivery.address : null,
         // Delivery-only columns (from the Uber Direct migration); pickup rows
         // never mention them, so pickup works whether or not it is applied.
-        ...(delivery ? { delivery_quote_id: delivery.quoteRowId, uber_mode: UBER_MODE, courier_tip: courierTipCents / 100, delivery_tax: deliveryTaxCents / 100, tracking_token: trackingToken } : {}),
+        ...(delivery ? { delivery_quote_id: delivery.quoteRowId, uber_mode: UBER_MODE, courier_tip: courierTipCents / 100, delivery_tax: deliveryTaxCents / 100, tracking_token: trackingToken, delivery_subsidy_cents: deliverySubsidyCents } : {}),
         scheduled_for: scheduledFor,
         points_redeemed: 0,
         points_earned: 0,
@@ -463,6 +478,11 @@ Deno.serve(async (req) => {
         p_error: orderErr?.message ?? "insert failed",
       });
       return json({ error: "Could not create order." }, 500);
+    }
+    // Tie the budget claim to the order: it now counts once paid, and lapses
+    // after 30 minutes if the customer never pays.
+    if (deliverySubsidyCents > 0 && delivery) {
+      await supabase.from("delivery_promo_claims").update({ order_id: order.id }).eq("claim_key", delivery.quoteRowId);
     }
 
     const { error: itemsErr } = await supabase
@@ -518,7 +538,7 @@ Deno.serve(async (req) => {
       p_amount: totalCents,
       p_breakdown: {
         subtotalCents, taxCents, tipCents, totalCents,
-        ...(delivery ? { deliveryFeeCents, deliveryTaxCents, courierTipCents, trackingToken } : {}),
+        ...(delivery ? { deliveryFeeCents, deliveryTaxCents, courierTipCents, deliverySubsidyCents, trackingToken } : {}),
       },
     });
 
@@ -526,7 +546,7 @@ Deno.serve(async (req) => {
       paymentIntent: paymentIntent.client_secret,
       orderId: order.id,
       orderNumber: String(order.id).slice(-6).toUpperCase(),
-      breakdown: { subtotalCents, taxCents, tipCents, totalCents, ...(delivery ? { deliveryFeeCents, deliveryTaxCents, courierTipCents } : {}) },
+      breakdown: { subtotalCents, taxCents, tipCents, totalCents, ...(delivery ? { deliveryFeeCents, deliveryTaxCents, courierTipCents, deliverySubsidyCents } : {}) },
       ...(trackingToken ? { trackingToken } : {}),
     });
   } catch (err) {

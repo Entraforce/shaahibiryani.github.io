@@ -549,6 +549,84 @@ await test('X4', 'partial refund (one item) does NOT cancel the courier', async 
   await dispatch(); const o = await getOrder(H.orderId); must(o.uber_status !== 'canceled', 'courier cancelled on partial refund');
   return `refund_status=partial, courier still ${o.uber_status}`;
 });
+// ── Launch offer (only with RUN_PROMO=1: flips staging promo secrets, restores them) ──
+if (process.env.RUN_PROMO === '1') {
+  const { execSync } = await import('node:child_process');
+  const setS = (kv) => execSync(`supabase secrets set --project-ref ${ST.STAGING_PROJECT_REF} ${kv}`, { stdio: 'ignore' });
+  const SMALL = [{ menuItemId: 'chicken-65', variantId: 'chicken-65-standard', quantity: 1 }, { menuItemId: 'vegetable-samosa-2pc', variantId: 'vegetable-samosa-2pc-standard', quantity: 1 }]; // $20
+  const promoQuote = async (want) => waitFor(async () => { const q = await quote(); return q.status === 200 && (!!q.body.promo) === want ? q : null; }, 90_000, 5_000);
+  const { chicagoDayStartMs } = await import('../supabase/functions/_shared/delivery-policy.js');
+  const usedToday = async () => (await rest('POST', 'rpc/delivery_promo_used', { p_since: new Date(chicagoDayStartMs()).toISOString() })).body;
+  setS('DELIVERY_PROMO=on DELIVERY_PROMO_DAILY_BUDGET_CENTS=1000000');
+  try {
+    let P1;
+    await test('PR1', 'offer: $30+ food in the $7.99 tier pays $4.99, Shaahi subsidy $3, tax on $4.99, courier still booked', async () => {
+      const q = await promoQuote(true); must(q, 'quote never showed the offer');
+      must(q.body.feeCents === 799 && q.body.promo.feeCents === 499 && q.body.promo.minSubtotalCents === 3000, JSON.stringify(q.body.promo));
+      const c = await call('create-web-order', checkoutBody(q.body.quoteId, NEAR, phone(), { expectedDeliveryFeeCents: 499 }));
+      must(c.status === 200, `checkout ${c.status} ${JSON.stringify(c.body)}`);
+      const b = c.body.breakdown; must(b.deliveryFeeCents === 499 && b.deliverySubsidyCents === 300, JSON.stringify(b));
+      must(b.taxCents === Math.round((b.subtotalCents + 499) * 0.0825), `tax ${b.taxCents}`);
+      must(b.totalCents === b.subtotalCents + b.taxCents + b.tipCents + 499 + b.courierTipCents, `total ${b.totalCents}`);
+      const piId = c.body.paymentIntent.split('_secret_')[0];
+      const pi = await stripe('POST', `payment_intents/${piId}/confirm`, { payment_method: 'pm_card_visa', return_url: 'https://example.com/return' });
+      must(pi.status === 'succeeded' && pi.amount === b.totalCents && pi.metadata.delivery_subsidy_cents === '300', `stripe ${pi.status} ${pi.amount}`);
+      await call('confirm-web-order', { orderId: c.body.orderId }); await kitchen(c.body.orderId, 'accepted');
+      const o = await waitFor(async () => { await dispatch(); const x = await getOrder(c.body.orderId); return x.uber_delivery_id || x.uber_dispatch_state === 'needs_staff' ? x : null; }, 120_000, 5_000);
+      must(o?.uber_delivery_id && o.uber_dispatch_state !== 'needs_staff', `dispatch: ${o?.uber_dispatch_state} ${o?.uber_dispatch_error}`);
+      P1 = o; return `food $${b.subtotalCents / 100}, delivery $4.99, subsidy $3.00, tax $${b.taxCents / 100}, Stripe $${pi.amount / 100}; courier ${short(o.uber_delivery_id)} (no fee_rose)`;
+    });
+    await test('PR2', 'offer: under $30 food pays the regular $7.99, no subsidy', async () => {
+      const q = await promoQuote(true); must(q, 'no quote');
+      const c = await call('create-web-order', { ...checkoutBody(q.body.quoteId), items: SMALL, expectedDeliveryFeeCents: 799 });
+      must(c.status === 200, `checkout ${c.status} ${JSON.stringify(c.body)}`);
+      must(c.body.breakdown.deliveryFeeCents === 799 && c.body.breakdown.deliverySubsidyCents === 0, JSON.stringify(c.body.breakdown));
+      return `food $${c.body.breakdown.subtotalCents / 100} → delivery $7.99, subsidy 0`;
+    });
+    await test('PR3', 'page showed $4.99 but the server says $7.99 → 409 before any charge', async () => {
+      const q = await promoQuote(true); must(q, 'no quote');
+      const c = await call('create-web-order', { ...checkoutBody(q.body.quoteId), items: SMALL, expectedDeliveryFeeCents: 499 });
+      must(c.status === 409 && c.body.code === 'delivery_fee_changed' && c.body.deliveryFeeCents === 799, `${c.status} ${JSON.stringify(c.body)}`);
+      return `409 delivery_fee_changed → $7.99 shown before paying`;
+    });
+    await test('PR4', 'daily budget used up → regular fee shown and charged; stale $4.99 refused', async () => {
+      const used = await usedToday(); setS(`DELIVERY_PROMO_DAILY_BUDGET_CENTS=${used}`);
+      const q = await promoQuote(false); must(q, 'quote still offers the promo after budget hit');
+      const stale = await call('create-web-order', checkoutBody(q.body.quoteId, NEAR, phone(), { expectedDeliveryFeeCents: 499 }));
+      must(stale.status === 409 && stale.body.deliveryFeeCents === 799, `${stale.status} ${JSON.stringify(stale.body)}`);
+      const c = await call('create-web-order', checkoutBody(q.body.quoteId, NEAR, phone(), { expectedDeliveryFeeCents: 799 }));
+      must(c.status === 200 && c.body.breakdown.deliveryFeeCents === 799 && c.body.breakdown.deliverySubsidyCents === 0, `${c.status} ${JSON.stringify(c.body.breakdown ?? c.body)}`);
+      return `budget ${used}¢ used → quote without offer; $4.99 refused (409); $32 food charged $7.99`;
+    });
+    await test('PR7', 'budget is atomic: room for ONE more subsidy, 5 simultaneous qualifying checkouts → exactly one gets $4.99', async () => {
+      setS('DELIVERY_PROMO_DAILY_BUDGET_CENTS=100000000'); const q0 = await promoQuote(true); must(q0, 'offer not back on');
+      const quotes = []; for (let i = 0; i < 5; i++) { const q = await quote(); must(q.status === 200, `quote ${q.status}`); quotes.push(q.body.quoteId); }
+      const used = await usedToday(); must(typeof used === 'number', `used ${JSON.stringify(used)}`);
+      setS(`DELIVERY_PROMO_DAILY_BUDGET_CENTS=${used + 300}`);
+      await waitFor(async () => { const t = await quote(); const c = t.status === 200 && t.body.promo; return c; }, 60_000, 4_000);
+      await sleep(10_000);
+      const rs = await Promise.all(quotes.map((id) => call('create-web-order', checkoutBody(id, NEAR, phone()))));
+      const ok = rs.filter((r) => r.status === 200); must(ok.length === 5, `checkouts ${rs.map((r) => r.status)}`);
+      const promo = ok.filter((r) => r.body.breakdown.deliveryFeeCents === 499).length;
+      must(promo === 1, `promo given to ${promo} of 5 (fees ${ok.map((r) => r.body.breakdown.deliveryFeeCents)})`);
+      return `fees ${ok.map((r) => r.body.breakdown.deliveryFeeCents / 100).join(', ')} → exactly one $4.99`;
+    });
+    await test('PR5', 'offer switched off by secret (no deploy) → regular pricing; pickup unaffected', async () => {
+      setS('DELIVERY_PROMO=off');
+      const q = await promoQuote(false); must(q, 'quote still shows the offer');
+      const pk = await call('create-web-order', { items: ITEMS, guestName: 'Promo Pickup', guestPhone: phone(), guestEmail: '', tipCents: 0, fulfillment: 'pickup' });
+      must(pk.status === 200 && !pk.body.breakdown.deliveryFeeCents, `pickup ${pk.status} ${JSON.stringify(pk.body.breakdown)}`);
+      return `promo null; pickup $${pk.body.breakdown.totalCents / 100}, no delivery fee`;
+    });
+    await test('PR6', 'subsidy is measurable per day (delivery_daily view + order column)', async () => {
+      const r = await rest('GET', `orders?id=eq.${P1?.id}&select=delivery_subsidy_cents,delivery_fee,uber_fee_cents`);
+      must(r.body?.[0]?.delivery_subsidy_cents === 300, JSON.stringify(r.body));
+      const v = await rest('GET', 'delivery_daily?select=day,orders,promo_orders,subsidy_cents&order=day.desc&limit=1');
+      must(v.status === 200, `view ${v.status}`);
+      return `order subsidy 300¢, customer fee $${r.body[0].delivery_fee}, Uber fee ${r.body[0].uber_fee_cents}¢; view OK`;
+    });
+  } finally { setS('DELIVERY_PROMO=off DELIVERY_PROMO_DAILY_BUDGET_CENTS=7500'); }
+}
 await test('Z1', 'reconciliation: no order has more than one courier; every courier belongs to a paid order', async () => {
   const rows = (await rest('GET', `orders?uber_delivery_id=not.is.null&select=id,uber_delivery_id,payment_status`)).body;
   const ids = rows.map((r) => r.uber_delivery_id); must(new Set(ids).size === ids.length, 'duplicate delivery ids');

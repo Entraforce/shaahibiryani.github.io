@@ -15,7 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore — shared plain-JS modules
 import { formatUberAddress, toE164, UberDirectError } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { STORE, normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents } from "../_shared/delivery-policy.js";
+import { STORE, normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, promoAvailable, promoSubsidyUsedTodayCents } from "../_shared/delivery-policy.js";
 import { uberClientFor, UBER_MODE, POLICY, pilotGate, NEW_DELIVERY_ORDERS } from "../_shared/uber-env.ts";
 
 const supabase = createClient(
@@ -106,6 +106,12 @@ Deno.serve(async (req) => {
       expiresAt: q.expiresAt,
       minSubtotalCents: POLICY.minSubtotalCents,
       courierTips: POLICY.courierTips,
+      // Launch offer the page may show for this address; checkout re-decides.
+      promo: await (async () => {
+        if (!POLICY.promoOn) return null;
+        const p = promoAvailable(q.feeCents, POLICY, await promoSubsidyUsedTodayCents(supabase));
+        return p.ok ? { feeCents: p.feeCents, minSubtotalCents: POLICY.promoMinSubtotalCents } : null;
+      })(),
       sandbox: UBER_MODE === "sandbox",
     });
   } catch (e) {
