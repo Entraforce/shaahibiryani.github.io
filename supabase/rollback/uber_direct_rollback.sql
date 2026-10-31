@@ -1,4 +1,4 @@
--- ROLLBACK for migrations 20261031000000, 20261031010000, 20261031020000
+-- ROLLBACK for migrations 20261031000000, 20261031010000, 20261031020000, 20261031030000
 -- (Uber Direct website delivery). Run ONLY after delivery is switched off
 -- (UBER_DIRECT_MODE unset) and the uber-dispatch cron job is unscheduled.
 -- Removes only objects those migrations added; pickup, app orders, payments
@@ -8,6 +8,8 @@ begin;
 
 select cron.unschedule('uber-dispatch') where exists (select 1 from cron.job where jobname = 'uber-dispatch');
 
+drop trigger if exists orders_force_delivery_fields on public.orders;
+drop function if exists public.force_server_owned_delivery_fields();
 drop trigger if exists orders_stamp_kitchen_accepted_at on public.orders;
 drop function if exists public.stamp_kitchen_accepted_at();
 drop function if exists public.claim_auto_refund(uuid);

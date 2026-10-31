@@ -182,6 +182,10 @@ Deno.serve(async (req) => {
     .select("*")
     .eq("fulfillment", "delivery").eq("payment_status", "paid").eq("uber_mode", UBER_MODE)
     .is("uber_delivery_id", null).in("status", ["accepted", "preparing", "ready"])
+    // Orders already handed to staff are skipped in the query itself, so a
+    // pile of them can never crowd new orders out of the batch.
+    .or("uber_dispatch_state.is.null,uber_dispatch_state.neq.needs_staff")
+    .order("created_at", { ascending: true })
     .gte("created_at", since).limit(20);
 
   const { data: toCancel } = await supabase.from("orders")

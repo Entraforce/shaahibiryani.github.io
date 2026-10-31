@@ -40,6 +40,8 @@ export const NEW_DELIVERY_ORDERS = String(Deno.env.get("DELIVERY_NEW_ORDERS") ??
 // in DELIVERY_PILOT_PHONES (comma-separated). Live mode refuses to run without it.
 const PILOT_ON = ["on", "true", "1"].includes(String(Deno.env.get("DELIVERY_PILOT") ?? "").toLowerCase());
 const PILOT_CODE = String(Deno.env.get("DELIVERY_PILOT_CODE") ?? "");
+// Pilot window end (ISO time). Required in live mode; after it nobody gets in.
+const PILOT_UNTIL = Date.parse(String(Deno.env.get("DELIVERY_PILOT_UNTIL") ?? ""));
 const PILOT_PHONES = new Set(String(Deno.env.get("DELIVERY_PILOT_PHONES") ?? "").split(",")
   .map((p) => p.replace(/\D/g, "").slice(-10)).filter((p) => p.length === 10));
 function sameText(a: string, b: string): boolean {
@@ -53,5 +55,6 @@ export function pilotGate(code: unknown, phone: unknown): { ok: boolean; reason?
     mode: UBER_MODE, pilotOn: PILOT_ON,
     codeOk: sameText(String(code ?? ""), PILOT_CODE),
     phoneListed: PILOT_PHONES.has(String(phone ?? "").replace(/\D/g, "").slice(-10)),
+    untilMs: Number.isFinite(PILOT_UNTIL) ? PILOT_UNTIL : null,
   });
 }

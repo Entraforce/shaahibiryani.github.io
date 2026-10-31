@@ -231,6 +231,14 @@ await check('tax: split always adds up (one rounding over the taxable base)', ()
     assert.equal(t.taxCents, Math.round((f + d) * 0.0825));
   }
 });
+await check('pilot code: captured from #fragment in <head> before analytics, then wiped from the address bar', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const capture = html.indexOf("sessionStorage.setItem('shaahiPilot'"), ga = html.indexOf('googletagmanager'), attr = html.indexOf('shaahiAttribution=');
+  assert.ok(capture > 0 && capture < ga && capture < attr, 'pilot capture must run before Google Analytics and attribution');
+  assert.match(html.slice(capture, capture + 200), /history\.replaceState\(null, '', location\.pathname\)/);
+  assert.ok(!/[?&]code=/.test(html.slice(html.indexOf('pilotCode:'), html.indexOf('pilotCode:') + 120)), 'code must not be put in a URL');
+});
 await check('tax: page formula equals server formula (index.html orderTotals)', async () => {
   const { readFileSync } = await import('node:fs');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
@@ -248,9 +256,13 @@ await check('ledger: #C9D668 with delivery tax separates every bucket', () => {
 });
 await check('pilot gate: live never public; code AND listed phone required', () => {
   assert.deepEqual(pilotAccess({ mode: 'live', pilotOn: false, codeOk: true, phoneListed: true }), { ok: false, reason: 'live_requires_pilot' });
-  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: false, phoneListed: true }).reason, 'pilot_code');
-  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: false }).reason, 'pilot_phone');
-  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: true }).ok, true);
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: false, codeOk: false, phoneListed: false }).ok, false); // flag off → no live booking path at all
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: false, phoneListed: true , untilMs: Date.now() + 3600e3 }).reason, 'pilot_code');
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: false , untilMs: Date.now() + 3600e3 }).reason, 'pilot_phone');
+  const until = Date.now() + 3600e3;
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: true, untilMs: until }).ok, true);
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: true }).reason, 'pilot_window_unset');
+  assert.equal(pilotAccess({ mode: 'live', pilotOn: true, codeOk: true, phoneListed: true, untilMs: Date.now() - 1 }).reason, 'pilot_expired');
   assert.equal(pilotAccess({ mode: 'sandbox', pilotOn: false, codeOk: false, phoneListed: false }).ok, true);
 });
 const rejected = { fulfillment: 'delivery', status: 'cancelled', payment_status: 'paid', refund_status: 'none', uber_delivery_id: null, auto_refund_state: null, stripe_payment_intent: 'pi_1', uber_mode: 'sandbox' };

@@ -44,6 +44,7 @@ async function test(id, name, fn) {
 }
 function must(cond, msg) { if (!cond) throw new Error(msg); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const canDispatchLike = (o) => (o.uber_mode ? 'NOT skipped' : 'no uber_mode → not_sandbox_order');
 const short = (s) => (s ? String(s).slice(0, 12) + '…' : String(s));
 
 // ── HTTP helpers ──
@@ -77,7 +78,9 @@ const FAR = { street: '301 W 2nd St', apt: '', city: 'Austin', zip: '78701' };
 const ITEMS = [{ menuItemId: 'chicken-65', variantId: 'chicken-65-standard', quantity: 2, itemName: 'Chicken 65' }];
 const run = Date.now().toString(36);
 let phoneSeq = 0;
-const phone = () => `469555${String(100 + (Number(run.slice(-3).replace(/\D/g, '') || 0) + phoneSeq++) % 900).padStart(4, '0')}`;
+// Numbers that replied STOP in earlier runs stay STOP (the consent log is append-only), so skip them.
+const STOPPED = new Set();
+const phone = () => { for (;;) { const p = `469555${String(100 + (Number(run.slice(-3).replace(/\D/g, '') || 0) + phoneSeq++) % 900).padStart(4, '0')}`; if (!STOPPED.has(p)) return p; } };
 const checkoutBody = (quoteId, addr = NEAR, p = phone(), extra = {}) => ({ items: ITEMS, guestName: 'Staging Test', guestPhone: p, guestEmail: '', tipCents: 300, courierTipCents: 200, fulfillment: 'delivery', deliveryAddress: { ...addr, notes: 'STAGING TEST' }, deliveryQuoteId: quoteId, ...extra });
 const uberApi = makeUberClient({ mode: 'sandbox', customerId: PRIV.UBER_DIRECT_CUSTOMER_ID, clientId: PRIV.UBER_DIRECT_CLIENT_ID, clientSecret: PRIV.UBER_DIRECT_CLIENT_SECRET });
 async function waitFor(fn, ms = 60_000, every = 3_000) { const end = Date.now() + ms; let v; while (Date.now() < end) { v = await fn(); if (v) return v; await sleep(every); } return v; }
@@ -120,6 +123,7 @@ async function kitchen(orderId, status, jwt = staffJwt) {
 // ════════════════════════════════════════════════════════════════════════
 console.log(`Staging E2E — project ${REF} (production is ${PROD_REF}: not used)\n`);
 await ensureStaff();
+for (const r of (await rest('GET', 'marketing_consent?source=eq.reply_stop&select=phone')).body ?? []) STOPPED.add(r.phone);
 
 // 1. Isolation preconditions
 await test('S1', 'staging is isolated: printing off, no cron jobs pointing at production', async () => {
@@ -268,8 +272,10 @@ await test('K3', 'kitchen rejects a paid order → no courier is ever booked', a
   return `order ${short(B.orderId)} cancelled, uber_delivery_id null`;
 });
 await test('X1', 'kitchen cancels after booking (before pickup) → courier is cancelled', async () => {
+  // Our run or the every-minute job may book it; wait for whichever does.
   const C = await paidOrder(); const d = await dispatch();
-  const o1 = await getOrder(C.orderId); must(o1.uber_delivery_id, `not booked: ${JSON.stringify(d.dispatched)}`);
+  const o1 = await waitFor(async () => { const o = await getOrder(C.orderId); return o.uber_delivery_id ? o : null; }, 30_000) ?? await getOrder(C.orderId);
+  must(o1.uber_delivery_id, `not booked: ${JSON.stringify((d.dispatched ?? []).find((x) => x.id === C.orderId))}`);
   await kitchen(C.orderId, 'cancelled'); const d2 = await dispatch();
   const c = (d2.cancelled ?? []).find((x) => x.id === C.orderId);
   const o2 = await getOrder(C.orderId);
@@ -384,7 +390,8 @@ await test('N1', 'notifications: one per order per event, captured in staging (n
   return `${kinds.join(', ')} — ${n[0].status}, none sent; 0 marketing_consent rows`;
 });
 await test('N2', 'a number that replied STOP is never texted', async () => {
-  const p = phone();
+  // Own range (469555 9xxx) so a STOP never collides with phone() in later runs.
+  const p = `4695559${String(Date.now() % 1000).padStart(3, '0')}`;
   const st = await rest('POST', 'rpc/record_marketing_consent', { p_phone: p, p_email: null, p_granted: false, p_channel: 'sms', p_source: 'reply_stop', p_wording: 'Customer replied STOP to an order text (staging test).' });
   must(st.status === 200, `could not record STOP: ${st.status} ${JSON.stringify(st.body).slice(0, 120)}`);
   const q = await quote(); const c = await call('create-web-order', checkoutBody(q.body.quoteId, NEAR, p));
@@ -458,6 +465,57 @@ await test('NT1', 'failed text is retried at most 3 times; STOP re-checked each 
   must(rows[0].attempts === 2 && (rows[0].status === 'captured' || rows[0].suppressed_reason === 'replied_stop'), `retry row ${JSON.stringify(rows[0])}`);
   must(rows[1].status === 'failed' && rows[1].attempts === 3, `capped row ${JSON.stringify(rows[1])}`);
   return `attempt 1 failed → retried → ${rows[0].status}${rows[0].suppressed_reason ? ':' + rows[0].suppressed_reason : ''} (attempt 2); a 3-attempt failure stays failed for staff (retried=${d.retried})`;
+});
+// ── Server-owned delivery fields: an app customer cannot plant a courier order ──
+await test('G1', 'a signed-in customer inserting their own order cannot set Uber/delivery fields (cleared by trigger)', async () => {
+  const email = 'customer-test@shaahi-staging.test';
+  let pw = ST.STAGING_CUSTOMER_TEST_PASSWORD;
+  if (!pw) {
+    pw = randomBytes(18).toString('base64url');
+    writeFileSync(join(cfgDir, 'staging.env'), readFileSync(join(cfgDir, 'staging.env'), 'utf8') + `STAGING_CUSTOMER_TEST_PASSWORD=${pw}\n`, { mode: 0o600 });
+    const u = await fetch(`${BASE}/auth/v1/admin/users`, { method: 'POST', headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pw, email_confirm: true }) }).then((r) => r.json());
+    must(u.id, 'could not create staging customer');
+  }
+  const t = await fetch(`${BASE}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pw }) }).then((r) => r.json());
+  must(t.access_token, 'customer login failed');
+  const uid = JSON.parse(Buffer.from(t.access_token.split('.')[1], 'base64url').toString()).sub;
+  await rest('POST', 'profiles', { id: uid, is_staff: false }, SERVICE, { Prefer: 'resolution=merge-duplicates,return=representation' });
+  const planted = { user_id: uid, fulfillment: 'delivery', status: 'pending', subtotal: 32, tax: 2.64, total: 34.64, source: 'app',
+    delivery_address: { street: '1520 K Ave', city: 'Plano', state: 'TX', zip: '75074' },
+    uber_mode: 'sandbox', uber_dispatch_state: 'ready', tracking_token: 'f'.repeat(32), courier_tip: 50, delivery_tax: 0, auto_refund_state: 'refunded', uber_delivery_id: 'del_planted', kitchen_accepted_at: '2020-01-01T00:00:00Z' };
+  const r = await rest('POST', 'orders', planted, ANON, { Authorization: `Bearer ${t.access_token}` });
+  must(r.status === 201, `customer insert ${r.status} ${JSON.stringify(r.body).slice(0, 160)}`);
+  const o = await getOrder(r.body[0].id);
+  const leaked = ['uber_mode', 'uber_dispatch_state', 'tracking_token', 'delivery_tax', 'auto_refund_state', 'uber_delivery_id', 'kitchen_accepted_at'].filter((k) => o[k] != null);
+  if (Number(o.courier_tip) !== 0) leaked.push('courier_tip');
+  await rest('DELETE', `orders?id=eq.${o.id}`);
+  must(leaked.length === 0, `customer set: ${leaked.join(', ')}`);
+  must(o.payment_status === 'pending', 'payment guard changed');
+  const gate = canDispatchLike(o);
+  return `8 planted fields all cleared; payment_status=pending; dispatcher would skip it (${gate})`;
+});
+// ── Pickup regression: the existing checkout must behave exactly as before ──
+await test('PK1', 'pickup checkout unchanged: food tax only, no delivery fields, paid, never a courier or a delivery text', async () => {
+  const p = phone();
+  const c = await call('create-web-order', { items: ITEMS, guestName: 'Pickup Regression', guestPhone: p, guestEmail: '', tipCents: 480, fulfillment: 'pickup' });
+  must(c.status === 200, `checkout ${c.status} ${JSON.stringify(c.body).slice(0, 120)}`);
+  const b = c.body.breakdown;
+  must(b.subtotalCents === 3200 && b.taxCents === 264 && b.tipCents === 480 && b.totalCents === 3944, `breakdown ${JSON.stringify(b)}`);
+  must(!('deliveryFeeCents' in b) && !('deliveryTaxCents' in b) && !c.body.trackingToken, 'delivery fields leaked into pickup');
+  const piId = c.body.paymentIntent.split('_secret_')[0];
+  const pi = await stripe('POST', `payment_intents/${piId}/confirm`, { payment_method: 'pm_card_visa', return_url: 'https://example.com/return' });
+  must(pi.status === 'succeeded' && pi.amount === 3944, `stripe ${pi.status} ${pi.amount}`);
+  must(!Object.keys(pi.metadata).some((k) => /delivery|courier|uber/.test(k)), `metadata ${Object.keys(pi.metadata)}`);
+  const cf = await call('confirm-web-order', { orderId: c.body.orderId }); must(cf.body?.paid === true, 'confirm');
+  await kitchen(c.body.orderId, 'accepted'); await dispatch();
+  const o = await getOrder(c.body.orderId);
+  must(o.fulfillment === 'pickup' && o.payment_status === 'paid' && Number(o.tax) === 2.64 && !o.uber_mode && !o.uber_delivery_id && !o.tracking_token && o.delivery_tax == null && !o.courier_tip, JSON.stringify({ f: o.fulfillment, t: o.tax, m: o.uber_mode }));
+  const n = (await rest('GET', `delivery_notifications?order_id=eq.${c.body.orderId}&select=id`)).body;
+  must(n.length === 0, 'pickup got a delivery text');
+  await kitchen(c.body.orderId, 'cancelled'); await dispatch();
+  const o2 = await getOrder(c.body.orderId);
+  must(!o2.auto_refund_state, 'pickup was auto-refunded — only deliveries may be');
+  return `$39.44 = $32.00 + $2.64 tax + $4.80 tip; Stripe 3944, no delivery metadata; accepted → no courier, no text; cancel → no automatic refund (pickup refunds stay manual)`;
 });
 // ── Emergency switch (only with RUN_SWITCH=1: changes a staging secret for ~1 min) ──
 if (process.env.RUN_SWITCH === '1') await test('SW1', 'emergency switch: new delivery orders stop; a paid order already in the kitchen still gets its courier; pickup unaffected', async () => {

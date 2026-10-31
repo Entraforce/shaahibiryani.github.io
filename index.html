@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en" class="fresh">
 <head>
+<script>
+  // Staff delivery pilot. The link is /#pilot=CODE: a #fragment is never sent
+  // to the web server, in referrers or by default analytics. This runs FIRST in
+  // <head>, before Google Analytics or attribution read the address, moves the
+  // code into this tab only (12 hours) and wipes it from the address bar. The
+  // server decides who may order; the code alone is not enough.
+  (function(){
+    try {
+      var m = /[#&]pilot=([A-Za-z0-9_-]{8,64})/.exec(location.hash) || /[?&]delivery=pilot&code=([A-Za-z0-9_-]{8,64})/.exec(location.search);
+      if (m) {
+        sessionStorage.setItem('shaahiPilot', JSON.stringify({ c: m[1], exp: Date.now() + 12 * 3600e3 }));
+        history.replaceState(null, '', location.pathname);
+      }
+    } catch (e) {}
+  })();
+</script>
 <script>if(location.pathname.toLowerCase()==='/index.html'){location.replace('/'+location.search+location.hash);}</script>
 <script>
   // Ask Shaahi first-time discovery. On a phone the launcher normally
@@ -5910,15 +5926,15 @@ var DELIVERY_LIVE = false;
 // server refuses sandbox delivery whenever it holds a live Stripe key, so this
 // can never take a real customer's money for a test courier.
 var DELIVERY_SANDBOX = /[?&]delivery=sandbox(&|$)/.test(location.search);
-// Staff pilot: ?delivery=pilot&code=… opens the hidden checkout. The SERVER
-// decides who may order (code + allow-listed phone); this only shows the form.
-// The code is moved out of the address bar so it isn't shared by accident.
+// Staff pilot: the code was captured (and removed from the address bar) by
+// the first script in <head>. Expires with the tab or after 12 hours.
 var DELIVERY_PILOT_CODE = (function(){
-  var m = /[?&]delivery=pilot(?:&|$)/.test(location.search) ? /[?&]code=([^&]+)/.exec(location.search) : null;
   try {
-    if (m) { sessionStorage.setItem('shaahiPilot', decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname + '?delivery=pilot'); }
-    return /[?&]delivery=pilot(&|$)/.test(location.search) ? (sessionStorage.getItem('shaahiPilot') || '') : '';
-  } catch (e) { return m ? decodeURIComponent(m[1]) : ''; }
+    var v = JSON.parse(sessionStorage.getItem('shaahiPilot') || 'null');
+    if (v && v.c && v.exp > Date.now()) return v.c;
+    sessionStorage.removeItem('shaahiPilot');
+  } catch (e) {}
+  return '';
 })();
 var DELIVERY_ON = DELIVERY_LIVE || DELIVERY_SANDBOX || !!DELIVERY_PILOT_CODE;
 if (DELIVERY_ON) document.documentElement.classList.add('deliv-on');

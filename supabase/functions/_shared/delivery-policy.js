@@ -84,9 +84,12 @@ export function deliveryLedger({ foodCents, foodTaxCents, deliveryTaxCents = 0, 
  * offered only to a caller who presents the pilot code AND whose phone is on
  * the tester list. Live mode is never open to the public in this build.
  */
-export function pilotAccess({ mode, pilotOn, codeOk, phoneListed }) {
+export function pilotAccess({ mode, pilotOn, codeOk, phoneListed, untilMs = null, now = Date.now() }) {
   if (mode === "live" && !pilotOn) return { ok: false, reason: "live_requires_pilot" };
   if (!pilotOn) return { ok: true };
+  // The pilot window must be set and still open (DELIVERY_PILOT_UNTIL).
+  if (mode === "live" && !Number.isFinite(untilMs)) return { ok: false, reason: "pilot_window_unset" };
+  if (Number.isFinite(untilMs) && now > untilMs) return { ok: false, reason: "pilot_expired" };
   if (!codeOk) return { ok: false, reason: "pilot_code" };
   if (!phoneListed) return { ok: false, reason: "pilot_phone" };
   return { ok: true };
