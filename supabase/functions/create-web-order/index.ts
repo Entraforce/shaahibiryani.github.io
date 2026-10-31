@@ -32,7 +32,7 @@ import { uberMode, toE164 } from "../_shared/uber-direct.js";
 // @ts-ignore
 import { normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, quoteUsableForCheckout, policyFromEnv, courierTipCents as courierTipFrom, orderTax } from "../_shared/delivery-policy.js";
 // @ts-ignore
-import { pilotGate, NEW_DELIVERY_ORDERS } from "../_shared/uber-env.ts";
+import { pilotGate, NEW_DELIVERY_ORDERS, PILOT_MAX_ORDERS } from "../_shared/uber-env.ts";
 
 // Website delivery via Uber Direct is SANDBOX-ONLY in this build and off unless
 // UBER_DIRECT_MODE=sandbox|live. Sandbox delivery requires a TEST Stripe key
@@ -301,6 +301,11 @@ Deno.serve(async (req) => {
       if ((UBER_MODE === "sandbox") === STRIPE_KEY_IS_LIVE) return json({ error: "Delivery isn't available yet. Please choose pickup." }, 400);
       const gate = pilotGate(body?.pilotCode, guestPhone);
       if (!gate.ok) return json({ error: "Delivery isn't available yet. Please choose pickup.", code: gate.reason }, 403);
+      if (PILOT_MAX_ORDERS !== null) {
+        const { count, error: capErr } = await supabase.from("orders").select("id", { count: "exact", head: true })
+          .eq("fulfillment", "delivery").eq("uber_mode", UBER_MODE).eq("payment_status", "paid");
+        if (capErr || (count ?? 0) >= PILOT_MAX_ORDERS) return json({ error: "Delivery isn't available yet. Please choose pickup.", code: "pilot_full" }, 403);
+      }
       const norm = normaliseDeliveryAddress(body?.deliveryAddress);
       if (norm.error) return json({ error: norm.error }, 400);
       const phoneE164 = toE164(guestPhone);

@@ -50,6 +50,10 @@ function sameText(a: string, b: string): boolean {
   for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return d === 0;
 }
+// Pilot size cap: DELIVERY_PILOT_MAX_ORDERS=3 refuses new delivery checkouts once
+// that many PAID delivery orders exist in the current Uber mode. Unset = no cap.
+const PILOT_MAX_RAW = String(Deno.env.get("DELIVERY_PILOT_MAX_ORDERS") ?? "").trim();
+export const PILOT_MAX_ORDERS = PILOT_ON && /^\d+$/.test(PILOT_MAX_RAW) ? Number(PILOT_MAX_RAW) : null;
 export function pilotGate(code: unknown, phone: unknown): { ok: boolean; reason?: string } {
   return pilotAccess({
     mode: UBER_MODE, pilotOn: PILOT_ON,
