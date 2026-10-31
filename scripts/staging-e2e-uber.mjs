@@ -281,8 +281,9 @@ await test('X2', 'refund after booking (payment_status=refunded) → courier is 
   must(o2.uber_status === 'canceled' || c?.cancel === 'too_late', `uber_status ${o2.uber_status}`);
   return `Stripe test refund ${rf.status}; courier ${c?.cancelled ? 'cancelled' : 'already picked up (not cancellable)'}`;
 });
+let F;
 await test('R1', 'quote expired by dispatch time → fresh quote, still booked', async () => {
-  const F = await paidOrder({ accept: false });
+  F = await paidOrder({ accept: false });
   await rest('PATCH', `delivery_quotes?id=eq.${F.quoteRowId}`, { expires_at: new Date(Date.now() - 60_000).toISOString() });
   await kitchen(F.orderId, 'accepted'); const d = await dispatch();
   const o = await getOrder(F.orderId); must(o.uber_delivery_id, `not booked: ${JSON.stringify((d.dispatched ?? []).find((x) => x.id === F.orderId))}`);
@@ -309,6 +310,21 @@ await test('R3', 'payment failure → order never paid, never dispatched', async
 await test('T1', 'Uber tracking: booked delivery is real and readable in the TEST environment', async () => {
   must(delA, 'no delivery from D3');
   const o = await getOrder(A.orderId); must(/^https:\/\//.test(o.uber_tracking_url), 'no tracking URL'); return `tracking URL stored for ${short(delA)}`;
+});
+
+if (WEBHOOK_SECRET) await test('W7', 'REAL Uber webhooks (robo courier) pass signature check and sync status + tracking', async () => {
+  must(F?.orderId, 'no R1 order');
+  const seen = [];
+  for (let i = 0; i < 24; i++) {
+    const o = await getOrder(F.orderId);
+    const tag = `${o.uber_status}/${o.status}`; if (seen.at(-1) !== tag) seen.push(tag);
+    if (o.status === 'delivered') break;
+    await sleep(10_000);
+  }
+  const ev = (await rest('GET', `uber_webhook_events?delivery_id=eq.${(await getOrder(F.orderId)).uber_delivery_id}&select=event_id`)).body ?? [];
+  must(ev.length > 0, `no real webhook events stored (uber/order states: ${seen.join(' → ')})`);
+  must(seen.length > 1, `status never changed: ${seen.join(' → ')}`);
+  return `${ev.length} signed Uber events; ${seen.join(' → ')}`;
 });
 
 const pass = results.filter((r) => r.pass).length;
