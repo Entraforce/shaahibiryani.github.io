@@ -168,8 +168,8 @@ export function makeUberClient(opts) {
     if (!res.ok) throw new UberDirectError(classifyUberError(res.status, body), body?.message || `Uber ${method} ${path} failed`, { status: res.status, detail: body });
     // Test and live must never cross: sandbox refuses live data, live refuses test data
     // (test credentials accidentally configured in production are caught here).
-    if (body && mode === "sandbox" && body.live_mode === true) throw new UberDirectError("live_mode", "Uber returned live_mode=true to a sandbox build; refusing.");
-    if (body && mode === "live" && body.live_mode === false) throw new UberDirectError("live_mode", "Uber returned test data to a live build; refusing (test credentials in production?).");
+    if (body && mode === "sandbox" && body.live_mode === true) throw new UberDirectError("live_mode", "Uber returned live_mode=true to a sandbox build; refusing.", { detail: body });
+    if (body && mode === "live" && body.live_mode === false) throw new UberDirectError("live_mode", "Uber returned test data to a live build; refusing (test credentials in production?).", { detail: body });
     return body;
   }
 
@@ -202,6 +202,24 @@ export function makeUberClient(opts) {
 
     /** POST /deliveries. externalId + idempotencyKey = our order id, so a retry can't create a second courier. */
     async createDelivery(d) {
+      try {
+        return await createRaw(d);
+      } catch (e) {
+        // Uber has answered a real live booking with live_mode=false (seen
+        // 2026-10-31). The delivery EXISTS, so never drop it: ask Uber again
+        // by id and trust that answer. If it still disagrees, the error keeps
+        // the delivery (e.detail.id) so the dispatcher records it for staff.
+        const id = e instanceof UberDirectError && e.code === "live_mode" ? e.detail?.id : null;
+        if (!id) throw e;
+        return await call("GET", `/deliveries/${encodeURIComponent(id)}`);
+      }
+    },
+
+    getDelivery: (id) => call("GET", `/deliveries/${encodeURIComponent(id)}`),
+    cancelDelivery: (id) => call("POST", `/deliveries/${encodeURIComponent(id)}/cancel`, {}),
+  };
+
+  function createRaw(d) {
       return call("POST", "/deliveries", {
         quote_id: d.quoteId,
         external_id: d.externalId,
@@ -222,9 +240,5 @@ export function makeUberClient(opts) {
         ...(d.tipCents ? { tip: d.tipCents } : {}),
         ...(d.testSpecifications ? { test_specifications: d.testSpecifications } : {}),
       });
-    },
-
-    getDelivery: (id) => call("GET", `/deliveries/${encodeURIComponent(id)}`),
-    cancelDelivery: (id) => call("POST", `/deliveries/${encodeURIComponent(id)}/cancel`, {}),
-  };
+  }
 }

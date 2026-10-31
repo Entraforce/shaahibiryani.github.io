@@ -293,5 +293,27 @@ await check('client: live build refuses test data (test keys in production)', as
   await assert.rejects(uber.createQuote({ pickupAddress: 'a', dropoffAddress: 'b', pickupPhone: '+1', dropoffPhone: '+1' }), (e) => e.code === 'live_mode');
 });
 
+// 2026-10-31 production: Uber answered a real live booking with live_mode=false.
+const delReq = { quoteId: 'dqt_1', externalId: 'ord-1', idempotencyKey: 'ord-1', pickupAddress: 'a', dropoffAddress: 'b', pickupPhone: '+1', dropoffPhone: '+1', manifestItems: [] };
+await check('booking: live reply flagged test, but Uber confirms live by id -> booking kept', async () => {
+  const calls = [];
+  const { fetch } = fakeUber((url, init) => { calls.push((init?.method ?? 'GET') + ' ' + url.replace(/^.*\/v1\/customers\/[^/]+/, ''));
+    if (/oauth|token/.test(url)) return tokenOk;
+    if (init?.method === 'POST') return { status: 200, body: { id: 'del_X', status: 'pending', live_mode: false } };
+    return { status: 200, body: { id: 'del_X', status: 'pending', live_mode: true, tracking_url: 'https://t' } };
+  });
+  const d = await makeUberClient({ ...creds, mode: 'live', fetch }).createDelivery(delReq);
+  assert.equal(d.id, 'del_X'); assert.equal(d.live_mode, true);
+  assert.equal(calls.filter((c) => c.startsWith('POST /deliveries')).length, 1, 'exactly one create');
+});
+await check('booking: if Uber still says test, the error keeps the delivery id (never lost, never retried)', async () => {
+  let creates = 0;
+  const { fetch } = fakeUber((url, init) => { if (/oauth|token/.test(url)) return tokenOk;
+    if (init?.method === 'POST') creates++;
+    return { status: 200, body: { id: 'del_Y', status: 'pending', live_mode: false } }; });
+  await assert.rejects(makeUberClient({ ...creds, mode: 'live', fetch }).createDelivery(delReq), (e) => e.code === 'live_mode' && e.detail?.id === 'del_Y');
+  assert.equal(creates, 1, 'exactly one create');
+});
+
 console.log(`\n${passed}/${passed + failed} Uber Direct checks passed`);
 if (failed) process.exit(1);

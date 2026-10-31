@@ -128,6 +128,14 @@ async function dispatchOne(uber: any, o: any) {
     return { id: order.id, dispatched: del.id, status: del.status };
   } catch (e) {
     const code = e instanceof UberDirectError ? e.code : "unknown";
+    // An error that still names a created delivery means a courier MAY be on
+    // the way: record it so it is never lost, and never retry (no duplicate).
+    const booked = (e as any)?.detail?.id;
+    if (typeof booked === "string" && booked.startsWith("del_")) {
+      await supabase.from("orders").update({ uber_delivery_id: booked }).eq("id", order.id).is("uber_delivery_id", null);
+      await release(order.id, { uber_dispatch_state: "needs_staff", uber_dispatch_error: `booked_unconfirmed:${booked}:${code}` });
+      return { id: order.id, error: code, needs_staff: true, delivery: booked };
+    }
     const giveUp = !RETRYABLE.has(code) || (order.uber_dispatch_attempts ?? 0) >= MAX_DISPATCH_ATTEMPTS;
     await release(order.id, { uber_dispatch_state: giveUp ? "needs_staff" : null, uber_dispatch_error: `${code}:${String((e as Error)?.message ?? "").slice(0, 160)}` });
     return { id: order.id, error: code, needs_staff: giveUp };
