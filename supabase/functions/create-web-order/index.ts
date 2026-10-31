@@ -27,6 +27,19 @@ import { PRICES } from "../_shared/prices.ts";
 import { inScheduleWindow, scheduleLabel } from "../_shared/render-menu.js";
 // @ts-ignore — shared plain-JS module (also run by scripts/verify-order-rules.mjs)
 import { addOnLimitError, addOnOnlyError } from "../_shared/order-rules.js";
+// @ts-ignore — shared plain-JS modules (also run by scripts/verify-uber-direct.mjs)
+import { uberMode, toE164 } from "../_shared/uber-direct.js";
+// @ts-ignore
+import { normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents, quoteUsableForCheckout, DELIVERY_MIN_SUBTOTAL_CENTS } from "../_shared/delivery-policy.js";
+
+// Website delivery via Uber Direct is SANDBOX-ONLY in this build and off unless
+// UBER_DIRECT_MODE=sandbox. Sandbox delivery is also refused whenever this
+// function holds a LIVE Stripe key, so a real customer can never pay for a
+// test courier. Pickup is untouched by everything below.
+const UBER_MODE = uberMode(Deno.env.get("UBER_DIRECT_MODE"));
+const STRIPE_KEY_IS_LIVE = /^(sk|rk)_live_/.test(
+  Deno.env.get("STRIPE_SECRET_KEY_WEB") ?? Deno.env.get("STRIPE_SECRET_KEY") ?? "",
+);
 
 // The website uses its OWN Stripe key (STRIPE_SECRET_KEY_WEB = the live, real
 // account) so it is fully independent of the app's create-payment-intent, which
@@ -80,11 +93,15 @@ type LineRef = {
 // Deliberately not random, and deliberately not client-supplied.
 async function basketFingerprint(parts: {
   phone: string; items: LineRef[]; tipCents: number; fulfillment: string;
+  delivery?: string;
 }): Promise<string> {
   const canonical = JSON.stringify({
     p: parts.phone,
     f: parts.fulfillment,
     t: parts.tipCents,
+    // Delivery only: the address + quote, so a changed address is a new
+    // checkout. Absent for pickup, keeping pickup fingerprints unchanged.
+    ...(parts.delivery ? { d: parts.delivery } : {}),
     // sorted so key order in the request cannot change the fingerprint
     i: parts.items
       .map((l) => `${String(l.menuItemId)}|${String(l.variantId)}x${Number(l.quantity)}`)
@@ -265,8 +282,40 @@ Deno.serve(async (req) => {
     if (!Number.isFinite(tipCents) || tipCents < 0) tipCents = 0;
     tipCents = Math.min(Math.round(tipCents), TIP_MAX_CENTS);
 
-    // Website is pickup-only for now (no delivery fee).
-    const totalCents = subtotalCents + taxCents + tipCents;
+    // ── Delivery (Uber Direct, sandbox) ──
+    // The fee is never taken from the browser: it comes from a delivery_quotes
+    // row that uber-delivery-quote wrote, for this exact address, still valid.
+    const fulfillment = body?.fulfillment === "delivery" ? "delivery" : "pickup";
+    let deliveryFeeCents = 0;
+    let delivery: null | { address: Record<string, string>; quoteRowId: string; key: string; phoneE164: string } = null;
+    if (fulfillment === "delivery") {
+      if (UBER_MODE !== "sandbox") return json({ error: "Delivery isn't available yet. Please choose pickup." }, 400);
+      if (STRIPE_KEY_IS_LIVE) return json({ error: "Delivery is in testing and can't be paid for yet. Please choose pickup." }, 400);
+      const norm = normaliseDeliveryAddress(body?.deliveryAddress);
+      if (norm.error) return json({ error: norm.error }, 400);
+      const phoneE164 = toE164(guestPhone);
+      if (!phoneE164) return json({ error: "Please enter a 10-digit US phone number for the driver." }, 400);
+      if (subtotalCents < DELIVERY_MIN_SUBTOTAL_CENTS) {
+        return json({ error: `Delivery orders need at least $${(DELIVERY_MIN_SUBTOTAL_CENTS / 100).toFixed(0)} of food.` }, 400);
+      }
+      const quoteRowId = clean(body?.deliveryQuoteId, 64);
+      if (!quoteRowId) return json({ error: "Please get a delivery price for your address first." }, 400);
+      const { data: q } = await supabase
+        .from("delivery_quotes")
+        .select("id, fee_cents, address_key, expires_at, uber_mode, used_by_order")
+        .eq("id", quoteRowId)
+        .maybeSingle();
+      if (!q || q.uber_mode !== "sandbox") return json({ error: "Please get a delivery price for your address first." }, 400);
+      if (q.address_key !== addressKey(norm.address)) return json({ error: "Your address changed. Please get a new delivery price." }, 409);
+      if (!quoteUsableForCheckout(q.expires_at)) return json({ error: "Your delivery price expired. Please refresh it.", code: "quote_expired" }, 409);
+      const fee = customerDeliveryFeeCents(q.fee_cents);
+      if (fee === null) return json({ error: "Sorry, that address is outside our delivery area." }, 400);
+      deliveryFeeCents = fee;
+      delivery = { address: norm.address, quoteRowId: q.id, key: addressKey(norm.address) + "#" + q.id, phoneE164 };
+    }
+
+    // Tax is on food only; the delivery fee is a pass-through of Uber's quote.
+    const totalCents = subtotalCents + taxCents + tipCents + deliveryFeeCents;
     if (totalCents < 50) return json({ error: "Order total too low." }, 400);
 
     // Optional scheduled pickup time (ISO string).
@@ -277,7 +326,7 @@ Deno.serve(async (req) => {
     const itemSummary = itemRows
       .map((r) => `${r.quantity}x ${r.item_name}`)
       .join(", ");
-    const description = `Shaahi Biryani pickup order — ${itemSummary}`.slice(0, 900);
+    const description = `Shaahi Biryani ${fulfillment} order — ${itemSummary}`.slice(0, 900);
 
     // ── Stripe PaymentIntent ──
     // The idempotency key is stable for this logical checkout, so concurrent
@@ -287,7 +336,8 @@ Deno.serve(async (req) => {
       phone: guestPhone,
       items: items as LineRef[],
       tipCents: Math.round(Number(body?.tipCents) || 0),
-      fulfillment: "pickup",
+      fulfillment,
+      delivery: delivery?.key,
     });
 
     // Atomically become the creator of this checkout, or discover that someone
@@ -346,6 +396,7 @@ Deno.serve(async (req) => {
         // visible wherever the customer is being looked at. Our table is the
         // record of evidence; this is a convenience copy.
         marketing_opt_in: marketingOptIn ? "yes" : "no",
+        ...(delivery ? { fulfillment: "delivery", delivery_fee_cents: String(deliveryFeeCents), uber_mode: UBER_MODE } : {}),
       },
     }, { idempotencyKey: ckey });
 
@@ -358,13 +409,16 @@ Deno.serve(async (req) => {
         guest_name: guestName,
         guest_phone: guestPhone,
         status: "pending",
-        fulfillment: "pickup",
+        fulfillment,
         subtotal: subtotalCents / 100,
         tax: taxCents / 100,
-        delivery_fee: 0,
+        delivery_fee: deliveryFeeCents / 100,
         tip: tipCents / 100,
         total: totalCents / 100,
-        delivery_address: null,
+        delivery_address: delivery ? delivery.address : null,
+        // Delivery-only columns (from the Uber Direct migration); pickup rows
+        // never mention them, so pickup works whether or not it is applied.
+        ...(delivery ? { delivery_quote_id: delivery.quoteRowId, uber_mode: UBER_MODE } : {}),
         scheduled_for: scheduledFor,
         points_redeemed: 0,
         points_earned: 0,
@@ -421,6 +475,12 @@ Deno.serve(async (req) => {
       }).then(() => {}, () => {});
     }
 
+    if (delivery) {
+      // One quote, one order. Not fatal if it races: the fee is already fixed.
+      await supabase.from("delivery_quotes").update({ used_by_order: order.id })
+        .eq("id", delivery.quoteRowId).is("used_by_order", null).then(() => {}, () => {});
+    }
+
     await supabase.rpc("complete_checkout_attempt", {
       p_attempt_id: claim.out_attempt_id,
       p_intent: paymentIntent.id,
@@ -430,6 +490,7 @@ Deno.serve(async (req) => {
       p_amount: totalCents,
       p_breakdown: {
         subtotalCents, taxCents, tipCents, totalCents,
+        ...(delivery ? { deliveryFeeCents } : {}),
       },
     });
 
@@ -437,7 +498,7 @@ Deno.serve(async (req) => {
       paymentIntent: paymentIntent.client_secret,
       orderId: order.id,
       orderNumber: String(order.id).slice(-6).toUpperCase(),
-      breakdown: { subtotalCents, taxCents, tipCents, totalCents },
+      breakdown: { subtotalCents, taxCents, tipCents, totalCents, ...(delivery ? { deliveryFeeCents } : {}) },
     });
   } catch (err) {
     return json({ error: (err as Error).message }, 500);

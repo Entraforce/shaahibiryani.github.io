@@ -6,3 +6,8 @@ private-data/
 
 # Supabase CLI temp files
 supabase/.temp/
+
+# Secrets — never commit (Uber/Stripe keys live in ~/.config/shaahi/ or Supabase secrets)
+.env
+.env.*
+*.env

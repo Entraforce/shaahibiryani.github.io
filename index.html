@@ -5327,6 +5327,26 @@ async function startWebPayment(){
     }
     if(ae)ae.style.display='none';
     deliveryAddress={street:street,apt:apt,city:city,zip:zip,notes:dnotes};
+    // The delivery price and ETA come from Uber Direct for THIS address. The
+    // server charges only a fee from that quote, never one from this page.
+    var aKey=[street,apt,city,zip].join('|').toLowerCase();
+    var stale=!_delivQuote||_delivQuote.key!==aKey||(Date.parse(_delivQuote.expiresAt)-Date.now()<3*60*1000);
+    if(stale){
+      var qb=gi('toPayBtn'); if(qb){qb.disabled=true;} if(err){err.style.display='block';err.textContent='Getting your delivery price…';}
+      try{
+        var qr=await fetch(SB_URL+'/functions/v1/uber-delivery-quote',{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
+          body:JSON.stringify({address:{street:street,apt:apt,city:city,zip:zip},phone:((gi('custPhone')||{}).value||'')})});
+        var qd=await qr.json();
+        if(qb){qb.disabled=false;}
+        if(!qr.ok){ _delivQuote=null; if(err){err.style.display='block';err.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';} return; }
+        _delivQuote={id:qd.quoteId,feeCents:qd.feeCents,etaMinutes:qd.etaMinutes,expiresAt:qd.expiresAt,key:aKey};
+        DELIVERY_FEE=qd.feeCents/100;
+        var dn=gi('delivNote'); if(dn){dn.style.display='block';dn.textContent='Delivery by Uber Direct: $'+DELIVERY_FEE.toFixed(2)+' \u00b7 about '+(qd.etaMinutes||'—')+' min once your food is ready'+(qd.sandbox?' (TEST MODE)':'');}
+        renderCart();
+        if(err){err.style.display='block';err.textContent='Delivery is $'+DELIVERY_FEE.toFixed(2)+'. Tap Continue to pay.';}
+        return; // let the customer see the price before paying
+      }catch(qe){ if(qb){qb.disabled=false;} if(err){err.style.display='block';err.textContent='Couldn\u2019t get a delivery price. Please try again, or choose pickup.';} return; }
+    }
   }
   if(err) err.style.display='none';
   if(!cart.length) return;
@@ -5342,7 +5362,7 @@ async function startWebPayment(){
   // Every call to create-web-order mints a fresh PaymentIntent and a fresh
   // orders row. Re-entering checkout with an unchanged basket should reuse the
   // one already open rather than leaving a trail of abandoned intents.
-  var _cartKey=JSON.stringify({i:r.items,t:tipCents,f:fulfillment});
+  var _cartKey=JSON.stringify({i:r.items,t:tipCents,f:fulfillment,d:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.key+'#'+_delivQuote.id:null});
   if(_wpSecret&&_wpElements&&_wpCartKey===_cartKey){
     gi('custDetailsBlock').style.display='none';
     if(gi('waOrderSummary')) gi('waOrderSummary').style.display='none';
@@ -5356,7 +5376,7 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,deliveryQuoteId:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.id:null,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
     });
     var data=await res.json();
     if(!res.ok) throw new Error(data.error||'Could not start the order.');
@@ -5829,6 +5849,12 @@ var selectedTip = 0; // percent
 // the create-web-order server function adds the $4.99 fee. Also remove the
 // "Coming Soon" badge on the Delivery button when going live.
 var DELIVERY_LIVE = false;
+// Uber Direct SANDBOX preview: only with ?delivery=sandbox in the URL. The
+// server refuses sandbox delivery whenever it holds a live Stripe key, so this
+// can never take a real customer's money for a test courier.
+var DELIVERY_SANDBOX = /[?&]delivery=sandbox(&|$)/.test(location.search);
+var DELIVERY_ON = DELIVERY_LIVE || DELIVERY_SANDBOX;
+var _delivQuote = null;   // {id, feeCents, etaMinutes, expiresAt, key} from uber-delivery-quote
 var fulfillment = 'pickup';
 var DELIVERY_FEE = 4.99;   // flat fee charged to the customer
 var DELIVERY_MIN = 20;     // minimum subtotal for delivery
@@ -5836,13 +5862,13 @@ var DELIVERY_RADIUS_MI = 8;
 
 function setFulfillment(mode){
   // While delivery isn't live yet, keep everyone on pickup and let them know.
-  if(mode==='delivery' && !DELIVERY_LIVE){
+  if(mode==='delivery' && !DELIVERY_ON){
     showToast('🛵 Delivery is coming soon! Pickup is available now.');
     return;
   }
   fulfillment = (mode==='delivery') ? 'delivery' : 'pickup';
   document.querySelectorAll('.ful-btn').forEach(function(b){
-    if(b.dataset.ful==='delivery' && !DELIVERY_LIVE) return; // leave the "Coming Soon" button untouched
+    if(b.dataset.ful==='delivery' && !DELIVERY_ON) return; // leave the "Coming Soon" button untouched
     var active = b.dataset.ful === fulfillment;
     b.style.background  = active ? 'var(--gold)'  : 'transparent';
     b.style.color       = active ? 'var(--black)' : 'var(--text-muted)';
