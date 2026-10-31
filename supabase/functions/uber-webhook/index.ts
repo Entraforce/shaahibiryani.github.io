@@ -22,6 +22,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyUberSignature } from "../_shared/uber-direct.js";
 // @ts-ignore
 import { orderStatusFromUber, uberNeedsStaff } from "../_shared/delivery-policy.js";
+import { notifyDelivery } from "../_shared/delivery-notify.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -48,18 +49,25 @@ Deno.serve(async (req) => {
   if (dupErr) return new Response("Store failed", { status: 500 }); // Uber retries 5xx
 
   if (!deliveryId) return ok("no delivery id");
-  const { data: order } = await supabase.from("orders").select("id, status, uber_status").eq("uber_delivery_id", deliveryId).maybeSingle();
+  const { data: order } = await supabase.from("orders").select("*").eq("uber_delivery_id", deliveryId).maybeSingle();
   if (!order) return ok("unknown delivery");
 
   const d = ev?.data ?? {};
   const uberStatus = ev?.status ?? d?.status ?? order.uber_status;
-  const courier = d?.courier
-    ? { name: d.courier.name ?? null, vehicle: d.courier.vehicle_type ?? null, location: ev?.location ?? d.courier.location ?? null, updated: new Date().toISOString() }
-    : ev?.location ? { location: ev.location, updated: new Date().toISOString() } : undefined;
+  // Merge into what we already know so a location ping never erases the ETAs.
+  const prev = (order.uber_courier ?? {}) as Record<string, unknown>;
+  const courier = {
+    ...prev,
+    ...(d?.courier ? { name: d.courier.name ?? prev.name ?? null, vehicle: d.courier.vehicle_type ?? prev.vehicle ?? null } : {}),
+    ...(ev?.location ?? d?.courier?.location ? { location: ev?.location ?? d.courier.location } : {}),
+    ...(d?.pickup_eta ? { pickup_eta: d.pickup_eta } : {}),
+    ...(d?.dropoff_eta ? { dropoff_eta: d.dropoff_eta } : {}),
+    updated: new Date().toISOString(),
+  };
 
   const patch: Record<string, unknown> = { uber_status: uberStatus, uber_updated_at: new Date().toISOString() };
   if (d?.tracking_url) patch.uber_tracking_url = d.tracking_url;
-  if (courier) patch.uber_courier = courier;
+  patch.uber_courier = courier;
   const next = orderStatusFromUber(uberStatus, order.status);
   if (next) patch.status = next;
   if (uberNeedsStaff(uberStatus) && order.status !== "cancelled") {
@@ -72,5 +80,8 @@ Deno.serve(async (req) => {
     await supabase.from("uber_webhook_events").delete().eq("event_id", eventId);
     return new Response("Update failed", { status: 500 });
   }
+  if (next === "out_for_delivery") await notifyDelivery(supabase, order, "picked_up");
+  if (next === "delivered") await notifyDelivery(supabase, order, "delivered");
+  if (patch.uber_dispatch_state === "needs_staff") await notifyDelivery(supabase, order, "problem");
   return ok(next ? `order -> ${next}` : `uber_status ${uberStatus}`);
 });

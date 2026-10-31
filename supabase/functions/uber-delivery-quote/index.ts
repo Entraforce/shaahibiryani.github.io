@@ -16,7 +16,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { formatUberAddress, toE164, UberDirectError } from "../_shared/uber-direct.js";
 // @ts-ignore
 import { STORE, normaliseDeliveryAddress, addressKey, customerDeliveryFeeCents } from "../_shared/delivery-policy.js";
-import { uberClientFor, UBER_MODE } from "../_shared/uber-env.ts";
+import { uberClientFor, UBER_MODE, POLICY } from "../_shared/uber-env.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -62,16 +62,20 @@ Deno.serve(async (req) => {
     const { count } = await supabase.from("delivery_quotes").select("id", { count: "exact", head: true }).gte("created_at", since);
     if ((count ?? 0) >= MAX_QUOTES_PER_10_MIN) return json({ error: CUSTOMER_MESSAGE.rate_limited }, 429);
 
+    // The courier is asked to arrive when the food will be ready, so Uber's
+    // drop-off estimate already includes the kitchen's prep time.
+    const readyAt = new Date(Date.now() + POLICY.prepMinutes * 60_000).toISOString();
     const uber = uberClientFor(supabase);
     const q = await uber.createQuote({
       pickupAddress: formatUberAddress(STORE.address),
       dropoffAddress,
       pickupPhone: STORE.phone,
       dropoffPhone,
+      pickupReadyAt: readyAt,
     });
 
-    const fee = customerDeliveryFeeCents(q.feeCents);
-    if (fee === null) return json({ error: "Sorry, that address is outside our delivery area (about 10 miles). Please choose pickup." }, 400);
+    const fee = customerDeliveryFeeCents(q.feeCents, POLICY);
+    if (fee === null) return json({ error: `Sorry, that address is outside our delivery area (about ${POLICY.maxMiles} miles). Please choose pickup.`, code: "out_of_area" }, 400);
 
     const { data: row, error } = await supabase.from("delivery_quotes").insert({
       uber_quote_id: q.quoteId,
@@ -85,15 +89,21 @@ Deno.serve(async (req) => {
     }).select("id").single();
     if (error || !row) return json({ error: "Could not save the delivery price. Please try again." }, 500);
 
-    // ETA to show the customer: Uber's estimate of minutes from now to the
-    // door. The kitchen's prep time is added at dispatch, so this is "from
-    // when your food is ready" and the page says so.
+    // Minutes from now to the door, prep included (Uber's drop-off estimate
+    // for a pickup at readyAt). Falls back to prep + Uber's trip duration.
+    const etaMs = Date.parse(q.dropoffEta ?? "") - Date.now();
+    const etaMinutes = Number.isFinite(etaMs) && etaMs > 0
+      ? Math.round(etaMs / 60_000)
+      : POLICY.prepMinutes + Number(q.durationMin ?? 0);
     return json({
       quoteId: row.id,
       feeCents: fee,
-      etaMinutes: q.durationMin,
+      etaMinutes,
+      prepMinutes: POLICY.prepMinutes,
       dropoffEta: q.dropoffEta,
       expiresAt: q.expiresAt,
+      minSubtotalCents: POLICY.minSubtotalCents,
+      courierTips: POLICY.courierTips,
       sandbox: true,
     });
   } catch (e) {

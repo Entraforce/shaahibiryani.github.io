@@ -5,6 +5,8 @@
 // deno-lint-ignore-file
 // @ts-ignore — shared plain-JS module
 import { makeUberClient, uberMode } from "./uber-direct.js";
+// @ts-ignore — shared plain-JS module
+import { policyFromEnv } from "./delivery-policy.js";
 
 export function uberClientFor(supabase: any) {
   return makeUberClient({
@@ -25,3 +27,5 @@ export function uberClientFor(supabase: any) {
 }
 
 export const UBER_MODE: string = uberMode(Deno.env.get("UBER_DIRECT_MODE"));
+// Owner delivery policy for this environment (see DEFAULT_POLICY).
+export const POLICY = policyFromEnv((k: string) => Deno.env.get(k));

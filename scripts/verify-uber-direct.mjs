@@ -8,7 +8,7 @@ import {
   verifyUberSignature, UberDirectError, UBER_TOKEN_URL,
 } from '../supabase/functions/_shared/uber-direct.js';
 import {
-  STORE, customerDeliveryFeeCents, quoteUsableForCheckout, normaliseDeliveryAddress, addressKey,
+  STORE, customerDeliveryFeeCents, DEFAULT_POLICY, policyFromEnv, maxFeeForMiles, courierTipCents, pickupReadyAt, quoteUsableForCheckout, normaliseDeliveryAddress, addressKey,
   canDispatch, requoteDecision, orderStatusFromUber, uberNeedsStaff, courierCancellable,
   deliveryRequestFor, MAX_DISPATCH_ATTEMPTS,
 } from '../supabase/functions/_shared/delivery-policy.js';
@@ -122,9 +122,26 @@ await check('phone → E.164 for the driver', () => {
 });
 
 // ── Money ──
-await check('fee: pass-through of Uber quote; above the 10-mile tier ($10.99) is out of area', () => {
-  assert.equal(customerDeliveryFeeCents(799), 799); assert.equal(customerDeliveryFeeCents(1099), 1099);
-  assert.equal(customerDeliveryFeeCents(1100), null); assert.equal(customerDeliveryFeeCents(0), null); assert.equal(customerDeliveryFeeCents('x'), null);
+await check('fee: pass-through of Uber quote; default 5-mile limit = $7.99 tier, configurable', () => {
+  assert.equal(customerDeliveryFeeCents(799), 799); assert.equal(customerDeliveryFeeCents(899), null);
+  const ten = { ...DEFAULT_POLICY, maxMiles: 10 };
+  assert.equal(customerDeliveryFeeCents(1099, ten), 1099); assert.equal(customerDeliveryFeeCents(1100, ten), null);
+  assert.equal(maxFeeForMiles(6), 899); assert.equal(customerDeliveryFeeCents(0), null); assert.equal(customerDeliveryFeeCents('x'), null);
+});
+await check('policy from settings: defaults, overrides, bad values ignored', () => {
+  assert.deepEqual({ ...policyFromEnv(() => undefined) }, { ...DEFAULT_POLICY });
+  const p = policyFromEnv((k) => ({ DELIVERY_MIN_SUBTOTAL_CENTS: '2500', DELIVERY_PREP_MINUTES: '-5', DELIVERY_COURIER_TIPS: 'off' })[k]);
+  assert.equal(p.minSubtotalCents, 2500); assert.equal(p.prepMinutes, 25); assert.equal(p.courierTips, false);
+});
+await check('courier tip: optional, capped, off when policy disables it', () => {
+  assert.equal(courierTipCents(300), 300); assert.equal(courierTipCents(-1), 0); assert.equal(courierTipCents('abc'), 0);
+  assert.equal(courierTipCents(999999), 5000); assert.equal(courierTipCents(300, { ...DEFAULT_POLICY, courierTips: false }), 0);
+});
+await check('courier pickup time = kitchen accept time + prep; immediate when ready', () => {
+  const acc = '2026-10-31T17:00:00Z';
+  assert.equal(pickupReadyAt(acc, 'accepted', DEFAULT_POLICY, Date.parse(acc)), '2026-10-31T17:25:00.000Z');
+  assert.equal(pickupReadyAt(acc, 'ready', DEFAULT_POLICY, Date.parse('2026-10-31T17:10:00Z')), '2026-10-31T17:10:00.000Z');
+  assert.equal(pickupReadyAt(acc, 'accepted', DEFAULT_POLICY, Date.parse('2026-10-31T17:40:00Z')), '2026-10-31T17:40:00.000Z');
 });
 await check('expired quote cannot be paid against (2-minute margin)', () => {
   const exp = '2026-10-31T17:15:00Z';
@@ -132,8 +149,10 @@ await check('expired quote cannot be paid against (2-minute margin)', () => {
   assert.equal(quoteUsableForCheckout(exp, Date.parse('2026-10-31T17:13:30Z')), false);
   assert.equal(quoteUsableForCheckout('garbage', T0), false);
 });
-await check('re-quote at dispatch: absorb ≤ $2 rise, staff decides above, out of area refused', () => {
-  assert.deepEqual(requoteDecision(799, 899), { ok: true, absorbedCents: 100 });
+await check('re-quote at dispatch: never silently absorb by default; staff decides any rise', () => {
+  assert.equal(requoteDecision(799, 899).reason, 'fee_rose');
+  assert.deepEqual(requoteDecision(799, 899, { ...DEFAULT_POLICY, requoteAbsorbCents: 200 }), { ok: true, absorbedCents: 100 });
+  assert.deepEqual(requoteDecision(799, 799), { ok: true, absorbedCents: 0 });
   assert.deepEqual(requoteDecision(799, 699), { ok: true, absorbedCents: 0 });
   assert.equal(requoteDecision(799, 1099).reason, 'fee_rose');
   assert.equal(requoteDecision(1099, 1299).reason, 'out_of_area');
@@ -157,6 +176,8 @@ await check('no duplicate courier: already dispatched / in flight / staff hold /
 });
 await check('cancelled, pickup and non-sandbox orders never dispatch', () => {
   assert.equal(canDispatch({ ...paidAccepted, status: 'cancelled' }, T0).reason, 'cancelled');
+  assert.equal(canDispatch({ ...paidAccepted, refund_status: 'full' }, T0).reason, 'refunded');
+  assert.equal(canDispatch({ ...paidAccepted, refund_status: 'partial' }, T0).ok, true);
   assert.equal(canDispatch({ ...paidAccepted, fulfillment: 'pickup' }, T0).reason, 'not_delivery');
   assert.equal(canDispatch({ ...paidAccepted, uber_mode: null }, T0).reason, 'not_sandbox_order');
 });

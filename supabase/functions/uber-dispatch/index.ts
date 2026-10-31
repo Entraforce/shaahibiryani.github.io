@@ -21,8 +21,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore — shared plain-JS modules
 import { formatUberAddress, toE164, UberDirectError } from "../_shared/uber-direct.js";
 // @ts-ignore
-import { canDispatch, requoteDecision, quoteUsableForCheckout, deliveryRequestFor, courierCancellable, addressKey, MAX_DISPATCH_ATTEMPTS, STORE } from "../_shared/delivery-policy.js";
-import { uberClientFor, UBER_MODE } from "../_shared/uber-env.ts";
+import { canDispatch, requoteDecision, quoteUsableForCheckout, deliveryRequestFor, courierCancellable, addressKey, pickupReadyAt, MAX_DISPATCH_ATTEMPTS, STORE } from "../_shared/delivery-policy.js";
+import { uberClientFor, UBER_MODE, POLICY } from "../_shared/uber-env.ts";
+import { notifyDelivery } from "../_shared/delivery-notify.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -41,6 +42,10 @@ function json(body: unknown, status = 200): Response {
 
 async function release(id: string, patch: Record<string, unknown>) {
   await supabase.from("orders").update({ uber_dispatch_claimed_at: null, uber_updated_at: new Date().toISOString(), ...patch }).eq("id", id);
+  if (patch.uber_dispatch_state === "needs_staff") {
+    const { data: o } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+    if (o) await notifyDelivery(supabase, o, "problem");
+  }
 }
 
 async function dispatchOne(uber: any, o: any) {
@@ -54,6 +59,9 @@ async function dispatchOne(uber: any, o: any) {
   try {
     if (!order.guest_phone_e164) throw new UberDirectError("invalid_request", "Customer phone is not a valid US number");
     const paidFee = Math.round(Number(order.delivery_fee ?? 0) * 100);
+
+    // Ask the courier to arrive when the food will be ready (accept time + prep).
+    const readyAt = pickupReadyAt(order.kitchen_accepted_at, order.status, POLICY);
 
     // Reuse the checkout quote only while it is valid AND still for this
     // order's address (staff may have corrected it); otherwise re-quote. Uber
@@ -70,8 +78,9 @@ async function dispatchOne(uber: any, o: any) {
         dropoffAddress: formatUberAddress(order.delivery_address),
         pickupPhone: STORE.phone,
         dropoffPhone: order.guest_phone_e164,
+        pickupReadyAt: readyAt,
       });
-      const d = requoteDecision(paidFee, fresh.feeCents);
+      const d = requoteDecision(paidFee, fresh.feeCents, POLICY);
       if (!d.ok) {
         await release(order.id, { uber_dispatch_state: "needs_staff", uber_dispatch_error: `requote:${d.reason}${d.extraCents ? `:+${d.extraCents}c` : ""}` });
         return { id: order.id, needs_staff: d.reason };
@@ -85,6 +94,7 @@ async function dispatchOne(uber: any, o: any) {
     const del = await uber.createDelivery({
       ...req,
       quoteId,
+      pickupReadyAt: readyAt,
       ...(UBER_MODE === "sandbox" && ROBO ? { testSpecifications: { robo_courier_specification: { mode: "auto" } } } : {}),
     });
 
@@ -93,6 +103,7 @@ async function dispatchOne(uber: any, o: any) {
       uber_status: del.status ?? "pending",
       uber_tracking_url: del.tracking_url ?? null,
       uber_fee_cents: Number(del.fee ?? feeCents),
+      uber_courier: { pickup_eta: del.pickup_eta ?? null, dropoff_eta: del.dropoff_eta ?? null, updated: new Date().toISOString() },
       uber_dispatch_state: "dispatched",
       uber_dispatch_error: null,
       uber_dispatch_claimed_at: null,
@@ -103,6 +114,7 @@ async function dispatchOne(uber: any, o: any) {
       await release(order.id, { uber_dispatch_state: "needs_staff", uber_dispatch_error: `saved_failed:${del.id}` });
       return { id: order.id, needs_staff: "save_failed", delivery: del.id };
     }
+    await notifyDelivery(supabase, { ...order, uber_delivery_id: del.id }, "courier_booked");
     return { id: order.id, dispatched: del.id, status: del.status };
   } catch (e) {
     const code = e instanceof UberDirectError ? e.code : "unknown";
@@ -140,11 +152,18 @@ Deno.serve(async (req) => {
     .gte("created_at", since).limit(20);
 
   const { data: toCancel } = await supabase.from("orders")
-    .select("id, status, payment_status, uber_delivery_id, uber_status")
+    .select("id, status, payment_status, refund_status, uber_delivery_id, uber_status")
     .eq("fulfillment", "delivery").not("uber_delivery_id", "is", null)
-    .or("status.eq.cancelled,payment_status.eq.refunded,payment_status.eq.failed")
+    // A FULL refund cancels the courier; a partial refund (one item) does not.
+    .or("status.eq.cancelled,payment_status.eq.refunded,payment_status.eq.failed,refund_status.eq.full")
     .not("uber_status", "in", "(canceled,delivered,returned)")
     .gte("created_at", since).limit(20);
+
+  // "We got your order" text for newly paid delivery orders (deduplicated per order).
+  const { data: fresh } = await supabase.from("orders").select("*")
+    .eq("fulfillment", "delivery").eq("payment_status", "paid").eq("uber_mode", "sandbox")
+    .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString()).limit(50);
+  for (const o of fresh ?? []) await notifyDelivery(supabase, o, "confirmed");
 
   const dispatched = [];
   for (const o of todo ?? []) dispatched.push(await dispatchOne(uber, o));

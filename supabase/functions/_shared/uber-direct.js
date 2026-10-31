@@ -214,6 +214,7 @@ export function makeUberClient(opts) {
         manifest_reference: d.manifestReference,
         manifest_total_value: d.manifestTotalCents,
         undeliverable_action: "return",
+        ...(d.pickupReadyAt ? { pickup_ready_dt: d.pickupReadyAt } : {}),
         ...(d.tipCents ? { tip: d.tipCents } : {}),
         ...(d.testSpecifications ? { test_specifications: d.testSpecifications } : {}),
       });

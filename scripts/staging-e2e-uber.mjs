@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { createHmac, randomBytes } from 'node:crypto';
+import { makeUberClient } from '../supabase/functions/_shared/uber-direct.js';
 
 const PROD_REF = 'wtdthjhqgsbnyjucdqxl';
 function loadEnv(p) {
@@ -77,7 +78,9 @@ const ITEMS = [{ menuItemId: 'chicken-65', variantId: 'chicken-65-standard', qua
 const run = Date.now().toString(36);
 let phoneSeq = 0;
 const phone = () => `469555${String(100 + (Number(run.slice(-3).replace(/\D/g, '') || 0) + phoneSeq++) % 900).padStart(4, '0')}`;
-const checkoutBody = (quoteId, addr = NEAR, p = phone()) => ({ items: ITEMS, guestName: 'Staging Test', guestPhone: p, guestEmail: '', tipCents: 300, fulfillment: 'delivery', deliveryAddress: { ...addr, notes: 'STAGING TEST' }, deliveryQuoteId: quoteId });
+const checkoutBody = (quoteId, addr = NEAR, p = phone(), extra = {}) => ({ items: ITEMS, guestName: 'Staging Test', guestPhone: p, guestEmail: '', tipCents: 300, courierTipCents: 200, fulfillment: 'delivery', deliveryAddress: { ...addr, notes: 'STAGING TEST' }, deliveryQuoteId: quoteId, ...extra });
+const uberApi = makeUberClient({ mode: 'sandbox', customerId: PRIV.UBER_DIRECT_CUSTOMER_ID, clientId: PRIV.UBER_DIRECT_CLIENT_ID, clientSecret: PRIV.UBER_DIRECT_CLIENT_SECRET });
+async function waitFor(fn, ms = 60_000, every = 3_000) { const end = Date.now() + ms; let v; while (Date.now() < end) { v = await fn(); if (v) return v; await sleep(every); } return v; }
 
 async function quote(addr = NEAR) { return call('uber-delivery-quote', { address: addr, phone: '4695550100' }); }
 async function paidOrder({ accept = true } = {}) {
@@ -88,7 +91,7 @@ async function paidOrder({ accept = true } = {}) {
   must(pi.status === 'succeeded', `stripe ${pi.status ?? pi.error?.message}`);
   const cf = await call('confirm-web-order', { orderId: c.body.orderId }); must(cf.body?.paid === true, `confirm ${JSON.stringify(cf.body)}`);
   if (accept) await kitchen(c.body.orderId, 'accepted');
-  return { orderId: c.body.orderId, piId, quoteRowId: q.body.quoteId };
+  return { orderId: c.body.orderId, piId, quoteRowId: q.body.quoteId, token: c.body.trackingToken };
 }
 
 // ── Kitchen staff login (a TEST account that exists only in staging) ──
@@ -169,14 +172,14 @@ let A;
 await test('P1', 'checkout creates a delivery order with fee in the Stripe total', async () => {
   const qa = await quote(); const p = phone();
   const c = await call('create-web-order', checkoutBody(qa.body.quoteId, NEAR, p)); must(c.status === 200, `HTTP ${c.status} ${JSON.stringify(c.body)}`);
-  const b = c.body.breakdown; must(b.totalCents === b.subtotalCents + b.taxCents + b.tipCents + b.deliveryFeeCents, 'total arithmetic');
+  const b = c.body.breakdown; must(b.totalCents === b.subtotalCents + b.taxCents + b.tipCents + b.deliveryFeeCents + b.courierTipCents, 'total arithmetic');
   const piId = c.body.paymentIntent.split('_secret_')[0];
   const pi = await stripe('GET', `payment_intents/${piId}`); must(pi.amount === b.totalCents && pi.livemode === false, `PI amount ${pi.amount} livemode ${pi.livemode}`);
   const o = await getOrder(c.body.orderId);
   must(o.fulfillment === 'delivery' && o.uber_mode === 'sandbox' && o.payment_status === 'pending' && o.status === 'pending', 'order row');
   must(Math.round(o.delivery_fee * 100) === b.deliveryFeeCents && o.delivery_address?.zip === '75074', 'fee/address persisted');
   A = { orderId: c.body.orderId, piId, phone: p, quoteId: qa.body.quoteId, body: checkoutBody(qa.body.quoteId, NEAR, p) };
-  return `order ${short(A.orderId)} sub ${b.subtotalCents} + tax ${b.taxCents} + tip ${b.tipCents} + fee ${b.deliveryFeeCents} = ${b.totalCents}c; Stripe PI test-mode amount ${pi.amount}`;
+  return `order ${short(A.orderId)} food ${b.subtotalCents} + tax ${b.taxCents} + staff tip ${b.tipCents} + delivery ${b.deliveryFeeCents} + courier tip ${b.courierTipCents} = ${b.totalCents}c; Stripe PI test-mode amount ${pi.amount}`;
 });
 await test('P2', 'retrying the same checkout reuses the same payment (no double charge)', async () => {
   const r = await call('create-web-order', A.body); must(r.status === 200 && r.body.reused === true && r.body.orderId === A.orderId, JSON.stringify(r.body).slice(0, 160));
@@ -206,10 +209,12 @@ let delA;
 await test('D3', 'courier booked automatically after acceptance — exactly once under 3 concurrent runs', async () => {
   const runs = await Promise.all([dispatch(), dispatch(), dispatch()]);
   const booked = runs.flatMap((r) => r.dispatched ?? []).filter((d) => d.id === A.orderId && d.dispatched);
-  must(booked.length === 1, `booked ${booked.length} times: ${JSON.stringify(runs.map((r) => r.dispatched))}`);
+  must(booked.length <= 1, `booked ${booked.length} times: ${JSON.stringify(runs.map((r) => r.dispatched))}`);
   const o = await getOrder(A.orderId); delA = o.uber_delivery_id;
   must(delA && o.uber_dispatch_state === 'dispatched' && o.uber_tracking_url, 'order not updated');
-  return `1 booking from 3 runs; ${short(delA)} tracking=${o.uber_tracking_url ? 'yes' : 'no'}`;
+  // Uber's own record for this order: exactly the one delivery we stored.
+  const ud = await uberApi.getDelivery(delA); must(ud.external_id === A.orderId, 'external id mismatch');
+  return `${booked.length} booking from 3 runs + the every-minute job (${booked.length ? 'runs' : 'job'} won); ${short(delA)} tracking=${o.uber_tracking_url ? 'yes' : 'no'}`;
 });
 await test('D4', 'later runs never re-book a dispatched order', async () => {
   await dispatch(); const o = await getOrder(A.orderId); must(o.uber_delivery_id === delA, 'delivery id changed'); return 'unchanged';
@@ -275,17 +280,20 @@ await test('X2', 'refund after booking (payment_status=refunded) → courier is 
   const E = await paidOrder(); await dispatch();
   const o1 = await getOrder(E.orderId); must(o1.uber_delivery_id, 'not booked');
   const rf = await stripe('POST', 'refunds', { payment_intent: E.piId }); must(rf.status === 'succeeded' || rf.status === 'pending', rf.error?.message ?? rf.status);
-  await rest('PATCH', `orders?id=eq.${E.orderId}`, { payment_status: 'refunded' }); // what stripe-webhook-web sets on charge.refunded
+  // No hand-editing: the REAL Stripe charge.refunded webhook must record it.
+  const viaWebhook = await waitFor(async () => (await getOrder(E.orderId)).refund_status === 'full', 45_000);
+  must(viaWebhook, 'stripe-webhook-web never recorded refund_status=full');
   const d2 = await dispatch(); const c = (d2.cancelled ?? []).find((x) => x.id === E.orderId);
-  const o2 = await getOrder(E.orderId);
+  const o2 = await waitFor(async () => { const o = await getOrder(E.orderId); return ['canceled'].includes(o.uber_status) ? o : null; }, 70_000) ?? await getOrder(E.orderId);
   must(o2.uber_status === 'canceled' || c?.cancel === 'too_late', `uber_status ${o2.uber_status}`);
-  return `Stripe test refund ${rf.status}; courier ${c?.cancelled ? 'cancelled' : 'already picked up (not cancellable)'}`;
+  return `Stripe test refund ${rf.status} → Stripe webhook set refund_status=full → courier ${o2.uber_status === 'canceled' ? 'cancelled at Uber' : 'already picked up (not cancellable)'}`;
 });
 let F;
 await test('R1', 'quote expired by dispatch time → fresh quote, still booked', async () => {
   F = await paidOrder({ accept: false });
   await rest('PATCH', `delivery_quotes?id=eq.${F.quoteRowId}`, { expires_at: new Date(Date.now() - 60_000).toISOString() });
-  await kitchen(F.orderId, 'accepted'); const d = await dispatch();
+  // Food already ready → courier asked to come now (exercises the "ready" path; W7 watches it).
+  await kitchen(F.orderId, 'accepted'); await kitchen(F.orderId, 'ready'); const d = await dispatch();
   const o = await getOrder(F.orderId); must(o.uber_delivery_id, `not booked: ${JSON.stringify((d.dispatched ?? []).find((x) => x.id === F.orderId))}`);
   return `re-quoted and booked ${short(o.uber_delivery_id)}`;
 });
@@ -325,6 +333,89 @@ if (WEBHOOK_SECRET) await test('W7', 'REAL Uber webhooks (robo courier) pass sig
   must(ev.length > 0, `no real webhook events stored (uber/order states: ${seen.join(' → ')})`);
   must(seen.length > 1, `status never changed: ${seen.join(' → ')}`);
   return `${ev.length} signed Uber events; ${seen.join(' → ')}`;
+});
+
+// 7. Policies, tips, tracking, notifications
+await test('P4', '$20 food minimum for delivery', async () => {
+  const q = await quote(); const b = { ...checkoutBody(q.body.quoteId), items: [{ ...ITEMS[0], quantity: 1 }] };
+  const r = await call('create-web-order', b); must(r.status === 400 && /at least \$20/.test(r.body.error), `${r.status} ${r.body?.error}`); return `HTTP 400 "${r.body.error}"`;
+});
+await test('P5', 'ETA shown to the customer includes the 25-minute kitchen prep', async () => {
+  const q = await quote(); must(q.body.etaMinutes >= q.body.prepMinutes && q.body.prepMinutes === 25, JSON.stringify(q.body));
+  return `prep ${q.body.prepMinutes} min → door in ~${q.body.etaMinutes} min`;
+});
+await test('P6', '5-mile limit: an address quoted above the $7.99 tier is refused as out of area', async () => {
+  const far6 = { street: '3000 Grapevine Mills Pkwy', city: 'Grapevine', zip: '76051' };
+  const r = await quote(far6); must(r.status === 400, `HTTP ${r.status} fee ${r.body?.feeCents}`); return `HTTP 400 "${r.body.error}"`;
+});
+let Tp;
+await test('M1', 'money: staff tip and courier tip are separate; courier tip goes to Uber in full, staff tip never does', async () => {
+  Tp = await paidOrder();
+  const o = await getOrder(Tp.orderId);
+  const pi = await stripe('GET', `payment_intents/${o.stripe_payment_intent}`);
+  const parts = { food: Math.round(o.subtotal * 100), tax: Math.round(o.tax * 100), staffTip: Math.round(o.tip * 100), deliveryFee: Math.round(o.delivery_fee * 100), courierTip: Math.round(o.courier_tip * 100) };
+  must(parts.food + parts.tax + parts.staffTip + parts.deliveryFee + parts.courierTip === pi.amount_received, `sum ${JSON.stringify(parts)} != ${pi.amount_received}`);
+  must(pi.metadata.staff_tip_cents === '300' && pi.metadata.courier_tip_cents === '200', JSON.stringify(pi.metadata));
+  const booked = await waitFor(async () => (await getOrder(Tp.orderId)).uber_delivery_id, 90_000, 5_000);
+  must(booked, 'never booked');
+  const ud = await uberApi.getDelivery(booked);
+  must(Number(ud.tip ?? 0) === 200, `Uber delivery tip ${ud.tip}`);
+  // What Uber bills Shaahi = delivery fee the customer paid + the courier tip the customer paid.
+  must(Number(ud.fee) === parts.deliveryFee + parts.courierTip, `Uber bills ${ud.fee} vs collected ${parts.deliveryFee + parts.courierTip}`);
+  return `Stripe ${pi.amount_received}c = food ${parts.food} + tax ${parts.tax} + staff tip ${parts.staffTip} + delivery ${parts.deliveryFee} + courier tip ${parts.courierTip}; Uber bills ${ud.fee}c (= delivery ${parts.deliveryFee} + courier tip ${ud.tip}); Shaahi keeps food+tax+staff tip`;
+});
+await test('T2', 'tracking page data: right token works; wrong token = 404; no phone/email/payment fields', async () => {
+  must(Tp?.token, 'no tracking token returned at checkout');
+  const ok = await call('delivery-status', { o: Tp.orderId, t: Tp.token }); must(ok.status === 200, `${ok.status}`);
+  const bad = await call('delivery-status', { o: Tp.orderId, t: '0'.repeat(32) }); must(bad.status === 404, `wrong token ${bad.status}`);
+  const leaked = Object.keys(ok.body).filter((k) => /phone|email|payment_intent|guest_name|zip/i.test(k)); must(!leaked.length, `leaks ${leaked}`);
+  must(!JSON.stringify(ok.body).includes('469555'), 'phone digits in response');
+  return `200 {status:${ok.body.kitchenStatus}, courier:${ok.body.courierStatus}, tracking:${ok.body.trackingUrl ? 'yes' : 'no'}}; wrong token 404`;
+});
+await test('N1', 'notifications: one per order per event, recorded but NOT sent (no approved provider), no marketing sign-up', async () => {
+  const n = (await rest('GET', `delivery_notifications?order_id=eq.${Tp.orderId}&select=kind,status,suppressed_reason,body`)).body;
+  const kinds = n.map((x) => x.kind);
+  must(kinds.includes('confirmed') && kinds.includes('courier_booked'), `kinds ${kinds}`);
+  must(new Set(kinds).size === kinds.length, 'duplicate notification');
+  must(n.every((x) => x.status === 'suppressed' && x.suppressed_reason === 'transport_disabled'), JSON.stringify(n.map((x) => x.status + ':' + x.suppressed_reason)));
+  must(n.every((x) => /Reply STOP/.test(x.body)), 'missing STOP wording');
+  const mc = (await rest('GET', `marketing_consent?order_id=eq.${Tp.orderId}&select=id`)).body; must(mc.length === 0, 'marketing consent row written!');
+  return `${kinds.join(', ')} — all transport_disabled; 0 marketing_consent rows`;
+});
+await test('N2', 'a number that replied STOP is never texted', async () => {
+  const p = phone();
+  const st = await rest('POST', 'rpc/record_marketing_consent', { p_phone: p, p_email: null, p_granted: false, p_channel: 'sms', p_source: 'reply_stop', p_wording: 'Customer replied STOP to an order text (staging test).' });
+  must(st.status === 200, `could not record STOP: ${st.status} ${JSON.stringify(st.body).slice(0, 120)}`);
+  const q = await quote(); const c = await call('create-web-order', checkoutBody(q.body.quoteId, NEAR, p));
+  const piId = c.body.paymentIntent.split('_secret_')[0];
+  await stripe('POST', `payment_intents/${piId}/confirm`, { payment_method: 'pm_card_visa', return_url: 'https://example.com/return' });
+  await call('confirm-web-order', { orderId: c.body.orderId }); await dispatch();
+  const n = (await rest('GET', `delivery_notifications?order_id=eq.${c.body.orderId}&select=kind,suppressed_reason`)).body;
+  must(n.length && n.every((x) => x.suppressed_reason === 'replied_stop'), JSON.stringify(n));
+  await kitchen(c.body.orderId, 'cancelled');
+  return `${n.length} message(s) suppressed: replied_stop`;
+});
+await test('X3', 'kitchen cancels AFTER the courier picked up → courier not cancelled, nothing breaks', async () => {
+  must(Tp?.orderId, 'no order');
+  const o = await getOrder(Tp.orderId);
+  if (WEBHOOK_SECRET && o.uber_status !== 'pickup_complete' && o.uber_status !== 'delivered') await webhook({ id: `evt_${run}_x3`, kind: 'event.delivery_status', delivery_id: o.uber_delivery_id, status: 'pickup_complete', data: { status: 'pickup_complete' } });
+  await kitchen(Tp.orderId, 'cancelled'); const d = await dispatch();
+  const c = (d.cancelled ?? []).find((x) => x.id === Tp.orderId);
+  must(!c || c.cancel === 'too_late', JSON.stringify(c));
+  return c ? `too_late (${c.uber_status})` : 'not in cancel queue (already delivered)';
+});
+await test('X4', 'partial refund (one item) does NOT cancel the courier', async () => {
+  const H = await paidOrder(); const booked = await waitFor(async () => (await getOrder(H.orderId)).uber_delivery_id, 90_000, 5_000); must(booked, 'not booked');
+  await stripe('POST', 'refunds', { payment_intent: H.piId, amount: '500' });
+  must(await waitFor(async () => (await getOrder(H.orderId)).refund_status === 'partial', 45_000), 'webhook never set partial');
+  await dispatch(); const o = await getOrder(H.orderId); must(o.uber_status !== 'canceled', 'courier cancelled on partial refund');
+  return `refund_status=partial, courier still ${o.uber_status}`;
+});
+await test('Z1', 'reconciliation: no order has more than one courier; every courier belongs to a paid order', async () => {
+  const rows = (await rest('GET', `orders?uber_delivery_id=not.is.null&select=id,uber_delivery_id,payment_status`)).body;
+  const ids = rows.map((r) => r.uber_delivery_id); must(new Set(ids).size === ids.length, 'duplicate delivery ids');
+  const unpaid = rows.filter((r) => !['paid', 'refunded'].includes(r.payment_status)); must(!unpaid.length, `couriers on unpaid orders: ${unpaid.length}`);
+  return `${rows.length} couriers, ${rows.length} distinct orders, all paid`;
 });
 
 const pass = results.filter((r) => r.pass).length;
