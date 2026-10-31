@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Track Your Order | Shaahi Biryani</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+<style>
+  :root{--bg:#0d0608;--card:#170b0e;--gold:#C9A84C;--gold-l:#e3c878;--text:#F5EDD8;--muted:#a89a85;--ok:#4CAF50;--warn:#f0b429;--bad:#f87171;--line:rgba(201,168,76,.18)}
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Georgia,'Times New Roman',serif;line-height:1.55}
+  main{max-width:520px;margin:0 auto;padding:28px 16px 48px}
+  .brand{font-family:Georgia,serif;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-size:.78rem;text-align:center;margin-bottom:4px}
+  h1{font-weight:normal;font-size:1.5rem;text-align:center;margin:0 0 4px}
+  .sub{color:var(--muted);text-align:center;font-size:.9rem;margin:0 0 22px}
+  .card{background:var(--card);border:1px solid var(--line);padding:18px 18px 8px;margin-bottom:16px}
+  .eta{font-size:1.25rem;color:var(--gold-l);text-align:center;margin:2px 0 4px}
+  .eta-sub{color:var(--muted);text-align:center;font-size:.85rem;margin:0 0 14px}
+  ol{list-style:none;margin:0;padding:0}
+  li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+  li:first-child{border-top:0}
+  .dot{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);margin-top:1px;display:grid;place-items:center;font-size:.75rem}
+  li.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+  li.now .dot{border-color:var(--gold);box-shadow:0 0 0 4px rgba(201,168,76,.18)}
+  li .t{font-size:.98rem} li .d{color:var(--muted);font-size:.84rem}
+  li:not(.done):not(.now) .t{color:var(--muted)}
+  .btn{display:block;text-align:center;background:var(--gold);color:#120a06;text-decoration:none;padding:13px;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;margin:6px 0 14px}
+  .note{font-size:.88rem;padding:12px 14px;border:1px solid var(--line);margin-bottom:16px}
+  .note.warn{border-color:rgba(240,180,41,.6)} .note.bad{border-color:rgba(248,113,113,.6)}
+  .test{background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.5);color:var(--warn);text-align:center;font-size:.8rem;padding:6px;margin-bottom:16px}
+  .foot{color:var(--muted);font-size:.82rem;text-align:center} a{color:var(--gold-l)}
+  .upd{color:var(--muted);font-size:.75rem;text-align:center;margin-top:6px}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">Shaahi Biryani</div>
+  <h1>Your delivery</h1>
+  <p class="sub" id="ordno">Loading your order…</p>
+  <div id="testBanner" class="test" hidden>TEST MODE — no real courier is on the way.</div>
+  <div id="msg" class="note" hidden></div>
+  <section class="card" id="card" hidden>
+    <div class="eta" id="eta"></div>
+    <p class="eta-sub" id="etaSub"></p>
+    <ol id="steps"></ol>
+  </section>
+  <a class="btn" id="live" href="#" target="_blank" rel="noopener noreferrer" hidden>Follow your courier live (Uber)</a>
+  <p class="foot">Questions about your order? Call <a href="tel:4699603300">(469) 960-3300</a>.<br>Shaahi Biryani · 3421 E Renner Rd, Suite 110, Plano, TX</p>
+  <p class="upd" id="upd"></p>
+</main>
+<script>
+// Customer delivery tracking. The link (order id + secret token) comes from the
+// confirmation screen and order texts; the server answers only with that pair.
+var SB_URL='https://wtdthjhqgsbnyjucdqxl.supabase.co';
+var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZHRoamhxZ3NibnlqdWNkcXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcxMzcsImV4cCI6MjA5MjQ0MzEzN30.1WYVcbrulkg0l7QB-scj4KcJCnMwFKSLHXucEdEZV3Q';
+var q=new URLSearchParams(location.search), O=q.get('o')||'', T=q.get('t')||'';
+var timer=null;
+function el(id){return document.getElementById(id);}
+function time(iso){var d=new Date(iso);return isNaN(d)?'':d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});}
+function mins(iso){var m=Math.round((Date.parse(iso)-Date.now())/60000);return isFinite(m)?m:null;}
+function show(kind,text){var m=el('msg');m.hidden=false;m.className='note '+(kind||'');m.textContent=text;}
+function render(s){
+  el('ordno').textContent='Order #'+s.orderNumber+(s.deliverTo?' · to '+s.deliverTo:'');
+  if(/localhost|127\.0\.0\.1/.test(location.hostname)) el('testBanner').hidden=false;
+  el('msg').hidden=true;
+  var k=s.kitchenStatus, c=s.courierStatus;
+  var picked = c==='pickup_complete'||c==='dropoff'||c==='delivered'||k==='out_for_delivery'||k==='delivered';
+  var delivered = c==='delivered'||k==='delivered';
+  var steps=[
+    {t:'Order received',d:s.paid?'Payment confirmed':'Waiting for payment confirmation',done:s.paid},
+    {t:'Kitchen accepted',d:'We’re cooking it fresh',done:['accepted','preparing','ready','out_for_delivery','delivered'].indexOf(k)>=0},
+    {t:'Courier booked',d:s.pickupEta?('Courier picks up around '+time(s.pickupEta)):'An Uber courier is assigned once the kitchen accepts',done:!!c},
+    {t:'On the way',d:s.courierName?(s.courierName+' is bringing your order'):'Your courier has your food',done:picked},
+    {t:'Delivered',d:'Enjoy your meal!',done:delivered}
+  ];
+  var nowIdx=steps.findIndex(function(x){return !x.done;});
+  el('steps').innerHTML=steps.map(function(x,i){
+    return '<li class="'+(x.done?'done':(i===nowIdx?'now':''))+'"><span class="dot">'+(x.done?'✓':'')+'</span><div><div class="t"></div><div class="d"></div></div></li>';
+  }).join('');
+  var lis=el('steps').querySelectorAll('li');
+  steps.forEach(function(x,i){lis[i].querySelector('.t').textContent=x.t;lis[i].querySelector('.d').textContent=x.d;});
+  if(delivered){el('eta').textContent='Delivered';el('etaSub').textContent='Thank you for ordering from Shaahi Biryani.';}
+  else if(s.dropoffEta){var m=mins(s.dropoffEta);el('eta').textContent='Arriving around '+time(s.dropoffEta);el('etaSub').textContent=m!=null&&m>0?('about '+m+' minutes from now'):'any minute now';}
+  else {el('eta').textContent='Being prepared';el('etaSub').textContent='Your arrival time appears once a courier is booked.';}
+  el('card').hidden=false;
+  var live=el('live'); if(s.trackingUrl&&!delivered){live.href=s.trackingUrl;live.hidden=false;}else live.hidden=true;
+  if(s.refunded) show('warn','This order was cancelled and refunded. Questions? Call (469) 960-3300.');
+  else if(k==='cancelled') show('bad','This order was cancelled. If you were charged, a refund is on its way. Questions? Call (469) 960-3300.');
+  else if(s.needsAttention) show('warn','There’s a hiccup with the delivery. Our team is on it and will call you if needed.');
+  el('upd').textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'});
+  if(delivered||k==='cancelled'||s.refunded){clearInterval(timer);timer=null;}
+}
+async function load(){
+  try{
+    var r=await fetch(SB_URL+'/functions/v1/delivery-status',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_ANON,Authorization:'Bearer '+SB_ANON},body:JSON.stringify({o:O,t:T})});
+    var j=await r.json();
+    if(!r.ok){el('ordno').textContent='';show('bad',j.error||'We couldn’t find that order.');clearInterval(timer);timer=null;return;}
+    render(j);
+  }catch(e){show('warn','Can’t reach us right now — retrying…');}
+}
+if(!O||!T){el('ordno').textContent='';show('bad','This tracking link is incomplete. Please use the link from your order confirmation.');}
+else{load();timer=setInterval(load,20000);}
+</script>
+</body>
+</html>

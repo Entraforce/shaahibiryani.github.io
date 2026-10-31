@@ -3788,7 +3788,10 @@ html.fresh .cart-footer{border-top:1px solid var(--f-line);background:var(--f-so
 html.fresh .cart-footer > div:first-child{background:#fff;border-radius:var(--f-r-lg);padding:12px;}
 html.fresh .cart-footer [style*="color:rgba(245,237,216"]{color:var(--f-body) !important;}
 html.fresh .ful-btn,html.fresh .tip-btn{border-radius:999px !important;min-height:40px;font-size:.82rem !important;font-weight:700 !important;border-color:var(--f-line-2) !important;}
-html.fresh .ful-btn[data-ful="delivery"]{color:#8A8A8A !important;background:#fff !important;}
+html.fresh:not(.deliv-on) .ful-btn[data-ful="delivery"]{color:#8A8A8A !important;background:#fff !important;}
+html.deliv-on .deliv-soon-tag{display:none;}
+html.fresh.deliv-on .ful-btn[aria-pressed="true"]{background:var(--f-red,#B8322A) !important;color:#fff !important;border-color:var(--f-red,#B8322A) !important;}
+html.fresh.deliv-on #delivNote{color:var(--f-ink-2,#4a4a4a) !important;font-style:normal !important;font-size:.74rem !important;}
 html.fresh .cart-subtotal{margin-bottom:6px;}
 html.fresh .cart-subtotal span,html.fresh .cart-footer [style*="font-size:.58rem"],html.fresh .cart-footer [style*="font-size:.66rem"]{font-size:.9rem !important;color:var(--f-body) !important;}
 html.fresh .cart-subtotal strong,html.fresh #cartTax,html.fresh #cartTipAmt,html.fresh #cartDelivAmt{font-size:.95rem !important;color:var(--f-text) !important;font-weight:700;}
@@ -4945,9 +4948,9 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
       <div style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;">Pickup or Delivery</div>
       <div style="display:flex;gap:6px;">
         <button class="ful-btn" data-ful="pickup" onclick="setFulfillment('pickup')" style="flex:1;font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:1px solid var(--gold);padding:9px 4px;cursor:pointer;transition:all .25s;">&#129377; Pickup</button>
-        <button class="ful-btn" data-ful="delivery" onclick="setFulfillment('delivery')" style="flex:1;font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(201,168,76,.4);background:transparent;border:1px dashed rgba(201,168,76,.25);padding:6px 4px;cursor:not-allowed;transition:all .25s;line-height:1.25;">&#128757; Delivery<br><span style="font-size:.44rem;letter-spacing:.16em;color:var(--gold);">Coming Soon</span></button>
+        <button class="ful-btn" data-ful="delivery" onclick="setFulfillment('delivery')" style="flex:1;font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(201,168,76,.4);background:transparent;border:1px dashed rgba(201,168,76,.25);padding:6px 4px;cursor:not-allowed;transition:all .25s;line-height:1.25;">&#128757; Delivery<br><span class="deliv-soon-tag" style="font-size:.44rem;letter-spacing:.16em;color:var(--gold);">Coming Soon</span></button>
       </div>
-      <p style="font-size:.72rem;color:rgba(245,237,216,.9);margin-top:8px;line-height:1.55;">🛵 <strong style="color:var(--gold-l);">Delivery coming soon</strong> — order <strong style="color:var(--gold-l);">Pickup</strong> now, $4.99 doorstep delivery launching shortly!</p>
+      <p id="delivSoon" style="font-size:.72rem;color:rgba(245,237,216,.9);margin-top:8px;line-height:1.55;">🛵 <strong style="color:var(--gold-l);">Delivery coming soon</strong> — order <strong style="color:var(--gold-l);">Pickup</strong> now, $4.99 doorstep delivery launching shortly!</p>
       <p id="delivNote" style="display:none;font-size:.66rem;font-style:italic;color:rgba(201,168,76,.45);margin-top:7px;line-height:1.5;">$4.99 delivery fee &middot; $20 minimum &middot; within ~8 miles of our Plano kitchen</p>
     </div>
     <div class="cart-subtotal">
@@ -4963,7 +4966,7 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
       <span id="cartTax" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);">$0.00</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <span style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Tip</span>
+      <span id="cartTipLabel" style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Tip</span>
       <span id="cartTipAmt" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);">$0.00</span>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:14px;" id="tipBtns">
@@ -5015,12 +5018,16 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
         <span id="waTax" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);"></span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:10px;" id="waTipRow">
-        <span style="font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Tip</span>
+        <span id="waTipLabel" style="font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Tip</span>
         <span id="waTip" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);"></span>
       </div>
       <div style="justify-content:space-between;margin-bottom:10px;display:none;" id="waDelivRow">
-        <span style="font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Delivery</span>
+        <span style="font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Delivery fee &middot; Uber Direct</span>
         <span id="waDeliv" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);"></span>
+      </div>
+      <div style="justify-content:space-between;margin-bottom:10px;display:none;" id="waCourierTipRow">
+        <span style="font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Tip for your Uber courier</span>
+        <span id="waCourierTip" style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);"></span>
       </div>
       <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(201,168,76,.15);">
         <span style="font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);">Total</span>
@@ -5087,6 +5094,17 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
         <input id="delivNotes" type="text" placeholder="Gate code, leave at door, etc." style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.18);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .3s;" onfocus="this.style.borderColor='rgba(201,168,76,.5)'" onblur="this.style.borderColor='rgba(201,168,76,.18)'" />
       </div>
       <p id="delivAddrError" style="display:none;font-size:.72rem;color:#f87171;font-style:italic;margin-top:8px;">Please complete your delivery address (within ~8 miles of Plano).</p>
+      <div id="delivQuoteBox" role="status" aria-live="polite" style="display:none;margin-top:12px;padding:10px 12px;border:1px solid rgba(201,168,76,.3);font-size:.82rem;line-height:1.55;color:var(--text-warm);"></div>
+      <div id="courierTipBlock" style="display:none;margin-top:12px;">
+        <div style="font-family:'Cinzel',serif;font-size:.5rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Tip for your Uber courier <span style="text-transform:none;letter-spacing:0;font-family:inherit;color:var(--text-muted);font-style:italic;">&middot; optional &middot; 100% goes to the courier</span></div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="ctip-btn" data-ctip="0" onclick="setCourierTip(0)" style="flex:1;font-family:'Cinzel',serif;font-size:.52rem;font-weight:600;letter-spacing:.1em;color:var(--text-muted);background:transparent;border:1px solid rgba(201,168,76,.18);padding:9px 0;cursor:pointer;">None</button>
+          <button type="button" class="ctip-btn" data-ctip="200" onclick="setCourierTip(200)" style="flex:1;font-family:'Cinzel',serif;font-size:.52rem;font-weight:600;letter-spacing:.1em;color:var(--text-muted);background:transparent;border:1px solid rgba(201,168,76,.18);padding:9px 0;cursor:pointer;">$2</button>
+          <button type="button" class="ctip-btn" data-ctip="300" onclick="setCourierTip(300)" style="flex:1;font-family:'Cinzel',serif;font-size:.52rem;font-weight:600;letter-spacing:.1em;color:var(--text-muted);background:transparent;border:1px solid rgba(201,168,76,.18);padding:9px 0;cursor:pointer;">$3</button>
+          <button type="button" class="ctip-btn" data-ctip="500" onclick="setCourierTip(500)" style="flex:1;font-family:'Cinzel',serif;font-size:.52rem;font-weight:600;letter-spacing:.1em;color:var(--text-muted);background:transparent;border:1px solid rgba(201,168,76,.18);padding:9px 0;cursor:pointer;">$5</button>
+        </div>
+        <p style="font-size:.7rem;font-style:italic;color:var(--text-muted);margin-top:6px;">The tip above the order total is for our restaurant staff. This one is paid in full to the Uber courier who brings your food.</p>
+      </div>
     </div>
 
     <div style="display:flex;gap:10px;" id="waActionBtns">
@@ -5227,6 +5245,10 @@ function _wpResetModal(){
   var ps=document.getElementById('webPaySuccess'); if(ps)ps.style.display='none';
   var pe=document.getElementById('payment-element'); if(pe)pe.innerHTML='';
   var er=document.getElementById('webPayErr'); if(er)er.textContent='';
+  // Undo what a finished delivery checkout hid or locked.
+  ['waIntro'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='';});
+  var wt=document.getElementById('waTotal'); if(wt&&wt.parentElement&&wt.parentElement.parentElement) wt.parentElement.parentElement.style.display='';
+  var ab=document.getElementById('delivAddrBlock'); if(ab) ab.querySelectorAll('input').forEach(function(i){i.readOnly=false;i.style.opacity='';});
 }
 
 // ── Catering tray limits ──────────────────────────────────────────────
@@ -5338,12 +5360,20 @@ async function startWebPayment(){
           body:JSON.stringify({address:{street:street,apt:apt,city:city,zip:zip},phone:((gi('custPhone')||{}).value||'')})});
         var qd=await qr.json();
         if(qb){qb.disabled=false;}
-        if(!qr.ok){ _delivQuote=null; if(err){err.style.display='block';err.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';} return; }
-        _delivQuote={id:qd.quoteId,feeCents:qd.feeCents,etaMinutes:qd.etaMinutes,expiresAt:qd.expiresAt,key:aKey};
+        if(!qr.ok){ _delivQuote=null; DELIVERY_FEE=DELIVERY_SANDBOX?0:DELIVERY_FEE; _refreshWaTotals();
+          var qbe=gi('delivQuoteBox'); if(qbe){qbe.style.display='block';qbe.style.borderColor='rgba(248,113,113,.6)';qbe.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';}
+          if(err){err.style.display='block';err.style.color='';err.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';} return; }
+        _delivQuote={id:qd.quoteId,feeCents:qd.feeCents,etaMinutes:qd.etaMinutes,prepMinutes:qd.prepMinutes,expiresAt:qd.expiresAt,key:aKey};
         DELIVERY_FEE=qd.feeCents/100;
-        var dn=gi('delivNote'); if(dn){dn.style.display='block';dn.textContent='Delivery by Uber Direct: $'+DELIVERY_FEE.toFixed(2)+' \u00b7 about '+(qd.etaMinutes||'—')+' min once your food is ready'+(qd.sandbox?' (TEST MODE)':'');}
-        renderCart();
-        if(err){err.style.display='block';err.textContent='Delivery is $'+DELIVERY_FEE.toFixed(2)+'. Tap Continue to pay.';}
+        var held=new Date(Date.parse(qd.expiresAt)-2*60*1000).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+        var qbx=gi('delivQuoteBox');
+        if(qbx){qbx.style.display='block';qbx.style.borderColor='rgba(201,168,76,.3)';
+          qbx.innerHTML='<strong style="color:var(--gold-l);">Delivery by Uber Direct: $'+DELIVERY_FEE.toFixed(2)+'</strong><br>'
+            +'Arrives in about <strong>'+(qd.etaMinutes||'—')+' minutes</strong> — includes about '+(qd.prepMinutes||25)+' minutes to cook it fresh.<br>'
+            +'<span style="font-size:.74rem;color:var(--text-muted);">This price is held until '+held+'.'+(qd.sandbox?' <strong style="color:#f0b429;">TEST MODE — no real courier, no real charge.</strong>':'')+'</span>';}
+        var dn=gi('delivNote'); if(dn){dn.style.display='block';dn.textContent='Delivery by Uber Direct: $'+DELIVERY_FEE.toFixed(2)+' · about '+(qd.etaMinutes||'—')+' min to your door';}
+        renderCart(); _refreshWaTotals();
+        if(err){err.style.display='block';err.style.color='var(--gold-l)';err.textContent='Check your total above, then tap Pay Securely.';}
         return; // let the customer see the price before paying
       }catch(qe){ if(qb){qb.disabled=false;} if(err){err.style.display='block';err.textContent='Couldn\u2019t get a delivery price. Please try again, or choose pickup.';} return; }
     }
@@ -5362,7 +5392,7 @@ async function startWebPayment(){
   // Every call to create-web-order mints a fresh PaymentIntent and a fresh
   // orders row. Re-entering checkout with an unchanged basket should reuse the
   // one already open rather than leaving a trail of abandoned intents.
-  var _cartKey=JSON.stringify({i:r.items,t:tipCents,f:fulfillment,d:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.key+'#'+_delivQuote.id:null});
+  var _cartKey=JSON.stringify({i:r.items,t:tipCents,f:fulfillment,d:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.key+'#'+_delivQuote.id+'#'+courierTipCents:null});
   if(_wpSecret&&_wpElements&&_wpCartKey===_cartKey){
     gi('custDetailsBlock').style.display='none';
     if(gi('waOrderSummary')) gi('waOrderSummary').style.display='none';
@@ -5376,13 +5406,29 @@ async function startWebPayment(){
     var res=await fetch(SB_URL+'/functions/v1/create-web-order',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
-      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,deliveryQuoteId:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.id:null,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
+      body:JSON.stringify({items:r.items,guestName:(first+' '+last).trim(),guestPhone:phone,guestEmail:email,tipCents:tipCents,fulfillment:fulfillment,deliveryAddress:deliveryAddress,deliveryQuoteId:(fulfillment==='delivery'&&_delivQuote)?_delivQuote.id:null,courierTipCents:(fulfillment==='delivery'&&_delivQuote)?courierTipCents:0,marketingOptIn:!!((gi('custOptIn')||{}).checked),attribution:(typeof window.shaahiAttribution==='function'?window.shaahiAttribution():null)})
     });
     var data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Could not start the order.');
+    if(!res.ok){
+      // Price expired or address changed: drop the quote so Continue fetches a fresh one.
+      if(fulfillment==='delivery' && res.status===409){
+        _delivQuote=null; var qx=gi('delivQuoteBox'); if(qx) qx.style.display='none';
+        bl='Get delivery price &#8594;'; _refreshWaTotals();
+        throw new Error(data.code==='quote_expired'
+          ? 'Your delivery price expired. Tap Get delivery price for an updated one — you haven\u2019t been charged.'
+          : 'Your address changed. Tap Get delivery price for the new address — you haven\u2019t been charged.');
+      }
+      throw new Error(data.error||'Could not start the order.');
+    }
     var noteEl=gi('webPayNote');
     if(noteEl) noteEl.innerHTML = '&#128274; Secure payment by Stripe · your card never touches our servers · '+(fulfillment==='delivery'?'delivered to your door':'pickup at our Plano kitchen');
     _wpSecret=data.paymentIntent; _wpOrder=data; _wpCartKey=_cartKey;
+    if(fulfillment==='delivery'){
+      // The amount is now fixed at Stripe: lock what would change it.
+      var ab0=gi('delivAddrBlock'); if(ab0) ab0.querySelectorAll('input').forEach(function(i){i.readOnly=true;i.style.opacity='.7';});
+      var ctb=gi('courierTipBlock'); if(ctb) ctb.style.display='none';
+      if(gi('waCourierTip')) gi('waCourierTip').textContent = courierTipCents ? _fmtCents(courierTipCents) : 'None';
+    }
     _wpCustomer={email:email,phone:phone,items:r.items};
     gi('custDetailsBlock').style.display='none';
     if(gi('waOrderSummary')) gi('waOrderSummary').style.display='none';
@@ -5510,16 +5556,23 @@ async function payWeb(){
     // modal if it was dismissed while the payment was resolving.
     _reopenWaModal();
     gi('webPayArea').style.display='none';
+    ['waOrderSummary','delivAddrBlock','custDetailsBlock','waActionBtns','waIntro'].forEach(function(id){var e=gi(id); if(e) e.style.display='none';});
+    var wt=gi('waTotal'); if(wt && wt.parentElement && wt.parentElement.parentElement) wt.parentElement.parentElement.style.display='none';
     var s=gi('webPaySuccess'); if(s)s.style.display='block';
     var sm=gi('webPaySuccessMsg');
     if(sm){
+      var _trk=(_wpOrder&&(_wpOrder.trackingToken||(_wpOrder.breakdown&&_wpOrder.breakdown.trackingToken)))?('track.html?o='+encodeURIComponent(_wpOrder.orderId)+'&t='+encodeURIComponent(_wpOrder.trackingToken||_wpOrder.breakdown.trackingToken)):null;
       sm.innerHTML = (fulfillment==='delivery')
-        ? 'Paid &amp; sent to our kitchen. We\'ll freshly prepare it and have it on the way to your door shortly &mdash; typically <strong style="color:var(--gold-l);">45&ndash;60 minutes</strong>.<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.'
+        ? 'Paid &amp; sent to our kitchen. Once the kitchen accepts it, an Uber courier is booked to pick it up when it\'s ready'+(_delivQuote&&_delivQuote.etaMinutes?' &mdash; about <strong style="color:var(--gold-l);">'+_delivQuote.etaMinutes+' minutes</strong> to your door':'')+'.'
+          +(_trk?'<br><a href="'+_trk+'" style="display:inline-block;margin-top:12px;padding:11px 22px;background:var(--gold);color:var(--black);font-family:\'Cinzel\',serif;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;">Track your delivery</a><br><span style="font-size:.74rem;color:var(--text-muted);">Save this link — it\'s the only way to see your order\'s progress.</span>':'')
+          +'<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.'
         : 'Paid &amp; sent to our kitchen. We\'ll have it freshly made and ready for pickup in about <strong style="color:var(--gold-l);">20&ndash;30 minutes</strong>.<br>Questions? Call <a href="tel:4699603300" style="color:var(--gold-l);">(469) 960-3300</a>.';
     }
     if(gi('webPayOrdNo')) gi('webPayOrdNo').textContent=_wpOrder?('Order #'+_wpOrder.orderNumber):'';
     cart.length=0; if(typeof renderCart==='function') renderCart();
     _wpSecret=null; _wpElements=null; _wpCartKey=null;
+    _delivQuote=null; courierTipCents=0; if(DELIVERY_SANDBOX) DELIVERY_FEE=0;
+    var qbx2=gi('delivQuoteBox'); if(qbx2) qbx2.style.display='none';
     fulfillment='pickup'; if(typeof setFulfillment==='function') setFulfillment('pickup');
   } else { gi('webPayErr').textContent='Payment status: '+(rp.paymentIntent?rp.paymentIntent.status:'unknown'); btn.disabled=false; btn.textContent=bl; }
 }
@@ -5701,8 +5754,9 @@ function renderCart(){
   var dAmt  = document.getElementById('cartDelivAmt');
   if(taxEl) taxEl.textContent = tot>0 ? _fmtCents(T.taxCents) : '$0.00';
   if(tipEl) tipEl.textContent = tot>0 && selectedTip>0 ? _fmtCents(T.tipCents) : '$0.00';
-  if(dRow)  dRow.style.display = deliv>0 ? 'flex' : 'none';
-  if(dAmt)  dAmt.textContent = _fmtCents(T.deliveryFeeCents);
+  var _awaitQuote = fulfillment==='delivery' && DELIVERY_SANDBOX && !deliv;
+  if(dRow)  dRow.style.display = (deliv>0 || _awaitQuote) ? 'flex' : 'none';
+  if(dAmt)  dAmt.textContent = _awaitQuote ? 'At checkout' : _fmtCents(T.deliveryFeeCents);
   if(gtEl)  gtEl.textContent  = tot>0 ? _fmtCents(T.totalCents) : '$0.00';
   // Enforce delivery minimum on the checkout button
   var coBtn = document.querySelector('.cart-checkout');
@@ -5854,11 +5908,15 @@ var DELIVERY_LIVE = false;
 // can never take a real customer's money for a test courier.
 var DELIVERY_SANDBOX = /[?&]delivery=sandbox(&|$)/.test(location.search);
 var DELIVERY_ON = DELIVERY_LIVE || DELIVERY_SANDBOX;
-var _delivQuote = null;   // {id, feeCents, etaMinutes, expiresAt, key} from uber-delivery-quote
+if (DELIVERY_ON) document.documentElement.classList.add('deliv-on');
+if (DELIVERY_ON) document.addEventListener('DOMContentLoaded', function(){ setFulfillment(fulfillment); });
+var _delivQuote = null;   // {id, feeCents, etaMinutes, prepMinutes, expiresAt, key} from uber-delivery-quote
+var courierTipCents = 0;  // optional tip for the Uber courier (separate from the staff tip)
 var fulfillment = 'pickup';
 var DELIVERY_FEE = 4.99;   // flat fee charged to the customer
 var DELIVERY_MIN = 20;     // minimum subtotal for delivery
 var DELIVERY_RADIUS_MI = 8;
+if (DELIVERY_SANDBOX) DELIVERY_FEE = 0; // Uber prices each address; nothing is charged or shown until quoted
 
 function setFulfillment(mode){
   // While delivery isn't live yet, keep everyone on pickup and let them know.
@@ -5876,7 +5934,50 @@ function setFulfillment(mode){
   });
   var note = document.getElementById('delivNote');
   if(note) note.style.display = fulfillment==='delivery' ? 'block' : 'none';
+  if(DELIVERY_ON){
+    document.documentElement.classList.add('deliv-on');
+    document.querySelectorAll('.ful-btn').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.ful===fulfillment ? 'true' : 'false'); });
+  }
+  if(DELIVERY_SANDBOX){
+    var soon=document.getElementById('delivSoon'); if(soon) soon.style.display='none';
+    if(note && !_delivQuote) note.textContent='Delivered by Uber Direct · your delivery price and arrival time appear when you enter your address · $20 food minimum · within about 5 miles of our Plano kitchen.';
+    var tl=document.getElementById('cartTipLabel'); if(tl) tl.textContent = fulfillment==='delivery' ? 'Tip for restaurant staff' : 'Tip';
+    var ae=document.getElementById('delivAddrError'); if(ae) ae.textContent='Please complete your delivery address (within about 5 miles of Plano).';
+  }
   renderCart();
+  if(typeof _refreshWaTotals==='function') _refreshWaTotals();
+}
+
+// Optional courier tip (delivery only). Shown in the checkout breakdown and
+// sent to the server, which passes it to Uber in full.
+function setCourierTip(c){
+  courierTipCents = c;
+  document.querySelectorAll('.ctip-btn').forEach(function(b){
+    var on = parseInt(b.dataset.ctip,10) === c;
+    b.style.background = on ? 'var(--gold)' : 'transparent';
+    b.style.color = on ? '#fff' : 'var(--text-muted)';
+    b.style.borderColor = on ? 'var(--gold)' : 'rgba(201,168,76,.18)';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  _refreshWaTotals();
+}
+
+// Checkout breakdown: food, tax, staff tip, delivery fee, courier tip, total.
+function _refreshWaTotals(){
+  var gi=function(id){return document.getElementById(id);};
+  if(!gi('waTotal')) return;
+  var del = fulfillment==='delivery';
+  var T = orderTotals(cart, selectedTip || 0, del ? _cents(DELIVERY_FEE) : 0);
+  var ct = (del && _delivQuote) ? courierTipCents : 0;
+  if(gi('waTipLabel')) gi('waTipLabel').textContent = del ? 'Tip for restaurant staff' : 'Tip';
+  if(gi('waDelivRow')) gi('waDelivRow').style.display = del ? 'flex' : 'none';
+  if(gi('waDeliv')) gi('waDeliv').textContent = (del && DELIVERY_SANDBOX && !_delivQuote) ? 'Enter address' : _fmtCents(T.deliveryFeeCents);
+  if(gi('waCourierTipRow')) gi('waCourierTipRow').style.display = (del && _delivQuote) ? 'flex' : 'none';
+  if(gi('waCourierTip')) gi('waCourierTip').textContent = ct ? _fmtCents(ct) : 'None';
+  if(gi('courierTipBlock')) gi('courierTipBlock').style.display = (del && _delivQuote && !_wpSecret) ? 'block' : 'none';
+  document.querySelectorAll('.ctip-btn').forEach(function(b){ var on=parseInt(b.dataset.ctip,10)===courierTipCents; b.style.background=on?'var(--gold)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; b.setAttribute('aria-pressed',on?'true':'false'); });
+  var pb=gi('toPayBtn'); if(pb && !pb.disabled) pb.innerHTML = (del && DELIVERY_ON && !_delivQuote) ? 'Get delivery price &#8594;' : 'Pay Securely &#8594;';
+  gi('waTotal').textContent = _fmtCents(T.totalCents + ct);
 }
 
 function setTip(pct){
@@ -5940,6 +6041,7 @@ function initiateWhatsAppCheckout(){
     ? 'Review your order and delivery address, then continue to secure card payment — your food will be freshly made and delivered to your door.'
     : 'Review your order and details, then continue to secure card payment — your food will be freshly made and ready for pickup.';
   if(gi('waTotal'))        gi('waTotal').textContent      = '$'+grand.toFixed(2);
+  if(DELIVERY_ON) _refreshWaTotals();
 
   var ov = document.getElementById('waModalOverlay');
   if(ov){ ov.style.opacity='1'; ov.style.pointerEvents='all'; }

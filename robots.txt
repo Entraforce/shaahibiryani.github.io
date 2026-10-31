@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /kadmin
 Disallow: /table
+Disallow: /track
 
 Sitemap: https://shaahibiryanidfw.com/sitemap.xml
