@@ -5377,7 +5377,7 @@ async function startWebPayment(){
           body:JSON.stringify({address:{street:street,apt:apt,city:city,zip:zip},phone:((gi('custPhone')||{}).value||''),pilotCode:DELIVERY_PILOT_CODE||undefined})});
         var qd=await qr.json();
         if(qb){qb.disabled=false;}
-        if(!qr.ok){ _delivQuote=null; DELIVERY_FEE=DELIVERY_SANDBOX?0:DELIVERY_FEE; _refreshWaTotals();
+        if(!qr.ok){ _delivQuote=null; DELIVERY_FEE=DELIVERY_UBER?0:DELIVERY_FEE; _refreshWaTotals();
           var qbe=gi('delivQuoteBox'); if(qbe){qbe.style.display='block';qbe.style.borderColor='rgba(248,113,113,.6)';qbe.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';}
           if(err){err.style.display='block';err.style.color='';err.textContent=qd.error||'Delivery isn\u2019t available for that address. Please choose pickup.';} return; }
         _delivQuote={id:qd.quoteId,feeCents:qd.feeCents,etaMinutes:qd.etaMinutes,prepMinutes:qd.prepMinutes,expiresAt:qd.expiresAt,key:aKey};
@@ -5588,7 +5588,7 @@ async function payWeb(){
     if(gi('webPayOrdNo')) gi('webPayOrdNo').textContent=_wpOrder?('Order #'+_wpOrder.orderNumber):'';
     cart.length=0; if(typeof renderCart==='function') renderCart();
     _wpSecret=null; _wpElements=null; _wpCartKey=null;
-    _delivQuote=null; courierTipCents=0; if(DELIVERY_SANDBOX) DELIVERY_FEE=0;
+    _delivQuote=null; courierTipCents=0; if(DELIVERY_UBER) DELIVERY_FEE=0;
     var qbx2=gi('delivQuoteBox'); if(qbx2) qbx2.style.display='none';
     fulfillment='pickup'; if(typeof setFulfillment==='function') setFulfillment('pickup');
   } else { gi('webPayErr').textContent='Payment status: '+(rp.paymentIntent?rp.paymentIntent.status:'unknown'); btn.disabled=false; btn.textContent=bl; }
@@ -5771,7 +5771,7 @@ function renderCart(){
   var dAmt  = document.getElementById('cartDelivAmt');
   if(taxEl) taxEl.textContent = tot>0 ? _fmtCents(T.taxCents) : '$0.00';
   if(tipEl) tipEl.textContent = tot>0 && selectedTip>0 ? _fmtCents(T.tipCents) : '$0.00';
-  var _awaitQuote = fulfillment==='delivery' && DELIVERY_SANDBOX && !deliv;
+  var _awaitQuote = fulfillment==='delivery' && DELIVERY_UBER && !deliv;
   if(dRow)  dRow.style.display = (deliv>0 || _awaitQuote) ? 'flex' : 'none';
   if(dAmt)  dAmt.textContent = _awaitQuote ? 'At checkout' : _fmtCents(T.deliveryFeeCents);
   if(gtEl)  gtEl.textContent  = tot>0 ? _fmtCents(T.totalCents) : '$0.00';
@@ -5937,6 +5937,8 @@ var DELIVERY_PILOT_CODE = (function(){
   return '';
 })();
 var DELIVERY_ON = DELIVERY_LIVE || DELIVERY_SANDBOX || !!DELIVERY_PILOT_CODE;
+// Uber-priced delivery screen (live price per address, courier tip): sandbox preview or staff pilot.
+var DELIVERY_UBER = DELIVERY_SANDBOX || !!DELIVERY_PILOT_CODE;
 if (DELIVERY_ON) document.documentElement.classList.add('deliv-on');
 if (DELIVERY_ON) document.addEventListener('DOMContentLoaded', function(){ setFulfillment(fulfillment); });
 var _delivQuote = null;   // {id, feeCents, etaMinutes, prepMinutes, expiresAt, key} from uber-delivery-quote
@@ -5945,7 +5947,7 @@ var fulfillment = 'pickup';
 var DELIVERY_FEE = 4.99;   // flat fee charged to the customer
 var DELIVERY_MIN = 20;     // minimum subtotal for delivery
 var DELIVERY_RADIUS_MI = 8;
-if (DELIVERY_SANDBOX) DELIVERY_FEE = 0; // Uber prices each address; nothing is charged or shown until quoted
+if (DELIVERY_UBER) DELIVERY_FEE = 0; // Uber prices each address; nothing is charged or shown until quoted
 
 function setFulfillment(mode){
   // While delivery isn't live yet, keep everyone on pickup and let them know.
@@ -5967,7 +5969,8 @@ function setFulfillment(mode){
     document.documentElement.classList.add('deliv-on');
     document.querySelectorAll('.ful-btn').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.ful===fulfillment ? 'true' : 'false'); });
   }
-  if(DELIVERY_SANDBOX){
+  if(DELIVERY_UBER){
+    document.querySelectorAll('.ful-btn[data-ful="delivery"]').forEach(function(b){ b.style.cursor='pointer'; });
     var soon=document.getElementById('delivSoon'); if(soon) soon.style.display='none';
     if(note && !_delivQuote) note.textContent='Delivered by Uber Direct · your delivery price and arrival time appear when you enter your address · $20 food minimum · within about 5 miles of our Plano kitchen.';
     var tl=document.getElementById('cartTipLabel'); if(tl) tl.textContent = fulfillment==='delivery' ? 'Tip for restaurant staff' : 'Tip';
@@ -6000,7 +6003,7 @@ function _refreshWaTotals(){
   var ct = (del && _delivQuote) ? courierTipCents : 0;
   if(gi('waTipLabel')) gi('waTipLabel').textContent = del ? 'Tip for restaurant staff' : 'Tip';
   if(gi('waDelivRow')) gi('waDelivRow').style.display = del ? 'flex' : 'none';
-  if(gi('waDeliv')) gi('waDeliv').textContent = (del && DELIVERY_SANDBOX && !_delivQuote) ? 'Enter address' : _fmtCents(T.deliveryFeeCents);
+  if(gi('waDeliv')) gi('waDeliv').textContent = (del && DELIVERY_UBER && !_delivQuote) ? 'Enter address' : _fmtCents(T.deliveryFeeCents);
   if(gi('waCourierTipRow')) gi('waCourierTipRow').style.display = (del && _delivQuote) ? 'flex' : 'none';
   if(gi('waCourierTip')) gi('waCourierTip').textContent = ct ? _fmtCents(ct) : 'None';
   if(gi('courierTipBlock')) gi('courierTipBlock').style.display = (del && _delivQuote && !_wpSecret) ? 'block' : 'none';
