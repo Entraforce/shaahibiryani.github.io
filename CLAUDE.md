@@ -43,22 +43,50 @@ No build step, no framework, no package manager.
 - Google: `https://g.page/r/CdoUnFi5PmB4EBM`
 - Yelp: `https://www.yelp.com/biz/shaahi-biryani-plano`
 
-## ⚠️ DELIVERY MUST NOT BE ENABLED YET
+## Delivery (Uber Direct) — live as of 2026-10-31
 
-`create-web-order` computes `totalCents = subtotalCents + taxCents + tipCents`.
-**There is no delivery fee in that sum.** The cart UI has a `DELIVERY_FEE` of
-$4.99 and a `DELIVERY_MIN` of $20, but `setFulfillment()` refuses `'delivery'`
-and shows "Delivery is coming soon", so the fee is unreachable and nothing is
-mis-charged today.
+The original gap this section used to warn about — the server not charging
+the fee the cart showed — is fixed. `create-web-order` now computes
+`totalCents = subtotalCents + taxCents + tipCents + deliveryFeeCents +
+courierTipCents`, and the delivery fee is never trusted from the browser: it
+comes from a `delivery_quotes` row written by `uber-delivery-quote` for that
+exact address, and the server rejects checkout (without charging) if the
+page's `expectedDeliveryFeeCents` no longer matches. Reviewed 2026-11-02
+(Claude), confirmed via code read of `create-web-order`,
+`_shared/delivery-policy.js`, and `_shared/uber-direct.js`, plus a clean run
+of both verification scripts:
 
-The moment delivery is switched on, the screen would show a fee the server does
-not charge — the restaurant would eat $4.99 per delivery order, silently.
+```bash
+node scripts/verify-uber-direct.mjs    # 39/39 checks passed
+node scripts/verify-cart-math.mjs      # cart math matches the server across 66,670 random baskets
+```
 
-**Before enabling delivery:** implement and test server-side delivery fee
-calculation in `create-web-order` (the app's `create-payment-intent` already has
-`DELIVERY_FEE_CENTS`; the website's function does not), then re-run
-`scripts/verify-cart-math.mjs`, which compares the cart against the server line
-for line and will fail on the mismatch.
+How it works, briefly: `UBER_DIRECT_MODE` (`sandbox`/`live`) and
+`DELIVERY_PUBLIC` gate whether delivery is offered at all; sandbox orders can
+only pair with a test Stripe key and live orders with the live key, so a test
+courier can never be booked for a real charge or vice versa. The customer
+pays Uber's quoted fee pass-through (Shaahi neither earns nor loses on it)
+unless the `DELIVERY_PROMO` launch offer applies ($4.99 on $30+ orders in
+Uber's $7.99 tier, Shaahi subsidizing the difference up to a daily budget
+claimed atomically in the database so it can't be oversold). A specific real
+Uber API quirk — a live booking occasionally echoed back `live_mode: false`
+— is handled by re-fetching the delivery by its returned id and trusting that
+answer, rather than assuming the booking failed and risking a duplicate
+courier.
+
+**One thing not independently verified**: `delivery-policy.js` cites 34 TAC
+3.293(h)(2) for taxing the delivery fee alongside food, with a code comment
+saying "accountant to confirm before launch." Whether that confirmation
+actually happened before the 2026-10-31 launch wasn't something this review
+could check — worth confirming with Osman directly if sales-tax compliance
+on delivery orders ever needs re-verifying.
+
+Delivery hours, pilot/public gating, and the promo budget are all controlled
+by Supabase function secrets (`DELIVERY_PUBLIC`, `DELIVERY_PROMO`,
+`DELIVERY_HOURS`, etc.), not code — see `_shared/delivery-policy.js` and
+`_shared/uber-env.ts` for the full list. A rollback script exists at
+`supabase/rollback/uber_direct_rollback.sql` if delivery ever needs to be
+unwound.
 
 ## Menu management system (added July 2026)
 
