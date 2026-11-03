@@ -62,6 +62,7 @@
   gtag('config', 'G-3NJRL7V5NB');
   gtag('config', 'AW-17075652554');
 </script>
+<script src="/assets/ga-events.js" defer></script>
 <script>
 /* WHERE THIS CUSTOMER CAME FROM — remembered until they actually order.
    A Google Ads conversion only fires when the sale happens in the browser
@@ -5567,6 +5568,7 @@ async function payWeb(){
           transaction_id:_wpOrder.orderId||'',
           value:_wpAmt,
           currency:'USD',
+          affiliation:(fulfillment==='delivery')?'website delivery':'website pickup',
           tax:(_wpOrder.breakdown&&_wpOrder.breakdown.taxCents)?(_wpOrder.breakdown.taxCents/100):0,
           shipping:(_wpOrder.breakdown&&_wpOrder.breakdown.deliveryFeeCents)?(_wpOrder.breakdown.deliveryFeeCents/100):0,
           items:((_wpCustomer&&_wpCustomer.items)?_wpCustomer.items:[]).map(function(it,i){
@@ -6559,13 +6561,16 @@ function _cd(action){
     _br('3421 E Renner Rd Suite 110 Plano TX 75074\nHours: Sun & Tue-Thu 11:30am-10pm, Fri-Sat 11:30am-11pm (Closed Mondays)\nPhone: (469) 960-3300',
       [{l:'Directions',a:'directions'},{l:'WhatsApp',a:'whatsapp'},{l:'Back',a:'back'}],1000,true);
   } else if(action==='directions'){
+    if(window.shaahiTrack) shaahiTrack('get_directions',{link_page:'home',link_text:'chatbot'});
     window.open('https://maps.google.com/?q=3421+E+Renner+Rd+Plano+TX','_blank');
     _br('Opening Google Maps!',back);
   } else if(action==='whatsapp'){
+    if(window.shaahiTrack) shaahiTrack('whatsapp_click',{link_page:'home',link_text:'chatbot'});
     window.open('https://chat.whatsapp.com/Di7kavLUzKXIAm3pGF2EKJ?mode=gi_t','_blank');
     _br('Opening WhatsApp!',back);
   } else if(action==='call'){
     if(typeof gtag==='function') gtag('event','conversion',{'send_to':'AW-17075652554/_CCiCPey2pQdEMqPp84_'});
+    if(window.shaahiTrack) shaahiTrack('phone_call',{link_page:'home',link_text:'chatbot'});
     window.open('tel:4699603300');
     _br('Calling (469) 960-3300',back);
   } else if(action==='order'){
