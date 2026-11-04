@@ -7807,6 +7807,15 @@ document.addEventListener('click', function(e){
     <p class="pm-note">In-store offer &middot; not applied to online orders</p>
   </div>
 </div>
+<div class="pm-ov pm-fly" id="pmKar" hidden>
+  <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmKarT">
+    <button type="button" class="pm-x" data-pm-close aria-label="Close Karahi Chicken BOGO">&#10005;</button>
+    <h2 class="sr-only" id="pmKarT">Wednesday Special, Karahi Chicken BOGO: buy one for $13.99, get one free, plus one Regular Naan or 12 oz Rice, dine-in or takeout</h2>
+    <img class="pm-flyer" width="520" height="673" decoding="async" alt="Wednesday Special, Wednesday, November 4. Buy 1, get 1 free: Karahi Chicken. Takeout: 2 boxes, 28 oz each. Buy one for $13.99, get one free. Plus, choose one: 1 Regular Naan or 12 oz Rice, one side total, not both. Serving the Dallas–Fort Worth area. November 4, 2026, 11:30 AM to 10:00 PM, while supplies last. Ask for the Karahi Chicken BOGO. Dine-in or takeout. Shaahi Biryani, 3421 E Renner Rd, Plano, TX. (469) 960-3300. Instagram @shaahibiryani_planotx.">
+    <button type="button" class="pm-act" data-pm-go="contact">View location &amp; hours <span aria-hidden="true">&rarr;</span></button>
+    <p class="pm-note">Dine-in or takeout &middot; choose 1 Naan OR 12 oz Rice &middot; ask for the Karahi Chicken BOGO &middot; not applied to online orders</p>
+  </div>
+</div>
 <div class="pm-ov pm-fly" id="pmMan" hidden>
   <div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pmManT">
     <button type="button" class="pm-x" data-pm-close aria-label="Close Chicken Manchurian BOGO">&#10005;</button>
@@ -7885,7 +7894,7 @@ document.addEventListener('click', function(e){
 <script>
 (function(){
   'use strict';
-  var K_MAN='shaahiPromoChickenManchurianBogoNov3Shown', K_WBG='shaahiPromoWeekendBogoOct31Shown', K_PAK='shaahiPromoChickenPakoraBogoShown', K_ACH='shaahiPromoAchariChickenBogoShown', K_DKC='shaahiPromoDumKaChickenBogoShown', K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_RICE='shaahiPromoRiceDealShown', K_U10='shaahiPromoUnder10LastShownDate';
+  var K_KAR='shaahiPromoKarahiChickenBogoNov4Shown', K_MAN='shaahiPromoChickenManchurianBogoNov3Shown', K_WBG='shaahiPromoWeekendBogoOct31Shown', K_PAK='shaahiPromoChickenPakoraBogoShown', K_ACH='shaahiPromoAchariChickenBogoShown', K_DKC='shaahiPromoDumKaChickenBogoShown', K_BOGO='shaahiPromoBogoShown', K_TUE='shaahiPromoTuesdayRollShown', K_RICE='shaahiPromoRiceDealShown', K_U10='shaahiPromoUnder10LastShownDate';
 
   /* promo-logic:start — pure rules, run as-is by scripts/verify-promo-logic.mjs */
   var TZ='America/Chicago', BOGO_FROM='2026-10-23', TUE_FROM='2026-10-20', TUE_TO='2026-10-20';
@@ -7900,6 +7909,8 @@ document.addEventListener('click', function(e){
   // Chicken Pakora BOGO: Fri Oct 30 2026 (Central) until Sat Oct 31 12:00 AM CDT (= 05:00Z Oct 31; DST ends Nov 1).
   // Chicken Manchurian BOGO: Tue Nov 3 2026 (Central) until Wed Nov 4 12:00 AM CST (06:00Z; DST ended Nov 1).
   var MAN_FROM='2026-11-03', MAN_END_MS=Date.UTC(2026,10,4,6,0,0);
+  // Karahi Chicken BOGO: Wed Nov 4 2026 (Central) until Thu Nov 5 12:00 AM CST (06:00Z; DST ended Nov 1).
+  var KAR_FROM='2026-11-04', KAR_END_MS=Date.UTC(2026,10,5,6,0,0);
   var PAK_FROM='2026-10-30', PAK_END_MS=Date.UTC(2026,9,31,5,0,0);
   // Weekend BOGO (Chicken Dum Biryani): Sat Oct 31 2026 (Central) until Mon Nov 2 12:00 AM CST.
   // DST ends Sun Nov 1 2026, so midnight Monday Central is 06:00Z here, NOT the 05:00Z used above.
@@ -7916,6 +7927,7 @@ document.addEventListener('click', function(e){
   function dkcActive(ms){ return centralDate(ms)>=DKC_FROM && ms<DKC_END_MS; }
   function achActive(ms){ return centralDate(ms)>=ACH_FROM && ms<ACH_END_MS; }
   function manActive(ms){ return centralDate(ms)>=MAN_FROM && ms<MAN_END_MS; }
+  function karActive(ms){ return centralDate(ms)>=KAR_FROM && ms<KAR_END_MS; }
   function pakActive(ms){ return centralDate(ms)>=PAK_FROM && ms<PAK_END_MS; }
   function wbgActive(ms){ return centralDate(ms)>=WBG_FROM && ms<WBG_END_MS; }
   // Is a box really showing? W and H are the VISIBLE page (documentElement
@@ -7939,7 +7951,7 @@ document.addEventListener('click', function(e){
   function now(){ var t=window.__shaahiPromoNow; return typeof t==='number'?t:Date.now(); }
   function get(store,k){ try{ return window[store].getItem(k); }catch(e){ return null; } }
   function set(store,k,v){ try{ window[store].setItem(k,v); }catch(e){} }
-  window.shaahiPromo={centralDate:centralDate,manActive:manActive,wbgActive:wbgActive,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,dkcActive:dkcActive,achActive:achActive,pakActive:pakActive,onScreen:onScreen,paidU10Landing:paidU10Landing,
+  window.shaahiPromo={centralDate:centralDate,karActive:karActive,manActive:manActive,wbgActive:wbgActive,bogoActive:bogoActive,tuesdayActive:tuesdayActive,riceActive:riceActive,dkcActive:dkcActive,achActive:achActive,pakActive:pakActive,onScreen:onScreen,paidU10Landing:paidU10Landing,
     under10Due:function(ms){ return get('localStorage',K_U10)!==centralDate(ms); }};
 
   var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -8060,6 +8072,8 @@ document.addEventListener('click', function(e){
   // ── Dated flyers ──
   // In priority order; at most one is shown per page load, and only on its days.
   var FLYERS=[
+    { id:'pmKar', key:K_KAR, active:karActive, src:'assets/promo/karahi-chicken-bogo-nov4-',
+      view:'promo_karahi_chicken_bogo_view', closed:'promo_karahi_chicken_bogo_close' },
     { id:'pmMan', key:K_MAN, active:manActive, src:'assets/promo/chicken-manchurian-bogo-nov3-',
       view:'promo_chicken_manchurian_bogo_view', closed:'promo_chicken_manchurian_bogo_close' },
     { id:'pmWbg', key:K_WBG, active:wbgActive, src:'assets/promo/weekend-bogo-oct31-nov1-',
