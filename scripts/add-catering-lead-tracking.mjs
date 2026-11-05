@@ -129,7 +129,7 @@ const leadSnippet = `${LEAD_MARKER_START}
   var FORMS = {
     caterForm: { fn: 'create-catering-lead', build: function(fd){ return {
       city: v(fd,'City / Area'), name: v(fd,'Name'), phone: v(fd,'Phone'), email: v(fd,'email'),
-      eventDate: v(fd,'Event Date'), guestCount: v(fd,'Number of Guests'), eventType: v(fd,'Event Type'),
+      eventDate: v(fd,'Event Date'), eventTime: v(fd,'Event Time'), guestCount: v(fd,'Number of Guests'), eventType: v(fd,'Event Type'),
       details: v(fd,'Additional Details') }; } },
     contactForm: { fn: 'submit-website-form', build: function(fd){ return {
       kind: 'contact', name: v(fd,'Name'), phoneOrEmail: v(fd,'Phone or Email'), message: v(fd,'Message') }; } },

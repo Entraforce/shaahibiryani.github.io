@@ -322,8 +322,9 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
         <div class="frow"><label class="flbl" for="cf-email">Email</label><input type="email" id="cf-email" name="email" class="finp" placeholder="you@example.com" required></div>
         <div class="form-grid">
           <div><label class="flbl" for="cf-date">Event Date</label><input type="date" id="cf-date" name="Event Date" class="finp"></div>
-          <div><label class="flbl" for="cf-guests">Number of Guests</label><input type="number" id="cf-guests" name="Number of Guests" class="finp" placeholder="Approx. guest count"></div>
+          <div><label class="flbl" for="cf-time">Event Time</label><input type="time" id="cf-time" name="Event Time" class="finp"></div>
         </div>
+        <div class="frow"><label class="flbl" for="cf-guests">Number of Guests</label><input type="number" id="cf-guests" name="Number of Guests" class="finp" placeholder="Approx. guest count"></div>
         <div class="frow"><label class="flbl" for="cf-event-type">Type of Event</label>
           <select id="cf-event-type" name="Event Type" class="finp"><option value="">Select event type</option><option>Wedding / Reception</option><option>Walima</option><option>Engagement</option><option>Birthday / Anniversary</option><option>Eid / Festive Gathering</option><option>Corporate Event</option><option>Other</option></select>
         </div>
@@ -472,7 +473,7 @@ footer{background:var(--black);border-top:1px solid rgba(201,168,76,.12);padding
   var FORMS = {
     caterForm: { fn: 'create-catering-lead', build: function(fd){ return {
       city: v(fd,'City / Area'), name: v(fd,'Name'), phone: v(fd,'Phone'), email: v(fd,'email'),
-      eventDate: v(fd,'Event Date'), guestCount: v(fd,'Number of Guests'), eventType: v(fd,'Event Type'),
+      eventDate: v(fd,'Event Date'), eventTime: v(fd,'Event Time'), guestCount: v(fd,'Number of Guests'), eventType: v(fd,'Event Type'),
       details: v(fd,'Additional Details') }; } },
     contactForm: { fn: 'submit-website-form', build: function(fd){ return {
       kind: 'contact', name: v(fd,'Name'), phoneOrEmail: v(fd,'Phone or Email'), message: v(fd,'Message') }; } },

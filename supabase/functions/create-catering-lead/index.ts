@@ -77,6 +77,12 @@ function cleanInt(n: unknown, min: number, max: number): number | null {
   return i >= min && i <= max ? i : null;
 }
 
+// "19:30" from <input type="time">; anything else is dropped.
+function cleanTime(s: unknown): string | null {
+  const t = clean(s, 8);
+  return t && /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(t) ? t.slice(0, 5) : null;
+}
+
 function cleanDate(s: unknown): string | null {
   const t = clean(s, 10);
   if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(t)) return null;
@@ -141,6 +147,7 @@ Deno.serve(async (req) => {
       phone,
       email: clean(body?.email, 120),
       event_date: cleanDate(body?.eventDate),
+      event_time: cleanTime(body?.eventTime),
       guest_count: cleanInt(body?.guestCount, 0, 100_000),
       event_type: clean(body?.eventType, 60),
       details: clean(body?.details, 4000),
@@ -208,6 +215,7 @@ Deno.serve(async (req) => {
 function cateringTeamEmail(
   row: {
     city: string | null; name: string; phone: string; email: string | null; event_date: string | null;
+    event_time: string | null;
     guest_count: number | null; event_type: string | null; details: string | null; form_page: string | null;
     request_context: Record<string, string> | null; attribution: unknown;
   },
@@ -215,7 +223,7 @@ function cateringTeamEmail(
 ) {
   const where = row.city ?? (row.form_page === "/wedding-catering" ? "Wedding" : "Homepage");
   const subject = `New catering request #${id} - ${row.name}` +
-    (row.guest_count ? ` - ${row.guest_count} guests` : "") + (row.event_date ? ` - ${row.event_date}` : "");
+    (row.guest_count ? ` - ${row.guest_count} guests` : "") + (row.event_date ? ` - ${row.event_date}` : "") + (row.event_time ? ` ${row.event_time}` : "");
   const ctx = row.request_context ?? {};
   // deno-lint-ignore no-explicit-any
   const first = (row.attribution as any)?.first;
@@ -229,6 +237,7 @@ function cateringTeamEmail(
       ["Phone", row.phone],
       ["Email", row.email],
       ["Event date", row.event_date],
+      ["Event time", row.event_time],
       ["Guests", row.guest_count],
       ["Event type", row.event_type],
       ["Details", row.details],
