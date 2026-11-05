@@ -3489,7 +3489,8 @@ html.fresh .btn-ghost{color:var(--f-text);background:#fff;border:0;border-radius
 html.fresh .btn-ghost:hover{background:var(--f-soft);transform:translateY(-1px);}
 /* Hero actions: Catering (champagne) · Order Pickup (red) · Order Delivery
    (white), then View Menu · Dine-In / Visit Us · Call as quiet links. */
-html.fresh .hbtns .hide-sm{margin-right:.3em;}
+html.fresh .hbtns > a{gap:.3em;}
+html.fresh .hlinks a.hide-sm{display:inline-flex;}
 html.fresh .btn-gold.hb-cater{color:#1C1C1C;background:linear-gradient(135deg,#EFD6A0,#D6953A);}
 html.fresh .btn-gold.hb-cater:hover{background:linear-gradient(135deg,#F3DDAF,#C98A30);}
 html.fresh .hbtns a:focus-visible,html.fresh .hlinks a:focus-visible{outline:3px solid #fff;outline-offset:3px;}
@@ -3505,8 +3506,15 @@ html.fresh .hlinks{animation-delay:.15s;animation-duration:.5s;}
 /* The catering subtitle was pulled up under the heading (-24px) and overlapped
    it once the heading wraps or the Fresh type is larger. */
 #catering > h3:first-of-type{margin-top:6px !important;}
+/* Four actions: one row where it fits (desktop), otherwise a 2 × 2 grid —
+   Catering · Pickup / Delivery · Dine-In Menu — never four squeezed in a row. */
+@media(max-width:1100px){
+  html.fresh .hbtns{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px !important;width:100%;max-width:440px;}
+  html.fresh .hbtns > a{justify-content:center;}
+}
 @media(max-width:700px){
-  html.fresh .hbtns > a{padding:0 6px !important;font-size:.92rem !important;}
+  html.fresh .hbtns{max-width:none;}
+  html.fresh .hbtns > a{padding:0 6px !important;font-size:.92rem !important;min-height:48px !important;}
   /* Phones: the three actions only; Menu and Dine-In live in the menu button,
      and this row would sit under the Ask Shaahi / WhatsApp launchers. */
   .hlinks{display:none;}
@@ -4125,8 +4133,9 @@ html.fresh .fx-skel .fx-add{border-color:var(--f-line);background:var(--f-soft);
       <a href="#catering" class="btn-gold hb-cater" data-track="hero_catering_click">Catering</a>
       <a href="#menu" class="btn-gold" data-ful-go="pickup" data-track="hero_pickup_click"><span class="hide-sm">Order</span>Pickup</a>
       <a href="#menu" class="btn-ghost" data-ful-go="delivery" data-track="hero_delivery_click"><span class="hide-sm">Order</span>Delivery</a>
+      <a href="dine-in" class="btn-ghost" data-nfc-carry data-track="hero_dinein_menu_click">Dine-In Menu</a>
     </div>
-    <p class="hlinks"><a href="#menu" data-track="hero_menu_click">View Menu</a><span aria-hidden="true">·</span><a href="#contact" data-track="hero_dinein_click">Dine-In / Visit Us</a><span aria-hidden="true" class="hide-sm">·</span><a href="tel:4699603300" class="hide-sm" aria-label="Call Shaahi Biryani at (469) 960-3300">Call (469) 960-3300</a></p>
+    <p class="hlinks"><a href="#menu" data-track="hero_menu_click">View Menu</a><span aria-hidden="true">·</span><a href="#contact" data-track="hero_dinein_click">Visit Us &amp; Hours</a><span aria-hidden="true" class="hide-sm">·</span><a href="tel:4699603300" class="hide-sm" aria-label="Call Shaahi Biryani at (469) 960-3300">Call (469) 960-3300</a></p>
   </div>
   <div class="hstats">
     <div class="hstat"><span class="hstat-n">50+</span><span class="hstat-l">Menu Items</span></div>

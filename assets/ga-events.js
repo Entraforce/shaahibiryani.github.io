@@ -28,6 +28,32 @@
     else if (/wa\.me\/|chat\.whatsapp\.com|api\.whatsapp\.com/i.test(h)) send('whatsapp_click', where);
   }, true);
 
+  // Dine-in NFC / table tags. A tag opens a page with
+  //   ?utm_source=nfc_table&utm_medium=offline&utm_campaign=dinein_menu[&table=12]
+  // Count the visit once per page per tab session; table_id only when the tag
+  // itself carries a plain table number (never guessed, nothing personal). The
+  // tag's parameters ride along on links marked data-nfc-carry (the homepage's
+  // Dine-In Menu button), so the menu page knows where the guest came from.
+  var qs = new URLSearchParams(location.search);
+  if ((qs.get('utm_source') || '').toLowerCase() === 'nfc_table') {
+    var nfc = { source: 'nfc_table', menu_page: page };
+    var tid = qs.get('table');
+    if (tid && /^[A-Za-z0-9_-]{1,12}$/.test(tid)) nfc.table_id = tid;
+    var nkey = 'ga_nfc_' + page;
+    var nseen = false;
+    try { nseen = sessionStorage.getItem(nkey) === '1'; sessionStorage.setItem(nkey, '1'); } catch(e) {}
+    if (!nseen) send('nfc_menu_visit', nfc);
+    var keep = new URLSearchParams();
+    ['utm_source', 'utm_medium', 'utm_campaign', 'table'].forEach(function(k){ if (qs.get(k)) keep.set(k, qs.get(k)); });
+    var carry = function(){
+      [].forEach.call(document.querySelectorAll('a[data-nfc-carry]'), function(a){
+        var h = a.getAttribute('href') || '';
+        if (h.indexOf('?') < 0) a.setAttribute('href', h + '?' + keep.toString());
+      });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', carry); else carry();
+  }
+
   // The catering, hall and reservation forms post to FormSubmit, which sends
   // the visitor back here with ?status=thanks. Count each submission once,
   // even if the thank-you page is reloaded.
