@@ -1,3 +1,8 @@
+-- NEVER APPLIED TO PRODUCTION. The app repo's 20261006000000 migration took
+-- this version number first, so this file was recorded as done without
+-- running. Superseded by 20261105000000_catering_inquiries.sql; kept only as
+-- history. Do not re-run.
+--
 -- Structured record of catering quote requests, so a closed deal's revenue
 -- can later be matched back to the ad click that produced it.
 --

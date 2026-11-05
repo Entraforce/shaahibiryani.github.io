@@ -5,9 +5,9 @@
 // file in the exact format Google Ads' own UI accepts at
 // Tools & Settings > Conversions > Uploads > "+ Upload" (choose "Clicks").
 //
-// Prerequisite: a catering_leads row only produces a CSV line once staff has
+// Prerequisite: a catering_inquiries row only produces a CSV line once staff has
 // marked it won with a real value — today that's a manual step in the
-// Supabase Table Editor (table catering_leads, set status='won' and
+// Supabase Table Editor (table catering_inquiries, set status='won' and
 // closed_value_cents in cents, e.g. 45000 for $450.00). There is no admin UI
 // for this yet.
 //
@@ -28,7 +28,7 @@
 // Rows actually written are then marked exported_at so running this again
 // later never re-uploads the same conversion twice.
 //
-// KNOWN LIMITATION: catering_leads.attribution.last.click is whichever of
+// KNOWN LIMITATION: catering_inquiries.attribution.last.click is whichever of
 // gclid / gbraid / wbraid the landing URL had (see the capture logic in
 // index.html / scripts/add-catering-lead-tracking.mjs) — the three are
 // merged into one field, so this script cannot tell which kind it is and
@@ -86,7 +86,7 @@ async function main() {
     select: 'id,name,closed_value_cents,closed_at,created_at,attribution',
     order: 'closed_at.asc',
   });
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/catering_leads?${query}`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/catering_inquiries?${query}`, {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
   });
   if (!res.ok) {
@@ -145,7 +145,7 @@ async function main() {
 
   // Mark these rows exported so a re-run never double-uploads them.
   const ids = rows.map((r) => r._id);
-  const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/catering_leads?id=in.(${ids.join(',')})`, {
+  const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/catering_inquiries?id=in.(${ids.join(',')})`, {
     method: 'PATCH',
     headers: {
       apikey: SERVICE_KEY,
