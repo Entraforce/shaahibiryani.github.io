@@ -2,10 +2,11 @@
 // catering quote requests. (Function name kept: every page already calls it.)
 //
 // Every catering form (homepage #caterForm and every catering-<city>.html
-// page) calls this BEFORE handing the same submission to formsubmit.co, so
-// each request lands as a row in catering_inquiries with how the guest arrived.
-// The formsubmit.co email to the team and the guest's auto-reply are
-// unchanged; the email is now the notification, not the record.
+// page) calls this, so each request lands as a row in catering_inquiries with
+// how the guest arrived. Then, after the response, it emails the request to
+// info@ from catering@ and sends the guest a confirmation (Resend; see
+// _shared/form-email.ts). formsubmit.co is only the page's fallback when this
+// function cannot be reached (it was down on 2026-11-05).
 //
 // Idempotent: the browser generates one submissionId (UUID) per filled-in form
 // and sends it on every retry, including a retry from the thank-you page if
@@ -27,8 +28,20 @@
 //
 // Secrets used (set automatically for every function):
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// and RESEND_API_KEY (see _shared/form-email.ts).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  background,
+  confirmationEmail,
+  deliver,
+  detailsEmail,
+  FROM_CATERING,
+  INFO_EMAIL,
+  ipHash,
+  teamAddress,
+  validEmail,
+} from "../_shared/form-email.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -122,6 +135,7 @@ Deno.serve(async (req) => {
     const formPage = clean(body?.formPage, 120);
     const row = {
       submission_id: submissionId,
+      ip_hash: await ipHash(req),
       city: clean(body?.city, 60),
       name,
       phone,
@@ -146,10 +160,81 @@ Deno.serve(async (req) => {
       return json({ error: "Could not record lead." }, 500);
     }
 
-    // An ignored duplicate returns no row: the lead is already recorded.
-    return json({ ok: true, duplicate: !data || data.length === 0 });
+    // An ignored duplicate returns no row: the lead is already recorded. Its
+    // email is retried only if the first attempt failed (not if rate-limited).
+    const duplicate = !data || data.length === 0;
+    let id = data?.[0]?.id as number | undefined;
+    if (duplicate) {
+      const { data: prev } = await supabase.from("catering_inquiries")
+        .select("id, notified_at, notify_error").eq("submission_id", submissionId).maybeSingle();
+      id = prev && !prev.notified_at && prev.notify_error && prev.notify_error !== "rate_limited"
+        ? prev.id
+        : undefined;
+    }
+    if (id) {
+      const pending = background(
+        deliver({
+          supabase,
+          table: "catering_inquiries",
+          id,
+          ipHash: row.ip_hash,
+          guestEmail: row.email,
+          team: { from: FROM_CATERING, to: teamAddress(), ...cateringTeamEmail(row, id) },
+          confirm: validEmail(row.email)
+            ? {
+              from: FROM_CATERING,
+              to: row.email,
+              replyTo: INFO_EMAIL,
+              subject: "We received your catering request - Shaahi Biryani",
+              ...confirmationEmail(
+                name,
+                "Thank you for your catering quote request! We've received your event details, and our team will follow up within 24 hours with a custom menu and pricing.",
+              ),
+            }
+            : null,
+        }).catch((e) => console.error("catering email failed:", e instanceof Error ? e.message : e)),
+      );
+      if (pending) await pending;
+    }
+
+    return json({ ok: true, duplicate });
   } catch (e) {
     console.error("create-catering-lead error:", e instanceof Error ? e.message : e);
     return json({ error: "Bad request." }, 400);
   }
 });
+
+// The request as the team sees it in info@. Reply goes straight to the guest.
+function cateringTeamEmail(
+  row: {
+    city: string | null; name: string; phone: string; email: string | null; event_date: string | null;
+    guest_count: number | null; event_type: string | null; details: string | null; form_page: string | null;
+    request_context: Record<string, string> | null; attribution: unknown;
+  },
+  id: number,
+) {
+  const where = row.city ?? (row.form_page === "/wedding-catering" ? "Wedding" : "Homepage");
+  const subject = `New catering request #${id} - ${row.name}` +
+    (row.guest_count ? ` - ${row.guest_count} guests` : "") + (row.event_date ? ` - ${row.event_date}` : "");
+  const ctx = row.request_context ?? {};
+  // deno-lint-ignore no-explicit-any
+  const first = (row.attribution as any)?.first;
+  const source = [ctx.utm_source, ctx.utm_medium, ctx.utm_campaign].filter(Boolean).join(" / ") ||
+    (ctx.referrer ? `referral: ${ctx.referrer}` : first?.source ? `${first.source} / ${first.medium ?? ""}` : "");
+  return {
+    replyTo: validEmail(row.email) ? row.email : undefined,
+    subject,
+    ...detailsEmail(`New catering quote request (${where})`, [
+      ["Name", row.name],
+      ["Phone", row.phone],
+      ["Email", row.email],
+      ["Event date", row.event_date],
+      ["Guests", row.guest_count],
+      ["Event type", row.event_type],
+      ["Details", row.details],
+      ["Page", row.form_page],
+      ["Came from", source],
+      ["Request #", id],
+    ]),
+  };
+}
