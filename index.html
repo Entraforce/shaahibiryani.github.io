@@ -2944,6 +2944,12 @@ html.cookie-bar-open #chat-bubble,
 html.cookie-bar-open .wa-float{
   transform:translateY(calc(-1 * var(--cookie-bar-h, 0px) - 14px));
 }
+/* ...except where that lift would land them on the hero's Catering / Pickup /
+   Delivery buttons (phones, first visit). Then they stay at their normal spot,
+   under the bar, until the guest scrolls past the hero or answers the bar. */
+html.cookie-bar-open.cookie-float-tuck #chat-bubble,
+html.cookie-bar-open.cookie-float-tuck .wa-float{transform:none;}
+html.cookie-bar-open #hero .hero-content{translate:0 calc(-1 * var(--hero-lift, 0px));}
 @media (prefers-reduced-motion:reduce){#cookie-bar{transition:none;}}
 
 /* WhatsApp is a support channel, not the product. It was a saturated #25D366
@@ -7760,6 +7766,47 @@ document.addEventListener('click', function(e){
 
 <!-- CTATRACK:START -->
 <script>
+// First visit on a phone: the cookie bar owns the bottom of the screen. Keep
+// the hero's Catering / Pickup / Delivery clear of it without restyling
+// anything: (1) while the bar is up, raise the hero copy just enough to sit
+// above the bar (only where it would be covered, and never above the hero);
+// (2) if the lifted Ask Shaahi / WhatsApp would then land on those buttons,
+// leave them at their normal spot under the bar (.cookie-float-tuck) until the
+// guest scrolls past the hero or answers the bar. Both undo when it closes.
+(function(){
+  var root = document.documentElement, raf = 0;
+  function overlap(a, b){ return a.left < b.right && a.right > b.left && a.top < b.bottom + 8 && a.bottom > b.top - 8; }
+  function check(){
+    raf = 0;
+    var open = root.classList.contains('cookie-bar-open');
+    var hero = document.getElementById('hero'), box = hero && hero.querySelector('.hero-content'),
+        row = hero && hero.querySelector('.hbtns'), bar = document.getElementById('cookie-bar');
+    var lift = 0, tuck = false;
+    if (open && box && row && bar) {
+      var cur = parseFloat(root.style.getPropertyValue('--hero-lift')) || 0;
+      var y = window.scrollY, barTop = bar.getBoundingClientRect().top;
+      var rowBottom = row.getBoundingClientRect().bottom + cur + y;            // at the top of the page, unlifted
+      var first = box.firstElementChild && box.firstElementChild.nextElementSibling || box.firstElementChild;
+      var room = first ? first.getBoundingClientRect().top + cur - hero.getBoundingClientRect().top - 12 : 0;
+      lift = Math.max(0, Math.min(rowBottom + 12 - barTop, room));
+    }
+    root.style.setProperty('--hero-lift', Math.round(lift) + 'px');
+    if (open && row && bar) {
+      var r = row.getBoundingClientRect(), up = root.classList.contains('cookie-float-tuck') ? bar.offsetHeight + 14 : 0;
+      [document.getElementById('chat-bubble'), document.querySelector('.wa-float')].forEach(function(el){
+        if (!el || getComputedStyle(el).display === 'none') return;
+        var b = el.getBoundingClientRect();
+        if (r.height && overlap({ left: b.left, right: b.right, top: b.top - up, bottom: b.bottom - up }, r)) tuck = true;
+      });
+    }
+    root.classList.toggle('cookie-float-tuck', tuck);
+  }
+  function soon(){ if (!raf) raf = requestAnimationFrame(check); }
+  addEventListener('scroll', soon, { passive: true });
+  addEventListener('resize', soon);
+  new MutationObserver(soon).observe(root, { attributes: true, attributeFilter: ['class'] });
+  soon();
+})();
 // Takeout / Delivery shortcuts: the same website menu and cart, with pickup or
 // Uber Direct delivery pre-selected. The link's own #menu jump still happens.
 document.addEventListener('click', function(e){
@@ -7779,7 +7826,13 @@ document.addEventListener('click', function(e){
   document.addEventListener('click', function(e){
     var a = e.target && e.target.closest && e.target.closest('a[data-track]');
     if (!a || typeof gtag !== 'function' || !allowed()) return;
-    gtag('event', a.getAttribute('data-track'));
+    var t = a.getAttribute('data-track');
+    gtag('event', t);
+    // The hero's Pickup / Delivery replaced its single "Order Online" button;
+    // keep the historical order_click series going alongside the new events.
+    // Click events only: no value, no conversion.
+    var m = /^hero_(pickup|delivery)_click$/.exec(t);
+    if (m) gtag('event', 'order_click', { order_type: m[1], source: 'hero' });
   });
   var menu = document.getElementById('menu');
   if (menu && 'IntersectionObserver' in window) {
