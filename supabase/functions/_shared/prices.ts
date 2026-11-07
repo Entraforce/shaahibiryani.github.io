@@ -63,7 +63,6 @@ export const PRICES: Record<string, number> = {
   "mixed-vegetables|mixed-vegetables-standard": 12.0,
   "palak-paneer|palak-paneer-standard": 12.0,
   "dal-tadka|dal-tadka-standard": 10.0,
-  "navratan-korma|navratan-korma-standard": 12.0,
   "vegetarian-khorma|vegetarian-khorma-standard": 12.0,
   "chana-masala|chana-masala-standard": 12.0,
   "bhendi-masala|bhendi-masala-standard": 12.0,

@@ -363,7 +363,6 @@ export const VEGETARIAN_PIDS = new Set([
  "mirchi-ka-salan|mirchi-ka-salan-standard",
  "mixed-vegetables|mixed-vegetables-16oz",
  "mixed-vegetables|mixed-vegetables-standard",
- "navratan-korma|navratan-korma-standard",
  "palak-paneer|palak-paneer-16oz",
  "palak-paneer|palak-paneer-standard",
  "paratha|paratha-standard",
